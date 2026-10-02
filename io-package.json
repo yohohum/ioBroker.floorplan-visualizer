@@ -1,12 +1,12 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "news": {
-      "1.0.0": {
-        "en": "Initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Первый релиз"
+      "2.0.0": {
+        "en": "Major update: Dynamic floors/layers, image upload, global styles, multi-value sensors, mfd icons support",
+        "de": "Hauptupdate: Dynamische Etagen/Ebenen, Bild-Upload, globale Stile, Multi-Value-Sensoren, mfd-Icons",
+        "ru": "Крупное обновление: Динамические этажи/слои, загрузка изображений, глобальные стили, многозначные датчики, поддержка иконок mfd"
       }
     },
     "title": "Floor Plan Visualizer",
@@ -16,9 +16,9 @@
       "ru": "Визуализатор плана этажа"
     },
     "desc": {
-      "en": "Interactive floor plan visualization with device control",
-      "de": "Interaktive Grundrissvisualisierung mit Gerätesteuerung",
-      "ru": "Интерактивная визуализация плана этажа с управлением устройствами"
+      "en": "Advanced interactive floor plan visualization with dynamic layers, global styling, and device control",
+      "de": "Erweiterte interaktive Grundrissvisualisierung mit dynamischen Ebenen, globalem Styling und Gerätesteuerung",
+      "ru": "Продвинутая интерактивная визуализация плана этажа с динамическими слоями, глобальными стилями и управлением устройствами"
     },
     "authors": [
       "YoHoHum <yohohum@gmail.com>"
@@ -26,7 +26,8 @@
     "keywords": [
       "floorplan",
       "visualization",
-      "smart home"
+      "smart home",
+      "dynamic"
     ],
     "license": "MIT",
     "platform": "Javascript/Node.js",

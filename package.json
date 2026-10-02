@@ -1,7 +1,7 @@
 {
   "name": "iobroker.floorplan-visualizer",
-  "version": "1.0.0",
-  "description": "Interactive floor plan visualization for ioBroker",
+  "version": "2.0.0",
+  "description": "Advanced interactive floor plan visualization for ioBroker",
   "author": "YoHoHum <yohohum@gmail.com>",
   "homepage": "https://github.com/yohohum/ioBroker.floorplan-visualizer",
   "license": "MIT",

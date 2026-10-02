@@ -2,29 +2,10 @@
 'use strict';
 
 systemDictionary = {
-    "Floor Plan Visualizer Settings": {
-        "en": "Floor Plan Visualizer Settings",
-        "de": "Einstellungen für Grundriss-Visualisierer",
-        "ru": "Настройки Визуализатора плана этажа"
-    },
-    "Configure the web server for the floor plan visualization.": {
-        "en": "Configure the web server for the floor plan visualization.",
-        "de": "Konfigurieren Sie den Webserver für die Grundrissvisualisierung.",
-        "ru": "Настройте веб-сервер для визуализации плана этажа."
-    },
-    "Web Server Port": {
-        "en": "Web Server Port",
-        "de": "Webserver-Port",
-        "ru": "Порт веб-сервера"
-    },
-    "Bind IP Address": {
-        "en": "Bind IP Address",
-        "de": "IP-Adresse binden",
-        "ru": "IP адрес для прослушивания"
-    },
-    "ℹ️ After saving, restart the adapter. Open visualization at: http://YOUR_IOBROKER_IP:PORT": {
-        "en": "ℹ️ After saving, restart the adapter. Open visualization at: http://YOUR_IOBROKER_IP:PORT",
-        "de": "ℹ️ Nach dem Speichern Adapter neu starten. Visualisierung öffnen unter: http://YOUR_IOBROKER_IP:PORT",
-        "ru": "ℹ️ После сохранения перезапустите адаптер. Откройте визуализацию по адресу: http://ВАШ_IP_IOBROKER:ПОРТ"
-    }
+    "Floor Plan Visualizer Settings": { "en": "Floor Plan Visualizer Settings", "de": "Einstellungen", "ru": "Настройки Визуализатора" },
+    "Общие": { "en": "General", "de": "Allgemein", "ru": "Общие" },
+    "Глобальные стили": { "en": "Global Styles", "de": "Globale Stile", "ru": "Глобальные стили" },
+    "Этажи и Слои": { "en": "Floors & Layers", "de": "Etagen & Ebenen", "ru": "Этажи и Слои" },
+    "Web Server Port": { "en": "Web Server Port", "de": "Port", "ru": "Порт веб-сервера" },
+    "Bind IP Address": { "en": "Bind IP Address", "de": "IP-Adresse", "ru": "IP адрес" }
 };
