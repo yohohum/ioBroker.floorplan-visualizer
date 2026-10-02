@@ -21,7 +21,7 @@
       "ru": "Интерактивная визуализация плана этажа с управлением устройствами"
     },
     "authors": [
-      "yohohum@gmail.com"
+      "YoHoHum <yohohum@gmail.com>"
     ],
     "keywords": [
       "floorplan",
@@ -45,7 +45,7 @@
     "enabled": true
   },
   "native": {
-    "port": 8082,
+    "port": 8083,
     "bind": "0.0.0.0"
   },
   "objects": [],

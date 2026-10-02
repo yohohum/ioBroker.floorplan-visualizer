@@ -2,8 +2,8 @@
   "name": "iobroker.floorplan-visualizer",
   "version": "1.0.0",
   "description": "Interactive floor plan visualization for ioBroker",
-  "author": "YoHoHum@gmail.com",
-  "homepage": "https://github.com/ВАШ_АККАУНТ/ioBroker.floorplan-visualizer",
+  "author": "YoHoHum <yohohum@gmail.com>",
+  "homepage": "https://github.com/yohohum/ioBroker.floorplan-visualizer",
   "license": "MIT",
   "keywords": [
     "ioBroker",
@@ -28,6 +28,6 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "bugs": {
-    "url": "https://github.com/ВАШ_АККАУНТ/ioBroker.floorplan-visualizer/issues"
+    "url": "https://github.com/yohohum/ioBroker.floorplan-visualizer/issues"
   }
 }

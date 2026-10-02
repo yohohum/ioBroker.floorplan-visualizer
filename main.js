@@ -5,7 +5,6 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
-const fs = require('fs');
 
 class FloorplanVisualizer extends utils.Adapter {
     constructor(options = {}) {
@@ -27,7 +26,6 @@ class FloorplanVisualizer extends utils.Adapter {
     async onReady() {
         this.log.info('Starting Floor Plan Visualizer...');
 
-        // Инициализация состояния конфигурации по умолчанию
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: {
@@ -64,11 +62,9 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
 
-        // Раздача статики из папки www
         const wwwDir = path.join(__dirname, 'www');
         this.app.use(express.static(wwwDir));
 
-        // API: Получить конфигурацию
         this.app.get('/api/config', async (req, res) => {
             try {
                 const state = await this.getStateAsync('config');
@@ -79,7 +75,6 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // API: Сохранить конфигурацию
         this.app.post('/api/config', express.json({ limit: '10mb' }), async (req, res) => {
             try {
                 await this.setStateAsync('config', { val: JSON.stringify(req.body, null, 2), ack: true });
@@ -91,7 +86,6 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // API: Получить состояние устройства
         this.app.get('/api/state/:id(*)', async (req, res) => {
             try {
                 const stateId = req.params.id;
@@ -103,7 +97,6 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // API: Установить состояние устройства
         this.app.post('/api/state/:id(*)', express.json(), async (req, res) => {
             try {
                 const stateId = req.params.id;
@@ -118,7 +111,8 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     startServer() {
-        const port = this.config.port || 8082;
+        // ИЗМЕНЕНО: порт по умолчанию теперь 8083
+        const port = this.config.port || 8083;
         const bind = this.config.bind || '0.0.0.0';
 
         this.server = http.createServer(this.app);

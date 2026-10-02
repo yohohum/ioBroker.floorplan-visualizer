@@ -24,7 +24,7 @@ systemDictionary = {
     },
     "ℹ️ After saving, restart the adapter. Open visualization at: http://YOUR_IOBROKER_IP:PORT": {
         "en": "ℹ️ After saving, restart the adapter. Open visualization at: http://YOUR_IOBROKER_IP:PORT",
-        "de": "️ Nach dem Speichern Adapter neu starten. Visualisierung öffnen unter: http://YOUR_IOBROKER_IP:PORT",
+        "de": "ℹ️ Nach dem Speichern Adapter neu starten. Visualisierung öffnen unter: http://YOUR_IOBROKER_IP:PORT",
         "ru": "ℹ️ После сохранения перезапустите адаптер. Откройте визуализацию по адресу: http://ВАШ_IP_IOBROKER:ПОРТ"
     }
 };
