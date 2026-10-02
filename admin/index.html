@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Floor Plan Visualizer Settings</title>
+    <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+    <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css">
+    <script type="text/javascript" src="../../js/translate.js"></script>
+    <script type="text/javascript" src="../../lib/js/materialize.js"></script>
+    <script type="text/javascript" src="../../js/adapter-settings.js"></script>
+    <style>
+        .m .col .input-field input[type="number"] { width: 150px; }
+        .adapter-header { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="m adapter-container">
+        <div class="adapter-header">
+            <h4 class="translate">Floor Plan Visualizer Settings</h4>
+            <p class="translate">Configure the web server for the floor plan visualization.</p>
+        </div>
+
+        <div class="row">
+            <div class="col s12 m6">
+                <div class="input-field">
+                    <input class="value" id="port" type="number" min="1024" max="65535"/>
+                    <label for="port" class="translate">Web Server Port</label>
+                </div>
+            </div>
+            <div class="col s12 m6">
+                <div class="input-field">
+                    <input class="value" id="bind" type="text" placeholder="0.0.0.0"/>
+                    <label for="bind" class="translate">Bind IP Address</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col s12">
+                <p class="translate" style="color: #0cbaba; font-weight: bold;">
+                    ℹ️ After saving, restart the adapter. Open visualization at: http://YOUR_IOBROKER_IP:PORT
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

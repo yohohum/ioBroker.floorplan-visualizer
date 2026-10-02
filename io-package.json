@@ -1,0 +1,53 @@
+{
+  "common": {
+    "name": "floorplan-visualizer",
+    "version": "1.0.0",
+    "news": {
+      "1.0.0": {
+        "en": "Initial release",
+        "de": "Erstveröffentlichung",
+        "ru": "Первый релиз"
+      }
+    },
+    "title": "Floor Plan Visualizer",
+    "titleLang": {
+      "en": "Floor Plan Visualizer",
+      "de": "Grundriss-Visualisierer",
+      "ru": "Визуализатор плана этажа"
+    },
+    "desc": {
+      "en": "Interactive floor plan visualization with device control",
+      "de": "Interaktive Grundrissvisualisierung mit Gerätesteuerung",
+      "ru": "Интерактивная визуализация плана этажа с управлением устройствами"
+    },
+    "authors": [
+      "yohohum@gmail.com"
+    ],
+    "keywords": [
+      "floorplan",
+      "visualization",
+      "smart home"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "main": "main.js",
+    "mode": "daemon",
+    "type": "visualization",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "html"
+    },
+    "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
+    "loglevel": "info",
+    "tier": 3,
+    "enabled": true
+  },
+  "native": {
+    "port": 8082,
+    "bind": "0.0.0.0"
+  },
+  "objects": [],
+  "states": []
+}
