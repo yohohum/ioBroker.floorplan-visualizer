@@ -9,33 +9,36 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a1a; color: #ecf0f1; padding: 20px; }
         .wrapper { max-width: 1400px; margin: 0 auto; background: #2c3e50; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-        
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab { padding: 12px 24px; background: #34495e; border: 2px solid transparent; border-radius: 8px; color: #ecf0f1; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .tab { padding: 12px 24px; background: #34495e; border: 2px solid transparent; border-radius: 8px; color: #ecf0f1; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; }
         .tab:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .tab.active { border-color: currentColor; }
-        .tab.lighting.active { background: #f39c12; color: #fff; }
-        .tab.sockets.active { background: #e67e22; color: #fff; }
-        .tab.sensors.active { background: #3498db; color: #fff; }
-        .tab.security.active { background: #e74c3c; color: #fff; }
         .tab.floor.active { background: #0cbaba; border-color: #0cbaba; }
+        
+        .layer-btn { padding: 10px 20px; border: 2px solid transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.3s; margin-right: 10px; margin-bottom: 10px; }
+        .layer-btn:hover { transform: translateY(-2px); }
+        .layer-btn.active { border-color: currentColor; box-shadow: 0 0 15px currentColor; color: #fff !important; }
 
         .plan-container { position: relative; width: 100%; background: #34495e; border-radius: 8px; overflow: hidden; min-height: 500px; }
         .plan-image { width: 100%; height: auto; display: block; user-select: none; }
         
-        .marker { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.95); border: 3px solid #2c3e50; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: all 0.3s ease; z-index: 10; transform: translate(-50%, -50%); }
+        .marker { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.95); border: 3px solid #2c3e50; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: 0.3s ease; z-index: 10; transform: translate(-50%, -50%); }
         .marker:hover { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; }
-        
-        .marker.off { opacity: 0.4; filter: grayscale(80%) brightness(0.7); border-color: #7f8c8d; }
-        .marker.on { opacity: 1; filter: grayscale(0%) brightness(1); border-color: #0cbaba; box-shadow: 0 0 20px rgba(12,186,186,0.5); }
-        .marker.on::before { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle, rgba(12,186,186,0.3) 0%, transparent 70%); animation: pulse 2s infinite; z-index: -1; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0; } }
-        
-        .marker .icon { font-size: 28px; pointer-events: none; transition: all 0.3s; }
-        .marker.off .icon { filter: grayscale(100%); }
-        
-        .marker .label { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: 600; }
+        .marker img.mfd-icon { width: 100%; height: 100%; object-fit: contain; }
+        .marker .emoji-icon { font-size: inherit; line-height: 1; }
+
+        .marker .label { position: absolute; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; transition: 0.3s; pointer-events: none; font-weight: 600; z-index: 20; }
         .marker:hover .label { opacity: 1; }
+        .label.pos-top { bottom: auto; top: -35px; }
+        .label.pos-bottom { top: auto; bottom: -35px; }
+        .label.pos-overlay { top: auto; bottom: -35px; } /* Для оверлея подпись все равно снизу, а значения поверх */
+
+        .sensor-values { position: absolute; text-align: center; pointer-events: none; z-index: 11; width: 100%; }
+        .sensor-values.pos-overlay { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .sensor-values.pos-top { top: -35px; left: 50%; transform: translateX(-50%); }
+        .sensor-values.pos-bottom { bottom: -35px; left: 50%; transform: translateX(-50%); }
+        
+        .sensor-value-line { display: block; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
 
         .status { position: fixed; top: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 10001; }
         .status.connected { background: #27ae60; color: #fff; }
@@ -46,96 +49,210 @@
 <body>
     <div class="status disconnected" id="connStatus">Отключено</div>
     <div class="wrapper">
-        <div class="tabs" id="floorTabs">
-            <button class="tab floor active" data-floor="1">1 этаж</button>
-            <button class="tab floor" data-floor="2">2 этаж</button>
-        </div>
-        <div class="tabs" id="layerTabs">
-            <button class="tab lighting active" data-layer="lighting">💡 Освещение</button>
-            <button class="tab sockets" data-layer="sockets">🔌 Розетки</button>
-            <button class="tab sensors" data-layer="sensors">📡 Датчики</button>
-            <button class="tab security" data-layer="security">🛡️ Безопасность</button>
-        </div>
-        <div class="plan-container" id="planContainer">
-            <div class="loading">Загрузка...</div>
-        </div>
+        <div class="tabs" id="floorTabs"></div>
+        <div class="tabs" id="layerTabs"></div>
+        <div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div>
     </div>
 
     <script>
-        let config = null, socket = null, currentFloor = 1, currentLayer = 'lighting', deviceStates = {};
+        let config = null, socket = null, currentFloorId = null, currentLayerId = null, deviceStates = {};
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedFloorId = urlParams.get('floor');
 
         function connect() {
             socket = io();
             socket.on('connect', () => { document.getElementById('connStatus').textContent = 'Подключено'; document.getElementById('connStatus').className = 'status connected'; subscribe(); });
             socket.on('disconnect', () => { document.getElementById('connStatus').textContent = 'Отключено'; document.getElementById('connStatus').className = 'status disconnected'; });
-            socket.on('stateChange', (id, state) => { deviceStates[id] = state.val; updateVisual(findDevice(id), state.val); });
-            socket.on('configChanged', (newConfig) => { config = newConfig; renderFloor(); });
+            socket.on('stateChange', (id, state) => { deviceStates[id] = state.val; updateAllVisualsForState(id, state.val); });
+            socket.on('configChanged', (newConfig) => { config = newConfig; renderStructure(); });
         }
 
         async function loadConfig() {
             try {
                 const res = await fetch('/api/config');
                 config = await res.json();
-                renderFloor();
+                renderStructure();
             } catch (e) { document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки</div>'; }
         }
 
-        function renderFloor() {
-            const container = document.getElementById('planContainer');
-            const floor = config.floors[currentFloor];
-            if (!floor || !floor.image) { container.innerHTML = '<div class="loading">План не загружен. Отправьте JSON в /api/config</div>'; return; }
-            container.innerHTML = `<img src="${floor.image}" class="plan-image"><div id="devicesLayer"></div>`;
-            renderDevices();
+        function getTypeSettings(typeId) {
+            if (!config || !config.elementTypes) return null;
+            return config.elementTypes.find(t => t.id === typeId) || config.elementTypes[0];
         }
 
-        function renderDevices() {
+        function renderStructure() {
+            if (!config || !config.floors || config.floors.length === 0) {
+                document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен</div>';
+                return;
+            }
+
+            const floorTabs = document.getElementById('floorTabs');
+            floorTabs.innerHTML = '';
+            if (!currentFloorId) currentFloorId = requestedFloorId || config.floors[0].id;
+
+            config.floors.forEach(floor => {
+                const btn = document.createElement('button');
+                btn.className = `tab floor ${floor.id === currentFloorId ? 'active' : ''}`;
+                btn.textContent = floor.name;
+                btn.onclick = () => { currentFloorId = floor.id; currentLayerId = null; renderStructure(); };
+                floorTabs.appendChild(btn);
+            });
+
+            const currentFloor = config.floors.find(f => f.id === currentFloorId);
+            const layerTabs = document.getElementById('layerTabs');
+            layerTabs.innerHTML = '';
+            
+            if (currentFloor && currentFloor.layers.length > 0) {
+                if (!currentLayerId || !currentFloor.layers.find(l => l.id === currentLayerId)) {
+                    currentLayerId = currentFloor.layers[0].id;
+                }
+
+                currentFloor.layers.forEach(layer => {
+                    const btn = document.createElement('button');
+                    const isActive = layer.id === currentLayerId;
+                    btn.className = `layer-btn ${isActive ? 'active' : ''}`;
+                    btn.textContent = layer.name;
+                    
+                    const typeSettings = getTypeSettings(layer.type);
+                    const color = isActive ? (typeSettings?.colors?.active || '#0cbaba') : (typeSettings?.colors?.inactive || '#34495e');
+                    
+                    btn.style.backgroundColor = color;
+                    btn.style.borderColor = color;
+                    btn.onclick = () => { currentLayerId = layer.id; renderStructure(); };
+                    layerTabs.appendChild(btn);
+                });
+            }
+            renderPlan(currentFloor);
+        }
+
+        function renderPlan(floor) {
+            const container = document.getElementById('planContainer');
+            if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
+            container.innerHTML = `<img src="${floor.image}" class="plan-image"><div id="devicesLayer"></div>`;
+            renderDevices(floor);
+        }
+
+        function renderDevices(floor) {
             const layer = document.getElementById('devicesLayer');
             if (!layer) return;
             layer.innerHTML = '';
-            const devices = config.floors[currentFloor].devices[currentLayer] || [];
-            devices.forEach(dev => {
+            
+            const currentLayerObj = floor.layers.find(l => l.id === currentLayerId);
+            if (!currentLayerObj) return;
+
+            const typeSettings = getTypeSettings(currentLayerObj.type);
+            if (!typeSettings) return;
+
+            const size = typeSettings.iconSize || 48;
+            const opacity = typeSettings.iconOpacity !== undefined ? typeSettings.iconOpacity : 1.0;
+            const font = typeSettings.font || { family: 'Arial', weight: 'bold', size: '12px', color: '#fff' };
+            const pos = typeSettings.textPosition || 'bottom';
+
+            currentLayerObj.devices.forEach(dev => {
                 const marker = document.createElement('div');
-                marker.className = `marker ${deviceStates[dev.deviceId] ? 'on' : 'off'}`;
-                marker.style.left = dev.x + '%'; marker.style.top = dev.y + '%';
-                marker.dataset.id = dev.id; marker.dataset.stateId = dev.deviceId;
-                const isActive = !!deviceStates[dev.deviceId];
-                marker.innerHTML = `<span class="icon">${isActive ? (dev.iconOn || '💡') : (dev.iconOff || '')}</span><span class="label">${dev.name}</span>`;
-                marker.onclick = () => toggleDevice(dev);
+                marker.className = 'marker';
+                marker.style.left = dev.x + '%'; 
+                marker.style.top = dev.y + '%';
+                marker.style.width = size + 'px';
+                marker.style.height = size + 'px';
+                marker.style.fontSize = (size * 0.6) + 'px';
+                marker.style.opacity = opacity;
+                marker.dataset.devId = dev.id;
+                
+                let stateVal = null;
+                if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
+
+                // Определение цвета границы и свечения
+                let borderColor = typeSettings.colors.inactive;
+                let shadow = 'none';
+                if (stateVal) {
+                    borderColor = typeSettings.colors.active;
+                    shadow = `0 0 15px ${typeSettings.colors.active}`;
+                }
+                // Упрощенная логика для warning/safe (можно расширить при необходимости)
+                if (dev.stateIds && dev.stateIds.length > 1) {
+                    const val2 = deviceStates[dev.stateIds[1]];
+                    if (val2 > 30) { borderColor = typeSettings.colors.warning; shadow = `0 0 15px ${typeSettings.colors.warning}`; }
+                    else { borderColor = typeSettings.colors.safe; shadow = `0 0 15px ${typeSettings.colors.safe}`; }
+                }
+
+                marker.style.borderColor = borderColor;
+                if (stateVal) marker.style.boxShadow = shadow;
+
+                if (dev.iconType === 'mfd' && dev.iconName) {
+                    marker.innerHTML = `<img src="/icons-mfd-png/${dev.iconName}.png" class="mfd-icon" style="opacity: ${stateVal ? 1 : 0.4}; filter: ${stateVal ? 'none' : 'grayscale(100%)'}">`;
+                } else {
+                    const emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
+                    marker.innerHTML = `<span class="emoji-icon" style="filter: ${stateVal ? 'none' : 'grayscale(100%) brightness(0.7)'}">${emoji}</span>`;
+                }
+
+                // Текст значений датчика
+                if (dev.stateIds && dev.stateIds.length > 0) {
+                    const valuesDiv = document.createElement('div');
+                    valuesDiv.className = `sensor-values pos-${pos}`;
+                    valuesDiv.style.fontFamily = font.family;
+                    valuesDiv.style.fontWeight = font.weight;
+                    valuesDiv.style.fontSize = font.size;
+                    valuesDiv.style.color = font.color;
+
+                    dev.stateIds.forEach((sid, idx) => {
+                        const val = deviceStates[sid];
+                        const prefix = dev.prefixes && dev.prefixes[idx] ? dev.prefixes[idx] : '';
+                        const postfix = dev.postfixes && dev.postfixes[idx] ? dev.postfixes[idx] : '';
+                        const displayVal = val !== undefined && val !== null ? val : 'N/A';
+                        
+                        const line = document.createElement('span');
+                        line.className = 'sensor-value-line';
+                        line.textContent = `${prefix}${displayVal}${postfix}`;
+                        valuesDiv.appendChild(line);
+                    });
+                    marker.appendChild(valuesDiv);
+                }
+
+                const label = document.createElement('span');
+                label.className = `label pos-${pos}`;
+                label.textContent = dev.name;
+                marker.appendChild(label);
+
+                marker.onclick = () => toggleDevice(dev, currentLayerObj.type);
                 layer.appendChild(marker);
             });
         }
 
-        async function toggleDevice(dev) {
-            if (dev.isSensor) { alert(`${dev.name}: ${deviceStates[dev.deviceId] || 'Н/Д'}`); return; }
-            const newVal = !deviceStates[dev.deviceId];
+        function updateAllVisualsForState(stateId, val) {
+            const floor = config.floors.find(f => f.id === currentFloorId);
+            if (floor) renderDevices(floor);
+        }
+
+        async function toggleDevice(dev, layerType) {
+            if (layerType === 'sensor' || !dev.stateIds || dev.stateIds.length === 0) {
+                let msg = dev.name + ":\n";
+                dev.stateIds.forEach((sid, idx) => {
+                    const val = deviceStates[sid];
+                    const prefix = dev.prefixes && dev.prefixes[idx] ? dev.prefixes[idx] : '';
+                    const postfix = dev.postfixes && dev.postfixes[idx] ? dev.postfixes[idx] : '';
+                    msg += `${prefix}${val !== undefined ? val : 'N/A'}${postfix}\n`;
+                });
+                alert(msg);
+                return;
+            }
+            const currentState = deviceStates[dev.stateIds[0]] || false;
             try {
-                await fetch(`/api/state/${dev.deviceId}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({val: newVal}) });
-                deviceStates[dev.deviceId] = newVal;
-                updateVisual(dev, newVal);
+                await fetch(`/api/state/${dev.stateIds[0]}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({val: !currentState}) });
             } catch (e) { alert('Ошибка управления'); }
         }
 
-        function updateVisual(dev, val) {
-            if (!dev) return;
-            const marker = document.querySelector(`[data-id="${dev.id}"]`);
-            if (!marker) return;
-            marker.className = `marker ${val ? 'on' : 'off'}`;
-            marker.querySelector('.icon').textContent = val ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
-        }
-
         function subscribe() {
-            const all = [];
-            Object.values(config.floors).forEach(f => Object.values(f.devices).forEach(l => l.forEach(d => {
-                if (!all.includes(d.deviceId)) { all.push(d.deviceId); socket.emit('subscribe', d.deviceId); socket.emit('getState', d.deviceId, (err, state) => { if (!err && state) { deviceStates[d.deviceId] = state.val; updateVisual(d, state.val); } }); }
+            if (!config) return;
+            const allStates = new Set();
+            config.floors.forEach(f => f.layers.forEach(l => l.devices.forEach(d => {
+                if (d.stateIds) d.stateIds.forEach(sid => allStates.add(sid));
             })));
+            allStates.forEach(sid => {
+                socket.emit('subscribe', sid);
+                socket.emit('getState', sid, (err, state) => { if (!err && state) deviceStates[sid] = state.val; });
+            });
         }
-
-        function findDevice(stateId) {
-            for (const f of Object.values(config.floors)) for (const l of Object.values(f.devices)) { const d = l.find(x => x.deviceId === stateId); if (d) return d; } return null;
-        }
-
-        document.querySelectorAll('#floorTabs .tab').forEach(t => t.onclick = function() { document.querySelectorAll('#floorTabs .tab').forEach(x => x.classList.remove('active')); this.classList.add('active'); currentFloor = +this.dataset.floor; renderFloor(); });
-        document.querySelectorAll('#layerTabs .tab').forEach(t => t.onclick = function() { document.querySelectorAll('#layerTabs .tab').forEach(x => x.classList.remove('active')); this.classList.add('active'); currentLayer = this.dataset.layer; renderDevices(); });
 
         window.onload = () => { connect(); loadConfig(); };
     </script>
