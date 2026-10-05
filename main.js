@@ -20,7 +20,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.8...');
+        this.log.info('Starting Floor Plan Visualizer v5.10...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -42,12 +42,12 @@ class FloorplanVisualizer extends utils.Adapter {
             await this.setStateAsync('config', { val: JSON.stringify(defaultConfig, null, 2), ack: true });
         }
 
-        // Хранилище загрузок в папке данных адаптера (переживает обновления адаптера)
         this.uploadsDir = this.getUploadsDir();
         this.migrateOldUploads();
 
         this.iconsDir = this.findIconsDirectory();
         await this.detectWebPort();
+        this.removeConflictingIconsFolder();
 
         if (this.iconsDir) {
             this.log.info('MFD icons found at: ' + this.iconsDir);
@@ -59,7 +59,19 @@ class FloorplanVisualizer extends utils.Adapter {
         this.startPresentationServer();
     }
 
-    // === ПАПКА ЗАГРУЗОК В ДАННЫХ АДАПТЕРА ===
+    // Удаляем конфликтующую папку icons-mfd-png из www если она там есть
+    removeConflictingIconsFolder() {
+        const wwwIconsDir = path.join(__dirname, 'www', 'icons-mfd-png');
+        try {
+            if (fs.existsSync(wwwIconsDir)) {
+                fs.rmSync(wwwIconsDir, { recursive: true, force: true });
+                this.log.info('Removed conflicting icons folder from www: ' + wwwIconsDir);
+            }
+        } catch (e) {
+            this.log.debug('Cannot remove www icons folder: ' + e.message);
+        }
+    }
+
     getUploadsDir() {
         let base;
         try {
@@ -77,7 +89,6 @@ class FloorplanVisualizer extends utils.Adapter {
         return dir;
     }
 
-    // === МИГРАЦИЯ СТАРЫХ ЗАГРУЗОК ИЗ www/uploads ===
     migrateOldUploads() {
         const oldDir = path.join(__dirname, 'www', 'uploads');
         try {
@@ -138,19 +149,96 @@ class FloorplanVisualizer extends utils.Adapter {
 
     buildApp() {
         const app = express();
+        
+        // CORS headers для всех запросов
         app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
             res.header('Access-Control-Allow-Headers', 'Content-Type, Accept');
+            if (req.method === 'OPTIONS') {
+                res.sendStatus(200);
+                return;
+            }
             next();
         });
 
-        // === РАЗДАЧА ЗАГРУЗОК ИЗ ПАПКИ ДАННЫХ ===
+        // === МАРКЕР ВЕРСИИ ===
+        app.get('/api/version', (req, res) => {
+            res.json({ version: '5.10' });
+        });
+
+        // === РАЗДАЧА ИКОНОК MFD (ДО express.static чтобы не было конфликтов) ===
+        const serveIcon = (req, res) => {
+            let iconName = path.basename(req.params.name);
+            if (!/\.(png|svg)$/i.test(iconName)) iconName += '.png';
+
+            this.log.debug('Icon request: ' + iconName);
+
+            if (this.iconsDir) {
+                const filePath = path.join(this.iconsDir, iconName);
+                
+                if (!fs.existsSync(filePath)) {
+                    this.log.warn('Icon file not found: ' + filePath);
+                    res.status(404).send('Icon not found: ' + iconName);
+                    return;
+                }
+
+                const stat = fs.statSync(filePath);
+                const contentType = iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+                
+                res.setHeader('Content-Type', contentType);
+                res.setHeader('Content-Length', stat.size);
+                res.setHeader('Cache-Control', 'public, max-age=86400');
+                res.setHeader('Accept-Ranges', 'bytes');
+                
+                const stream = fs.createReadStream(filePath);
+                stream.pipe(res);
+                stream.on('error', (err) => {
+                    this.log.error('Stream error for ' + iconName + ': ' + err.message);
+                    if (!res.headersSent) res.status(500).send('Stream error');
+                });
+            } else {
+                const proxyUrl = 'http://' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort + '/icons-mfd-png/' + iconName;
+                this.log.debug('Proxying icon from: ' + proxyUrl);
+                
+                const proxyReq = http.get(proxyUrl, (proxyRes) => {
+                    if (proxyRes.headers['content-type']) {
+                        res.setHeader('Content-Type', proxyRes.headers['content-type']);
+                    } else {
+                        res.setHeader('Content-Type', iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
+                    }
+                    if (proxyRes.headers['content-length']) {
+                        res.setHeader('Content-Length', proxyRes.headers['content-length']);
+                    }
+                    res.setHeader('Cache-Control', 'public, max-age=86400');
+                    res.status(proxyRes.statusCode);
+                    proxyRes.pipe(res);
+                });
+                
+                proxyReq.on('error', (err) => {
+                    this.log.error('Proxy error for ' + iconName + ': ' + err.message);
+                    if (!res.headersSent) res.status(500).send('Proxy error');
+                });
+                
+                proxyReq.setTimeout(5000, () => {
+                    this.log.error('Proxy timeout for ' + iconName);
+                    proxyReq.destroy();
+                    if (!res.headersSent) res.status(504).send('Proxy timeout');
+                });
+            }
+        };
+        
+        app.get('/icons-mfd-png/:name', serveIcon);
+        app.get('/icons-mfd-svg/:name', serveIcon);
+
+        // === РАЗДАЧА ЗАГРУЗОК (ДО express.static) ===
         app.use('/uploads', express.static(this.uploadsDir, { maxAge: '1h' }));
         app.get('/uploads/:name', (req, res) => {
             const name = path.basename(req.params.name);
             const filePath = path.join(this.uploadsDir, name);
             if (fs.existsSync(filePath)) {
+                const stat = fs.statSync(filePath);
+                res.setHeader('Content-Length', stat.size);
                 res.sendFile(filePath);
             } else {
                 this.log.warn('Upload not found: ' + filePath);
@@ -158,44 +246,12 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // === РАЗДАЧА ИКОНОК MFD ===
-        const serveIcon = (req, res) => {
-            let iconName = path.basename(req.params.name);
-            if (!/\.(png|svg)$/i.test(iconName)) iconName += '.png';
-
-            res.setHeader('Cache-Control', 'public, max-age=86400');
-
-            if (this.iconsDir) {
-                const filePath = path.join(this.iconsDir, iconName);
-                if (fs.existsSync(filePath)) {
-                    res.setHeader('Content-Type', iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
-                    fs.createReadStream(filePath).pipe(res);
-                } else {
-                    this.log.warn('Icon file not found: ' + filePath);
-                    res.status(404).send('Icon not found: ' + iconName);
-                }
-            } else {
-                const proxyUrl = 'http://' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort + '/icons-mfd-png/' + iconName;
-                const proxyReq = http.get(proxyUrl, (proxyRes) => {
-                    if (proxyRes.headers['content-type']) res.setHeader('Content-Type', proxyRes.headers['content-type']);
-                    else res.setHeader('Content-Type', iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
-                    res.status(proxyRes.statusCode);
-                    proxyRes.pipe(res);
-                });
-                proxyReq.on('error', (err) => {
-                    this.log.error('Proxy error for ' + iconName + ': ' + err.message);
-                    res.status(500).send('Proxy error');
-                });
-                proxyReq.setTimeout(5000, () => { proxyReq.destroy(); res.status(504).send('Proxy timeout'); });
-            }
-        };
-        app.get('/icons-mfd-png/:name', serveIcon);
-        app.get('/icons-mfd-svg/:name', serveIcon);
-
-        app.use(express.static(path.join(__dirname, 'www')));
+        // === СТАТИЧЕСКИЕ ФАЙЛЫ (ПОСЛЕ всех API маршрутов) ===
+        app.use(express.static(path.join(__dirname, 'www'), { fallthrough: true }));
+        
         app.get('/favicon.ico', (req, res) => res.status(204));
 
-        // === ЗАГРУЗКА ФАЙЛОВ (ТЕПЕРЬ В ПАПКУ ДАННЫХ) ===
+        // === API МАРШРУТЫ ===
         app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
             try {
                 const { filename, base64Data } = req.body;
@@ -296,6 +352,11 @@ class FloorplanVisualizer extends utils.Adapter {
                 this.log.error('Get icons error: ' + e);
                 res.status(500).json({ error: e.message });
             }
+        });
+
+        // Fallback для всех остальных маршрутов
+        app.use((req, res) => {
+            res.status(404).send('Not found: ' + req.url);
         });
 
         return app;
