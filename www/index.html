@@ -46,6 +46,8 @@
         var urlParams = new URLSearchParams(window.location.search);
         var requestedFloorId = urlParams.get('floor');
 
+        function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
         document.addEventListener('DOMContentLoaded', function () {
             loadConfig();
             setInterval(pollStates, 2000);
@@ -57,21 +59,18 @@
                 lastConfigJson = JSON.stringify(data); config = data; renderStructure();
             }).catch(function () { document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки</div>'; });
         }
-
         function pollConfig() {
             fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
                 var s = JSON.stringify(data);
                 if (s !== lastConfigJson) { lastConfigJson = s; config = data; renderStructure(); }
             }).catch(function () { });
         }
-
         function collectAllStateIds() {
             var ids = [];
             if (!config || !config.floors) return ids;
             config.floors.forEach(function (f) { (f.layers || []).forEach(function (l) { (l.devices || []).forEach(function (d) { (d.stateIds || []).forEach(function (sid) { if (sid && ids.indexOf(sid) === -1) ids.push(sid); }); }); }); });
             return ids;
         }
-
         function pollStates() {
             if (!config) return;
             collectAllStateIds().forEach(function (sid) {
@@ -80,39 +79,32 @@
                 }).catch(function () { });
             });
         }
-
         function rerenderDevices() {
             if (!config || !config.floors) return;
             var floor = null;
             for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) { floor = config.floors[i]; break; }
             if (floor) renderDevices(floor);
         }
-
         function getTypeSettings(typeId) {
             if (!config || !config.elementTypes) return null;
             for (var i = 0; i < config.elementTypes.length; i++) if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
             return config.elementTypes[0];
         }
-
         function renderStructure() {
             if (!config || !config.floors || config.floors.length === 0) { document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен.</div>'; return; }
             var floorTabs = document.getElementById('floorTabs'); floorTabs.innerHTML = '';
             if (!currentFloorId) currentFloorId = requestedFloorId || config.floors[0].id;
-
             config.floors.forEach(function (floor) {
                 var btn = document.createElement('button'); btn.className = 'tab floor' + (floor.id === currentFloorId ? ' active' : ''); btn.textContent = floor.name;
                 btn.onclick = function () { currentFloorId = floor.id; currentLayerId = null; renderStructure(); }; floorTabs.appendChild(btn);
             });
-
             var currentFloor = null;
             for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) { currentFloor = config.floors[i]; break; }
-
             var layerTabs = document.getElementById('layerTabs'); layerTabs.innerHTML = '';
             if (currentFloor && currentFloor.layers && currentFloor.layers.length > 0) {
                 var layerExists = false;
                 for (var l = 0; l < currentFloor.layers.length; l++) if (currentFloor.layers[l].id === currentLayerId) layerExists = true;
                 if (!currentLayerId || !layerExists) currentLayerId = currentFloor.layers[0].id;
-
                 currentFloor.layers.forEach(function (layer) {
                     var btn = document.createElement('button'); var isActive = layer.id === currentLayerId; btn.className = 'layer-btn' + (isActive ? ' active' : ''); btn.textContent = layer.name;
                     var ts = getTypeSettings(layer.type); var colors = (ts && ts.colors) ? ts.colors : {};
@@ -123,45 +115,38 @@
             }
             renderPlan(currentFloor);
         }
-
         function renderPlan(floor) {
             var container = document.getElementById('planContainer');
             if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
             container.innerHTML = '<img src="' + floor.image + '" class="plan-image"><div id="devicesLayer"></div>';
             renderDevices(floor);
         }
-
         function renderDevices(floor) {
             var layer = document.getElementById('devicesLayer'); if (!layer) return; layer.innerHTML = '';
             var currentLayerObj = null;
             for (var i = 0; i < (floor.layers || []).length; i++) if (floor.layers[i].id === currentLayerId) { currentLayerObj = floor.layers[i]; break; }
             if (!currentLayerObj) return;
-
             var ts = getTypeSettings(currentLayerObj.type); if (!ts) return;
             var size = ts.iconSize || 48, opacity = (ts.iconOpacity !== undefined) ? ts.iconOpacity : 1.0;
             var font = ts.font || { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' };
             var pos = ts.textPosition || 'bottom', colors = ts.colors || {};
-
             (currentLayerObj.devices || []).forEach(function (dev) {
                 var marker = document.createElement('div'); marker.className = 'marker';
                 marker.style.left = dev.x + '%'; marker.style.top = dev.y + '%';
                 marker.style.width = size + 'px'; marker.style.height = size + 'px';
                 marker.style.fontSize = (size * 0.6) + 'px'; marker.style.opacity = opacity;
-
                 var stateVal = null;
                 if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
-
                 var borderColor = stateVal ? (colors.active || '#0cbaba') : (colors.inactive || '#7f8c8d');
                 marker.style.borderColor = borderColor;
                 if (stateVal) marker.style.boxShadow = '0 0 15px ' + (colors.active || '#0cbaba');
-
                 if (dev.iconType === 'mfd' && dev.iconName) {
-                    marker.innerHTML = '<img src="/icons-mfd-png/' + dev.iconName + '.png" class="mfd-icon" style="opacity:' + (stateVal ? 1 : 0.4) + ';filter:' + (stateVal ? 'none' : 'grayscale(100%)') + '">';
+                    var base = dev.iconBaseUrl || '/icons-mfd-png/';
+                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png" class="mfd-icon" style="opacity:' + (stateVal ? 1 : 0.4) + ';filter:' + (stateVal ? 'none' : 'grayscale(100%)') + '">';
                 } else {
                     var emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
                     marker.innerHTML = '<span class="emoji-icon" style="filter:' + (stateVal ? 'none' : 'grayscale(100%) brightness(0.7)') + '">' + emoji + '</span>';
                 }
-
                 if (dev.stateIds && dev.stateIds.length > 0) {
                     var valuesDiv = document.createElement('div'); valuesDiv.className = 'sensor-values pos-' + pos;
                     valuesDiv.style.fontFamily = font.family; valuesDiv.style.fontWeight = font.weight; valuesDiv.style.fontSize = font.size; valuesDiv.style.color = font.color;
@@ -171,12 +156,10 @@
                     });
                     marker.appendChild(valuesDiv);
                 }
-
                 var label = document.createElement('span'); label.className = 'label pos-' + pos; label.textContent = dev.name || ''; marker.appendChild(label);
                 marker.onclick = function () { toggleDevice(dev, currentLayerObj.type); }; layer.appendChild(marker);
             });
         }
-
         function toggleDevice(dev, layerType) {
             if (!dev.stateIds || dev.stateIds.length === 0 || !dev.stateIds[0]) return;
             if (layerType === 'sensor') {

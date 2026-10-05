@@ -16,7 +16,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.1...');
+        this.log.info('Starting Floor Plan Visualizer v5.2...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -41,6 +41,42 @@ class FloorplanVisualizer extends utils.Adapter {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
         this.startAdminServer();
         this.startPresentationServer();
+    }
+
+    findIconDirs() {
+        const results = [];
+        const nm = path.resolve(__dirname, '..');
+        const bases = [nm, path.join(nm, '@iobroker')];
+        for (const base of bases) {
+            if (!fs.existsSync(base)) continue;
+            let entries = [];
+            try { entries = fs.readdirSync(base, { withFileTypes: true }); } catch (e) { continue; }
+            for (const ent of entries) {
+                if (!ent.isDirectory()) continue;
+                const pkgDir = path.join(base, ent.name);
+                const candidates = [
+                    path.join(pkgDir, 'icons'),
+                    path.join(pkgDir, 'www', 'icons-mfd-png'),
+                    path.join(pkgDir, 'www', 'icons-mfd-svg'),
+                    path.join(pkgDir, 'icons-mfd-png'),
+                    path.join(pkgDir, 'icons-mfd-svg'),
+                    path.join(pkgDir, 'widgets', 'icons-mfd-png')
+                ];
+                for (const dir of candidates) {
+                    try {
+                        if (fs.existsSync(dir)) {
+                            const files = fs.readdirSync(dir);
+                            const iconFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.svg'));
+                            if (iconFiles.length > 0) {
+                                const baseUrl = dir.includes('svg') ? '/icons-mfd-svg/' : '/icons-mfd-png/';
+                                results.push({ dir, baseUrl, count: iconFiles.length });
+                            }
+                        }
+                    } catch (e) {}
+                }
+            }
+        }
+        return results;
     }
 
     buildApp() {
@@ -95,7 +131,6 @@ class FloorplanVisualizer extends utils.Adapter {
             } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
-        // Дерево объектов ioBroker (плоский список с путями)
         app.get('/api/iobroker/objects', async (req, res) => {
             try {
                 const objects = await this.getForeignObjectsAsync('*', 'state');
@@ -106,12 +141,7 @@ class FloorplanVisualizer extends utils.Adapter {
                         const name = typeof obj.common.name === 'object'
                             ? (obj.common.name.ru || obj.common.name.en || obj.common.name.de || id)
                             : (obj.common.name || id);
-                        result.push({
-                            id: id,
-                            name: name,
-                            type: obj.common.type || 'unknown',
-                            role: obj.common.role || ''
-                        });
+                        result.push({ id, name, type: obj.common.type || 'unknown', role: obj.common.role || '' });
                     }
                 }
                 result.sort((a, b) => a.id.localeCompare(b.id));
@@ -122,89 +152,22 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // === ИСПРАВЛЕННЫЙ API для MFD-иконок: многоуровневый поиск с диагностикой ===
         app.get('/api/iobroker/icons', async (req, res) => {
             try {
-                let icons = [];
-                let source = 'none';
-                const diagnostics = [];
-
-                // Метод 1: через ioBroker objects API (работает в любом ioBroker)
-                const prefixes = [
-                    'icons-mfd-png.0.', 'icons-mfd-svg.0.',
-                    'icons-mfd-png.', 'icons-mfd-svg.',
-                    'vis.0.icons-mfd-png.', 'vis.0.icons-mfd-svg.'
-                ];
-                for (const prefix of prefixes) {
-                    try {
-                        const objects = await this.getForeignObjectsAsync(prefix + '*', 'state');
-                        const found = [];
-                        for (const id in objects) {
-                            const parts = id.split('.');
-                            const name = parts[parts.length - 1];
-                            if (name && !['length', 'control', 'info'].includes(name) && !found.includes(name)) {
-                                found.push(name);
-                            }
-                        }
-                        if (found.length > 0) {
-                            icons = found;
-                            source = 'ioBroker objects (' + prefix + ')';
-                            diagnostics.push(prefix + ': ' + found.length + ' icons');
-                            break;
-                        } else {
-                            diagnostics.push(prefix + ': 0 icons');
-                        }
-                    } catch (e) {
-                        diagnostics.push(prefix + ': error (' + e.message + ')');
-                    }
+                const found = this.findIconDirs();
+                found.sort((a, b) => (a.baseUrl.includes('png') ? 0 : 1) - (b.baseUrl.includes('png') ? 0 : 1));
+                let icons = [], baseUrl = '/icons-mfd-png/', source = 'none';
+                if (found.length > 0) {
+                    const best = found[0];
+                    baseUrl = best.baseUrl;
+                    source = best.dir;
+                    icons = fs.readdirSync(best.dir)
+                        .filter(f => f.endsWith('.png') || f.endsWith('.svg'))
+                        .map(f => f.replace(/\.(png|svg)$/, ''))
+                        .sort();
                 }
-
-                // Метод 2: файловая система (резерв)
-                if (icons.length === 0) {
-                    const searchPaths = [
-                        path.join(process.cwd(), 'node_modules', '@iobroker', 'icons-mfd-svg', 'icons'),
-                        path.join(process.cwd(), 'node_modules', '@iobroker', 'icons-mfd-png', 'icons'),
-                        path.join(process.cwd(), 'node_modules', 'iobroker.vis', 'www', 'icons-mfd-png'),
-                        path.join(process.cwd(), 'node_modules', 'iobroker.vis', 'widgets', 'icons-mfd-png'),
-                        path.join(process.cwd(), 'node_modules', 'iobroker.icons-mfd-png', 'icons'),
-                        '/opt/iobroker/node_modules/@iobroker/icons-mfd-svg/icons',
-                        '/opt/iobroker/node_modules/@iobroker/icons-mfd-png/icons',
-                        '/opt/iobroker/node_modules/iobroker.vis/www/icons-mfd-png',
-                        '/opt/iobroker/node_modules/iobroker.vis/widgets/icons-mfd-png',
-                        path.join(__dirname, 'node_modules', '@iobroker', 'icons-mfd-svg', 'icons'),
-                        path.join(__dirname, 'node_modules', '@iobroker', 'icons-mfd-png', 'icons'),
-                        path.join(__dirname, '..', '..', 'iobroker.vis', 'www', 'icons-mfd-png')
-                    ];
-                    for (const p of searchPaths) {
-                        try {
-                            if (fs.existsSync(p)) {
-                                const files = fs.readdirSync(p);
-                                const found = files
-                                    .filter(f => f.endsWith('.png') || f.endsWith('.svg'))
-                                    .map(f => f.replace(/\.(png|svg)$/, ''));
-                                if (found.length > 0) {
-                                    icons = found;
-                                    source = 'filesystem (' + p + ')';
-                                    diagnostics.push('fs ' + p + ': ' + found.length + ' icons');
-                                    break;
-                                } else {
-                                    diagnostics.push('fs ' + p + ': 0 icons');
-                                }
-                            }
-                        } catch (e) {
-                            diagnostics.push('fs ' + p + ': error');
-                        }
-                    }
-                }
-
-                icons.sort();
-                this.log.info('MFD icons loaded: ' + icons.length + ' from ' + source);
-                res.json({
-                    icons: icons,
-                    count: icons.length,
-                    source: source,
-                    diagnostics: diagnostics
-                });
+                this.log.info('MFD icons: ' + icons.length + ' from ' + source);
+                res.json({ icons, count: icons.length, baseUrl, source, diagnostics: found.map(f => f.dir + ' (' + f.count + ')') });
             } catch (e) {
                 this.log.error('Get icons error: ' + e);
                 res.status(500).json({ error: e.message });
@@ -219,7 +182,7 @@ class FloorplanVisualizer extends utils.Adapter {
         const bind = this.config.bind || '0.0.0.0';
         const app = this.buildApp();
         this.adminServer = http.createServer(app);
-        this.adminServer.listen(port, bind, () => this.log.info('Admin server listening on http://' + bind + ':' + port));
+        this.adminServer.listen(port, bind, () => this.log.info('Admin server on http://' + bind + ':' + port));
         this.adminServer.on('error', (e) => this.log.error('Admin server error: ' + e));
     }
 
@@ -228,7 +191,7 @@ class FloorplanVisualizer extends utils.Adapter {
         const bind = this.config.bind || '0.0.0.0';
         const app = this.buildApp();
         this.presentationServer = http.createServer(app);
-        this.presentationServer.listen(port, bind, () => this.log.info('Presentation server listening on http://' + bind + ':' + port));
+        this.presentationServer.listen(port, bind, () => this.log.info('Presentation server on http://' + bind + ':' + port));
         this.presentationServer.on('error', (e) => this.log.error('Presentation server error: ' + e));
     }
 
