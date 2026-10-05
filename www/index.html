@@ -54,6 +54,10 @@
             setInterval(pollConfig, 5000);
         });
 
+        function planImageMissing() {
+            document.getElementById('planContainer').innerHTML = '<div class="loading">Изображение плана не найдено на сервере. Откройте редактор и загрузите план заново.</div>';
+        }
+
         function loadConfig() {
             fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
                 lastConfigJson = JSON.stringify(data); config = data; renderStructure();
@@ -118,7 +122,7 @@
         function renderPlan(floor) {
             var container = document.getElementById('planContainer');
             if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
-            container.innerHTML = '<img src="' + floor.image + '" class="plan-image"><div id="devicesLayer"></div>';
+            container.innerHTML = '<img src="' + floor.image + '" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';
             renderDevices(floor);
         }
         function renderDevices(floor) {
@@ -172,6 +176,8 @@
             .then(function () { deviceStates[dev.stateIds[0]] = !currentState; rerenderDevices(); })
             .catch(function () { alert('Ошибка управления'); });
         }
+
+        window.planImageMissing = planImageMissing;
     </script>
 </body>
 </html>

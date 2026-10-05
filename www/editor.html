@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор плана этажа v5.6</title>
+    <title>Редактор плана этажа v5.8</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
@@ -106,7 +106,7 @@
     <div class="container">
         <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v5.6</h1>
+            <h1>Редактор плана этажа v5.8</h1>
             <p>Интерактивный редактор с визуальным размещением объектов</p>
         </div>
         <div class="tabs">
@@ -236,9 +236,9 @@
         var editingDeviceContext = null, objectTreeContext = null;
 
         var emojiGroups = {
-            'Освещение': ['💡','','💫','🕯️','🌟','✨','🔅',''],
-            'Розетки/Энергия': ['🔌','','🔋','📱','💻','🖥️','📺',''],
-            'Климат': ['🌡️','','❄️','','🌬️','️','🌤️',''],
+            'Освещение': ['💡','🔆','💫','🕯️','🌟','✨','🔅',''],
+            'Розетки/Энергия': ['🔌','⚡','🔋','📱','💻','🖥️','📺','🎮'],
+            'Климат': ['🌡️','💧','❄️','🔥','🌬️','☀️','🌤️',''],
             'Безопасность': ['🔒','','🚪','','🔔','️','⚠️','🚨'],
             'Мультимедиа': ['🔊','','🎵','','📻','','🎬',''],
             'Бытовая техника': ['🌀','🧺','','☕','','🛁','','🧹']
@@ -271,6 +271,11 @@
             document.querySelectorAll('.tabs .tab').forEach(function(t) { t.classList.remove('active'); });
             document.getElementById('tab-' + tabName).style.display = 'block';
             if (el) el.classList.add('active');
+        }
+
+        // Сообщение, если файл плана не найден на сервере
+        function planImageError() {
+            showDebug('Файл изображения плана не найден на сервере (возможно, удалён при обновлении адаптера). Загрузите план этажа заново кнопкой «Загрузить план».');
         }
 
         // ===== ТИПЫ =====
@@ -383,7 +388,7 @@
             html += '<div class="floor-toolbar"><strong style="margin-right:10px;">Слои:</strong><div class="layer-selector">' + layerChips +
                 '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Слой</button></div></div>';
             if (floor.image) {
-                html += '<div class="plan-editor-area" id="planEditorArea"><img src="' + floor.image + '" id="planEditorImage"></div>';
+                html += '<div class="plan-editor-area" id="planEditorArea"><img src="' + floor.image + '" id="planEditorImage" onerror="planImageError()"></div>';
                 html += '<div style="margin-top:10px;"><button class="btn btn-success" onclick="openAddDeviceModal(' + fIdx + ')">+ Добавить объект на план</button></div>';
             } else {
                 html += '<div class="plan-editor-area"><div class="plan-empty"><div style="font-size:48px;">🖼️</div><div>Загрузите изображение плана этажа</div></div></div>';
@@ -798,9 +803,8 @@
                 var iconUrl = mfdBaseUrl + esc(name) + '.png';
                 html += '<div class="icon-option' + selected + '" onclick="selectMfdIcon(\'' + esc(name).replace(/'/g, "\\'") + '\')">' +
                     '<div class="icon-preview" style="background:#f0f0f0; min-height:32px;">' +
-                    '<img src="' + iconUrl + '" ' +
-                    'style="max-width:32px; max-height:32px;" ' +
-                    'onload="console.log(\'Loaded:\', this.src, \'Size:\', this.naturalWidth, \'x\', this.naturalHeight)" ' +
+                    '<img src="' + iconUrl + '" style="max-width:32px; max-height:32px;" ' +
+                    'onload="console.log(\'Loaded:\', this.src)" ' +
                     'onerror="console.error(\'Failed to load:\', this.src); this.style.border=\'2px solid red\'; this.alt=\'X\';">' +
                     '</div>' +
                     '<div class="icon-name">' + esc(name) + '</div></div>';
@@ -817,6 +821,7 @@
         window.showTab = showTab; window.addElementType = addElementType; window.removeType = removeType; window.saveType = saveType;
         window.addFloor = addFloor; window.removeFloor = removeFloor; window.selectFloor = selectFloor; window.selectLayer = selectLayer;
         window.addLayer = addLayer; window.removeLayer = removeLayer; window.saveFloorName = saveFloorName; window.handleImageUpload = handleImageUpload;
+        window.planImageError = planImageError;
         window.openAddDeviceModal = openAddDeviceModal; window.openEditDeviceModal = openEditDeviceModal; window.closeDeviceModal = closeDeviceModal;
         window.saveDevice = saveDevice; window.onIconTypeChange = onIconTypeChange;
         window.addExtraIdRow = addExtraIdRow; window.openObjectTreeForExtra = openObjectTreeForExtra;
