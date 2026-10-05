@@ -7,6 +7,12 @@ const socketIO = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 
+// Путь к клиентскому файлу socket.io (резервная раздача)
+let socketIoClientPath = null;
+try {
+    socketIoClientPath = require.resolve('socket.io/client-dist/socket.io.js');
+} catch (e) { /* не критично */ }
+
 class FloorplanVisualizer extends utils.Adapter {
     constructor(options = {}) {
         super({ ...options, name: 'floorplan-visualizer' });
@@ -22,7 +28,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v4.0.0...');
+        this.log.info('Starting Floor Plan Visualizer v4.2...');
 
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
@@ -40,19 +46,9 @@ class FloorplanVisualizer extends utils.Adapter {
                         font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' }
                     },
                     {
-                        id: 'socket', name: 'Розетки', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom',
-                        colors: { active: '#e67e22', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                        font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' }
-                    },
-                    {
                         id: 'sensor', name: 'Датчики', iconSize: 56, iconOpacity: 0.9, textPosition: 'overlay',
                         colors: { active: '#3498db', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
                         font: { family: 'Arial, sans-serif', weight: 'bold', size: '14px', color: '#ffffff' }
-                    },
-                    {
-                        id: 'security', name: 'Безопасность', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom',
-                        colors: { active: '#2ecc71', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                        font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' }
                     }
                 ],
                 floors: [
@@ -66,7 +62,7 @@ class FloorplanVisualizer extends utils.Adapter {
                 ]
             };
             await this.setStateAsync('config', { val: JSON.stringify(defaultConfig, null, 2), ack: true });
-            this.log.info('Default v4.0.0 configuration created.');
+            this.log.info('Default configuration created.');
         }
 
         const uploadDir = path.join(__dirname, 'www', 'uploads');
@@ -74,6 +70,28 @@ class FloorplanVisualizer extends utils.Adapter {
 
         this.startAdminServer();
         this.startPresentationServer();
+    }
+
+    // Резервная раздача клиентского скрипта socket.io
+    addSocketClientRoute(app) {
+        app.get('/socket.io/socket.io.js', (req, res) => {
+            if (socketIoClientPath && fs.existsSync(socketIoClientPath)) {
+                res.sendFile(socketIoClientPath);
+            } else {
+                res.status(404).send('socket.io client not found');
+            }
+        });
+    }
+
+    // ГЛАВНОЕ ИСПРАВЛЕНИЕ: socket.io подключается к серверу ДО Express
+    createServer(app, port, bind, name) {
+        const server = http.createServer();               // сервер БЕЗ обработчика
+        const io = socketIO(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
+        this.setupSocket(io);
+        server.on('request', app);                        // Express ПОСЛЕ socket.io
+        server.listen(port, bind, () => this.log.info(name + ' listening on http://' + bind + ':' + port));
+        server.on('error', (e) => this.log.error(name + ' error: ' + e));
+        return { server, io };
     }
 
     startAdminServer() {
@@ -88,41 +106,55 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
 
+        this.addSocketClientRoute(app);
         app.use(express.static(path.join(__dirname, 'www')));
 
         app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
             try {
                 const { filename, base64Data } = req.body;
-                const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '');
+                const safeFilename = String(filename).replace(/[^a-zA-Z0-9._-]/g, '');
                 const filePath = path.join(__dirname, 'www', 'uploads', safeFilename);
-                fs.writeFileSync(filePath, base64Data.split(';base64,').pop(), { encoding: 'base64' });
-                res.json({ success: true, url: `/uploads/${safeFilename}` });
+                fs.writeFileSync(filePath, String(base64Data).split(';base64,').pop(), { encoding: 'base64' });
+                res.json({ success: true, url: '/uploads/' + safeFilename });
             } catch (error) {
+                this.log.error('Upload error: ' + error);
                 res.status(500).json({ error: 'Upload failed' });
             }
         });
 
         app.get('/api/config', async (req, res) => {
-            const state = await this.getStateAsync('config');
-            res.json(state && state.val ? JSON.parse(state.val) : { elementTypes: [], floors: [] });
+            try {
+                const state = await this.getStateAsync('config');
+                res.json(state && state.val ? JSON.parse(state.val) : { elementTypes: [], floors: [] });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
         app.post('/api/config', express.json({ limit: '10mb' }), async (req, res) => {
-            await this.setStateAsync('config', { val: JSON.stringify(req.body, null, 2), ack: true });
-            this.adminIO.emit('configChanged', req.body);
-            this.presentationIO.emit('configChanged', req.body);
-            res.json({ success: true });
+            try {
+                await this.setStateAsync('config', { val: JSON.stringify(req.body, null, 2), ack: true });
+                if (this.adminIO) this.adminIO.emit('configChanged', req.body);
+                if (this.presentationIO) this.presentationIO.emit('configChanged', req.body);
+                res.json({ success: true });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        });
+
+        app.get('/api/state/:id(*)', async (req, res) => {
+            try {
+                const state = await this.getForeignStateAsync(req.params.id);
+                res.json({ id: req.params.id, val: state ? state.val : null });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
         app.post('/api/state/:id(*)', express.json(), async (req, res) => {
-            await this.setForeignStateAsync(req.params.id, req.body.val, false);
-            res.json({ success: true });
+            try {
+                await this.setForeignStateAsync(req.params.id, req.body.val, false);
+                res.json({ success: true });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
-        this.adminServer = http.createServer(app);
-        this.adminIO = socketIO(this.adminServer, { cors: { origin: '*', methods: ['GET', 'POST'] } });
-        this.setupSocket(this.adminIO);
-        this.adminServer.listen(port, bind, () => this.log.info(`Admin server on http://${bind}:${port}`));
+        const result = this.createServer(app, port, bind, 'Admin server');
+        this.adminServer = result.server;
+        this.adminIO = result.io;
     }
 
     startPresentationServer() {
@@ -134,22 +166,34 @@ class FloorplanVisualizer extends utils.Adapter {
             res.header('Access-Control-Allow-Origin', '*');
             next();
         });
+
+        this.addSocketClientRoute(app);
         app.use(express.static(path.join(__dirname, 'www')));
 
         app.get('/api/config', async (req, res) => {
-            const state = await this.getStateAsync('config');
-            res.json(state && state.val ? JSON.parse(state.val) : { elementTypes: [], floors: [] });
+            try {
+                const state = await this.getStateAsync('config');
+                res.json(state && state.val ? JSON.parse(state.val) : { elementTypes: [], floors: [] });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        });
+
+        app.get('/api/state/:id(*)', async (req, res) => {
+            try {
+                const state = await this.getForeignStateAsync(req.params.id);
+                res.json({ id: req.params.id, val: state ? state.val : null });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
         app.post('/api/state/:id(*)', express.json(), async (req, res) => {
-            await this.setForeignStateAsync(req.params.id, req.body.val, false);
-            res.json({ success: true });
+            try {
+                await this.setForeignStateAsync(req.params.id, req.body.val, false);
+                res.json({ success: true });
+            } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
-        this.presentationServer = http.createServer(app);
-        this.presentationIO = socketIO(this.presentationServer, { cors: { origin: '*', methods: ['GET', 'POST'] } });
-        this.setupSocket(this.presentationIO);
-        this.presentationServer.listen(port, bind, () => this.log.info(`Presentation server on http://${bind}:${port}`));
+        const result = this.createServer(app, port, bind, 'Presentation server');
+        this.presentationServer = result.server;
+        this.presentationIO = result.io;
     }
 
     setupSocket(io) {
@@ -157,11 +201,11 @@ class FloorplanVisualizer extends utils.Adapter {
             socket.on('subscribe', (stateId) => { this.subscribedStates.add(stateId); socket.join(stateId); });
             socket.on('unsubscribe', (stateId) => { this.subscribedStates.delete(stateId); socket.leave(stateId); });
             socket.on('getState', async (stateId, callback) => {
-                try { const state = await this.getForeignStateAsync(stateId); if (callback) callback(null, state); } 
+                try { const state = await this.getForeignStateAsync(stateId); if (callback) callback(null, state); }
                 catch (e) { if (callback) callback(e, null); }
             });
             socket.on('setState', async (stateId, value, callback) => {
-                try { await this.setForeignStateAsync(stateId, value, false); if (callback) callback(null); } 
+                try { await this.setForeignStateAsync(stateId, value, false); if (callback) callback(null); }
                 catch (e) { if (callback) callback(e); }
             });
         });
@@ -169,23 +213,24 @@ class FloorplanVisualizer extends utils.Adapter {
 
     async onStateChange(id, state) {
         if (!state) return;
-        if (id === `${this.namespace}.config`) {
-            const config = JSON.parse(state.val);
-            this.adminIO.emit('configChanged', config);
-            this.presentationIO.emit('configChanged', config);
+        if (id === this.namespace + '.config') {
+            let config;
+            try { config = JSON.parse(state.val); } catch (e) { return; }
+            if (this.adminIO) this.adminIO.emit('configChanged', config);
+            if (this.presentationIO) this.presentationIO.emit('configChanged', config);
             return;
         }
         if (this.subscribedStates.has(id)) {
-            this.adminIO.to(id).emit('stateChange', id, state);
-            this.presentationIO.to(id).emit('stateChange', id, state);
+            if (this.adminIO) this.adminIO.to(id).emit('stateChange', id, state);
+            if (this.presentationIO) this.presentationIO.to(id).emit('stateChange', id, state);
         }
     }
 
     async onUnload(callback) {
-        try { 
+        try {
             if (this.adminServer) this.adminServer.close();
             if (this.presentationServer) this.presentationServer.close();
-            callback(); 
+            callback();
         } catch (error) { callback(); }
     }
 }

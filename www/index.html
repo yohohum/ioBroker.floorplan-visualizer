@@ -11,43 +11,34 @@
         .wrapper { max-width: 1400px; margin: 0 auto; background: #2c3e50; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab { padding: 12px 24px; background: #34495e; border: 2px solid transparent; border-radius: 8px; color: #ecf0f1; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .tab:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .tab.active { border-color: currentColor; }
+        .tab:hover { transform: translateY(-2px); }
         .tab.floor.active { background: #0cbaba; border-color: #0cbaba; }
-        
         .layer-btn { padding: 10px 20px; border: 2px solid transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.3s; margin-right: 10px; margin-bottom: 10px; }
         .layer-btn:hover { transform: translateY(-2px); }
         .layer-btn.active { border-color: currentColor; box-shadow: 0 0 15px currentColor; color: #fff !important; }
-
         .plan-container { position: relative; width: 100%; background: #34495e; border-radius: 8px; overflow: hidden; min-height: 500px; }
         .plan-image { width: 100%; height: auto; display: block; user-select: none; }
-        
         .marker { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.95); border: 3px solid #2c3e50; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: 0.3s ease; z-index: 10; transform: translate(-50%, -50%); }
         .marker:hover { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; }
         .marker img.mfd-icon { width: 100%; height: 100%; object-fit: contain; }
         .marker .emoji-icon { font-size: inherit; line-height: 1; }
-
         .marker .label { position: absolute; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; transition: 0.3s; pointer-events: none; font-weight: 600; z-index: 20; }
         .marker:hover .label { opacity: 1; }
-        .label.pos-top { bottom: auto; top: -35px; }
-        .label.pos-bottom { top: auto; bottom: -35px; }
-        .label.pos-overlay { top: auto; bottom: -35px; } /* Для оверлея подпись все равно снизу, а значения поверх */
-
+        .label.pos-top { top: -35px; }
+        .label.pos-bottom { bottom: -35px; }
         .sensor-values { position: absolute; text-align: center; pointer-events: none; z-index: 11; width: 100%; }
         .sensor-values.pos-overlay { top: 50%; left: 50%; transform: translate(-50%, -50%); }
         .sensor-values.pos-top { top: -35px; left: 50%; transform: translateX(-50%); }
         .sensor-values.pos-bottom { bottom: -35px; left: 50%; transform: translateX(-50%); }
-        
         .sensor-value-line { display: block; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
-
         .status { position: fixed; top: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 10001; }
         .status.connected { background: #27ae60; color: #fff; }
-        .status.disconnected { background: #e74c3c; color: #fff; }
+        .status.disconnected { background: #e67e22; color: #fff; }
         .loading { display: flex; align-items: center; justify-content: center; min-height: 400px; font-size: 18px; color: #95a5a6; }
     </style>
 </head>
 <body>
-    <div class="status disconnected" id="connStatus">Отключено</div>
+    <div class="status disconnected" id="connStatus">Подключение...</div>
     <div class="wrapper">
         <div class="tabs" id="floorTabs"></div>
         <div class="tabs" id="layerTabs"></div>
@@ -55,70 +46,178 @@
     </div>
 
     <script>
-        let config = null, socket = null, currentFloorId = null, currentLayerId = null, deviceStates = {};
-        const urlParams = new URLSearchParams(window.location.search);
-        const requestedFloorId = urlParams.get('floor');
+        'use strict';
+        var config = null, socket = null, socketConnected = false;
+        var currentFloorId = null, currentLayerId = null;
+        var deviceStates = {};
+        var lastConfigJson = '';
 
-        function connect() {
-            socket = io();
-            socket.on('connect', () => { document.getElementById('connStatus').textContent = 'Подключено'; document.getElementById('connStatus').className = 'status connected'; subscribe(); });
-            socket.on('disconnect', () => { document.getElementById('connStatus').textContent = 'Отключено'; document.getElementById('connStatus').className = 'status disconnected'; });
-            socket.on('stateChange', (id, state) => { deviceStates[id] = state.val; updateAllVisualsForState(id, state.val); });
-            socket.on('configChanged', (newConfig) => { config = newConfig; renderStructure(); });
+        var urlParams = new URLSearchParams(window.location.search);
+        var requestedFloorId = urlParams.get('floor');
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadConfig();
+            try { connectSocket(); } catch (e) { }
+            setInterval(pollStates, 2000);   // резервный опрос состояний
+            setInterval(pollConfig, 5000);   // резервный опрос конфигурации
+        });
+
+        function setStatus(connected) {
+            socketConnected = connected;
+            var el = document.getElementById('connStatus');
+            if (connected) {
+                el.textContent = 'Подключено (live)';
+                el.className = 'status connected';
+            } else {
+                el.textContent = 'HTTP-режим (опрос)';
+                el.className = 'status disconnected';
+            }
         }
 
-        async function loadConfig() {
-            try {
-                const res = await fetch('/api/config');
-                config = await res.json();
+        function connectSocket() {
+            if (typeof io === 'undefined') { setStatus(false); return; }
+            socket = io();
+            socket.on('connect', function () { setStatus(true); subscribe(); });
+            socket.on('disconnect', function () { setStatus(false); });
+            socket.on('connect_error', function () { setStatus(false); });
+            socket.on('stateChange', function (id, state) {
+                if (deviceStates[id] !== state.val) {
+                    deviceStates[id] = state.val;
+                    rerenderDevices();
+                }
+            });
+            socket.on('configChanged', function (newConfig) {
+                lastConfigJson = JSON.stringify(newConfig);
+                config = newConfig;
                 renderStructure();
-            } catch (e) { document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки</div>'; }
+            });
+        }
+
+        function loadConfig() {
+            fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
+                lastConfigJson = JSON.stringify(data);
+                config = data;
+                renderStructure();
+            }).catch(function (e) {
+                document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки конфигурации</div>';
+            });
+        }
+
+        function pollConfig() {
+            fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
+                var s = JSON.stringify(data);
+                if (s !== lastConfigJson) {
+                    lastConfigJson = s;
+                    config = data;
+                    renderStructure();
+                    if (socketConnected) subscribe();
+                }
+            }).catch(function () { });
+        }
+
+        function collectAllStateIds() {
+            var ids = [];
+            if (!config || !config.floors) return ids;
+            config.floors.forEach(function (f) {
+                (f.layers || []).forEach(function (l) {
+                    (l.devices || []).forEach(function (d) {
+                        (d.stateIds || []).forEach(function (sid) {
+                            if (sid && ids.indexOf(sid) === -1) ids.push(sid);
+                        });
+                    });
+                });
+            });
+            return ids;
+        }
+
+        function pollStates() {
+            if (socketConnected || !config) return;
+            collectAllStateIds().forEach(function (sid) {
+                fetch('/api/state/' + sid).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data && deviceStates[sid] !== data.val) {
+                        deviceStates[sid] = data.val;
+                        rerenderDevices();
+                    }
+                }).catch(function () { });
+            });
+        }
+
+        function subscribe() {
+            if (!socket || !socketConnected) return;
+            collectAllStateIds().forEach(function (sid) {
+                socket.emit('subscribe', sid);
+                socket.emit('getState', sid, function (err, state) {
+                    if (!err && state && deviceStates[sid] !== state.val) {
+                        deviceStates[sid] = state.val;
+                        rerenderDevices();
+                    }
+                });
+            });
+        }
+
+        function rerenderDevices() {
+            if (!config || !config.floors) return;
+            var floor = null;
+            for (var i = 0; i < config.floors.length; i++) {
+                if (config.floors[i].id === currentFloorId) { floor = config.floors[i]; break; }
+            }
+            if (floor) renderDevices(floor);
         }
 
         function getTypeSettings(typeId) {
-            if (!config || !config.elementTypes) return null;
-            return config.elementTypes.find(t => t.id === typeId) || config.elementTypes[0];
+            if (!config || !config.elementTypes || config.elementTypes.length === 0) return null;
+            for (var i = 0; i < config.elementTypes.length; i++) {
+                if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
+            }
+            return config.elementTypes[0];
         }
 
         function renderStructure() {
             if (!config || !config.floors || config.floors.length === 0) {
-                document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен</div>';
+                document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен. Откройте редактор.</div>';
                 return;
             }
 
-            const floorTabs = document.getElementById('floorTabs');
+            var floorTabs = document.getElementById('floorTabs');
             floorTabs.innerHTML = '';
             if (!currentFloorId) currentFloorId = requestedFloorId || config.floors[0].id;
 
-            config.floors.forEach(floor => {
-                const btn = document.createElement('button');
-                btn.className = `tab floor ${floor.id === currentFloorId ? 'active' : ''}`;
+            config.floors.forEach(function (floor) {
+                var btn = document.createElement('button');
+                btn.className = 'tab floor' + (floor.id === currentFloorId ? ' active' : '');
                 btn.textContent = floor.name;
-                btn.onclick = () => { currentFloorId = floor.id; currentLayerId = null; renderStructure(); };
+                btn.onclick = function () { currentFloorId = floor.id; currentLayerId = null; renderStructure(); };
                 floorTabs.appendChild(btn);
             });
 
-            const currentFloor = config.floors.find(f => f.id === currentFloorId);
-            const layerTabs = document.getElementById('layerTabs');
-            layerTabs.innerHTML = '';
-            
-            if (currentFloor && currentFloor.layers.length > 0) {
-                if (!currentLayerId || !currentFloor.layers.find(l => l.id === currentLayerId)) {
-                    currentLayerId = currentFloor.layers[0].id;
-                }
+            var currentFloor = null;
+            for (var i = 0; i < config.floors.length; i++) {
+                if (config.floors[i].id === currentFloorId) { currentFloor = config.floors[i]; break; }
+            }
 
-                currentFloor.layers.forEach(layer => {
-                    const btn = document.createElement('button');
-                    const isActive = layer.id === currentLayerId;
-                    btn.className = `layer-btn ${isActive ? 'active' : ''}`;
+            var layerTabs = document.getElementById('layerTabs');
+            layerTabs.innerHTML = '';
+
+            if (currentFloor && currentFloor.layers && currentFloor.layers.length > 0) {
+                var layerExists = false;
+                for (var l = 0; l < currentFloor.layers.length; l++) {
+                    if (currentFloor.layers[l].id === currentLayerId) layerExists = true;
+                }
+                if (!currentLayerId || !layerExists) currentLayerId = currentFloor.layers[0].id;
+
+                currentFloor.layers.forEach(function (layer) {
+                    var btn = document.createElement('button');
+                    var isActive = layer.id === currentLayerId;
+                    btn.className = 'layer-btn' + (isActive ? ' active' : '');
                     btn.textContent = layer.name;
-                    
-                    const typeSettings = getTypeSettings(layer.type);
-                    const color = isActive ? (typeSettings?.colors?.active || '#0cbaba') : (typeSettings?.colors?.inactive || '#34495e');
-                    
+
+                    var ts = getTypeSettings(layer.type);
+                    var colors = (ts && ts.colors) ? ts.colors : {};
+                    var color = isActive ? (colors.active || '#0cbaba') : (colors.inactive || '#34495e');
                     btn.style.backgroundColor = color;
                     btn.style.borderColor = color;
-                    btn.onclick = () => { currentLayerId = layer.id; renderStructure(); };
+
+                    btn.onclick = function () { currentLayerId = layer.id; renderStructure(); };
                     layerTabs.appendChild(btn);
                 });
             }
@@ -126,135 +225,115 @@
         }
 
         function renderPlan(floor) {
-            const container = document.getElementById('planContainer');
-            if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
-            container.innerHTML = `<img src="${floor.image}" class="plan-image"><div id="devicesLayer"></div>`;
+            var container = document.getElementById('planContainer');
+            if (!floor || !floor.image) {
+                container.innerHTML = '<div class="loading">Изображение плана не загружено</div>';
+                return;
+            }
+            container.innerHTML = '<img src="' + floor.image + '" class="plan-image"><div id="devicesLayer"></div>';
             renderDevices(floor);
         }
 
         function renderDevices(floor) {
-            const layer = document.getElementById('devicesLayer');
+            var layer = document.getElementById('devicesLayer');
             if (!layer) return;
             layer.innerHTML = '';
-            
-            const currentLayerObj = floor.layers.find(l => l.id === currentLayerId);
+
+            var currentLayerObj = null;
+            for (var i = 0; i < (floor.layers || []).length; i++) {
+                if (floor.layers[i].id === currentLayerId) { currentLayerObj = floor.layers[i]; break; }
+            }
             if (!currentLayerObj) return;
 
-            const typeSettings = getTypeSettings(currentLayerObj.type);
-            if (!typeSettings) return;
+            var ts = getTypeSettings(currentLayerObj.type);
+            if (!ts) return;
 
-            const size = typeSettings.iconSize || 48;
-            const opacity = typeSettings.iconOpacity !== undefined ? typeSettings.iconOpacity : 1.0;
-            const font = typeSettings.font || { family: 'Arial', weight: 'bold', size: '12px', color: '#fff' };
-            const pos = typeSettings.textPosition || 'bottom';
+            var size = ts.iconSize || 48;
+            var opacity = (ts.iconOpacity !== undefined) ? ts.iconOpacity : 1.0;
+            var font = ts.font || { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' };
+            var pos = ts.textPosition || 'bottom';
+            var colors = ts.colors || {};
 
-            currentLayerObj.devices.forEach(dev => {
-                const marker = document.createElement('div');
+            (currentLayerObj.devices || []).forEach(function (dev) {
+                var marker = document.createElement('div');
                 marker.className = 'marker';
-                marker.style.left = dev.x + '%'; 
+                marker.style.left = dev.x + '%';
                 marker.style.top = dev.y + '%';
                 marker.style.width = size + 'px';
                 marker.style.height = size + 'px';
                 marker.style.fontSize = (size * 0.6) + 'px';
                 marker.style.opacity = opacity;
-                marker.dataset.devId = dev.id;
-                
-                let stateVal = null;
+
+                var stateVal = null;
                 if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
 
-                // Определение цвета границы и свечения
-                let borderColor = typeSettings.colors.inactive;
-                let shadow = 'none';
-                if (stateVal) {
-                    borderColor = typeSettings.colors.active;
-                    shadow = `0 0 15px ${typeSettings.colors.active}`;
-                }
-                // Упрощенная логика для warning/safe (можно расширить при необходимости)
-                if (dev.stateIds && dev.stateIds.length > 1) {
-                    const val2 = deviceStates[dev.stateIds[1]];
-                    if (val2 > 30) { borderColor = typeSettings.colors.warning; shadow = `0 0 15px ${typeSettings.colors.warning}`; }
-                    else { borderColor = typeSettings.colors.safe; shadow = `0 0 15px ${typeSettings.colors.safe}`; }
-                }
-
+                var borderColor = stateVal ? (colors.active || '#0cbaba') : (colors.inactive || '#7f8c8d');
                 marker.style.borderColor = borderColor;
-                if (stateVal) marker.style.boxShadow = shadow;
+                if (stateVal) marker.style.boxShadow = '0 0 15px ' + (colors.active || '#0cbaba');
 
                 if (dev.iconType === 'mfd' && dev.iconName) {
-                    marker.innerHTML = `<img src="/icons-mfd-png/${dev.iconName}.png" class="mfd-icon" style="opacity: ${stateVal ? 1 : 0.4}; filter: ${stateVal ? 'none' : 'grayscale(100%)'}">`;
+                    marker.innerHTML = '<img src="/icons-mfd-png/' + dev.iconName + '.png" class="mfd-icon" style="opacity:' + (stateVal ? 1 : 0.4) + ';filter:' + (stateVal ? 'none' : 'grayscale(100%)') + '">';
                 } else {
-                    const emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
-                    marker.innerHTML = `<span class="emoji-icon" style="filter: ${stateVal ? 'none' : 'grayscale(100%) brightness(0.7)'}">${emoji}</span>`;
+                    var emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
+                    marker.innerHTML = '<span class="emoji-icon" style="filter:' + (stateVal ? 'none' : 'grayscale(100%) brightness(0.7)') + '">' + emoji + '</span>';
                 }
 
-                // Текст значений датчика
                 if (dev.stateIds && dev.stateIds.length > 0) {
-                    const valuesDiv = document.createElement('div');
-                    valuesDiv.className = `sensor-values pos-${pos}`;
+                    var valuesDiv = document.createElement('div');
+                    valuesDiv.className = 'sensor-values pos-' + pos;
                     valuesDiv.style.fontFamily = font.family;
                     valuesDiv.style.fontWeight = font.weight;
                     valuesDiv.style.fontSize = font.size;
                     valuesDiv.style.color = font.color;
 
-                    dev.stateIds.forEach((sid, idx) => {
-                        const val = deviceStates[sid];
-                        const prefix = dev.prefixes && dev.prefixes[idx] ? dev.prefixes[idx] : '';
-                        const postfix = dev.postfixes && dev.postfixes[idx] ? dev.postfixes[idx] : '';
-                        const displayVal = val !== undefined && val !== null ? val : 'N/A';
-                        
-                        const line = document.createElement('span');
+                    dev.stateIds.forEach(function (sid, idx) {
+                        var val = deviceStates[sid];
+                        var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : '';
+                        var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : '';
+                        var displayVal = (val !== undefined && val !== null) ? val : 'N/A';
+                        var line = document.createElement('span');
                         line.className = 'sensor-value-line';
-                        line.textContent = `${prefix}${displayVal}${postfix}`;
+                        line.textContent = prefix + displayVal + postfix;
                         valuesDiv.appendChild(line);
                     });
                     marker.appendChild(valuesDiv);
                 }
 
-                const label = document.createElement('span');
-                label.className = `label pos-${pos}`;
-                label.textContent = dev.name;
+                var label = document.createElement('span');
+                label.className = 'label pos-' + pos;
+                label.textContent = dev.name || '';
                 marker.appendChild(label);
 
-                marker.onclick = () => toggleDevice(dev, currentLayerObj.type);
+                marker.onclick = function () { toggleDevice(dev, currentLayerObj.type); };
                 layer.appendChild(marker);
             });
         }
 
-        function updateAllVisualsForState(stateId, val) {
-            const floor = config.floors.find(f => f.id === currentFloorId);
-            if (floor) renderDevices(floor);
-        }
+        function toggleDevice(dev, layerType) {
+            if (!dev.stateIds || dev.stateIds.length === 0 || !dev.stateIds[0]) return;
 
-        async function toggleDevice(dev, layerType) {
-            if (layerType === 'sensor' || !dev.stateIds || dev.stateIds.length === 0) {
-                let msg = dev.name + ":\n";
-                dev.stateIds.forEach((sid, idx) => {
-                    const val = deviceStates[sid];
-                    const prefix = dev.prefixes && dev.prefixes[idx] ? dev.prefixes[idx] : '';
-                    const postfix = dev.postfixes && dev.postfixes[idx] ? dev.postfixes[idx] : '';
-                    msg += `${prefix}${val !== undefined ? val : 'N/A'}${postfix}\n`;
+            if (layerType === 'sensor') {
+                var msg = (dev.name || '') + ':\n';
+                dev.stateIds.forEach(function (sid, idx) {
+                    var val = deviceStates[sid];
+                    var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : '';
+                    var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : '';
+                    msg += prefix + ((val !== undefined) ? val : 'N/A') + postfix + '\n';
                 });
                 alert(msg);
                 return;
             }
-            const currentState = deviceStates[dev.stateIds[0]] || false;
-            try {
-                await fetch(`/api/state/${dev.stateIds[0]}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({val: !currentState}) });
-            } catch (e) { alert('Ошибка управления'); }
-        }
 
-        function subscribe() {
-            if (!config) return;
-            const allStates = new Set();
-            config.floors.forEach(f => f.layers.forEach(l => l.devices.forEach(d => {
-                if (d.stateIds) d.stateIds.forEach(sid => allStates.add(sid));
-            })));
-            allStates.forEach(sid => {
-                socket.emit('subscribe', sid);
-                socket.emit('getState', sid, (err, state) => { if (!err && state) deviceStates[sid] = state.val; });
-            });
+            var currentState = !!deviceStates[dev.stateIds[0]];
+            fetch('/api/state/' + dev.stateIds[0], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ val: !currentState })
+            }).then(function () {
+                deviceStates[dev.stateIds[0]] = !currentState;
+                rerenderDevices();
+            }).catch(function () { alert('Ошибка управления'); });
         }
-
-        window.onload = () => { connect(); loadConfig(); };
     </script>
 </body>
 </html>
