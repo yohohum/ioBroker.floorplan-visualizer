@@ -11,12 +11,13 @@ class FloorplanVisualizer extends utils.Adapter {
         super({ ...options, name: 'floorplan-visualizer' });
         this.adminServer = null;
         this.presentationServer = null;
+        this.iconsDir = null;
         this.on('ready', this.onReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.2...');
+        this.log.info('Starting Floor Plan Visualizer v5.3...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -39,44 +40,42 @@ class FloorplanVisualizer extends utils.Adapter {
         }
         const uploadDir = path.join(__dirname, 'www', 'uploads');
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        
+        // Поиск папки с MFD-иконками
+        this.iconsDir = this.findIconsDirectory();
+        if (this.iconsDir) {
+            this.log.info('MFD icons found at: ' + this.iconsDir);
+        } else {
+            this.log.warn('MFD icons not found. Install iobroker.icons-mfd-png adapter.');
+        }
+        
         this.startAdminServer();
         this.startPresentationServer();
     }
 
-    findIconDirs() {
-        const results = [];
-        const nm = path.resolve(__dirname, '..');
-        const bases = [nm, path.join(nm, '@iobroker')];
-        for (const base of bases) {
-            if (!fs.existsSync(base)) continue;
-            let entries = [];
-            try { entries = fs.readdirSync(base, { withFileTypes: true }); } catch (e) { continue; }
-            for (const ent of entries) {
-                if (!ent.isDirectory()) continue;
-                const pkgDir = path.join(base, ent.name);
-                const candidates = [
-                    path.join(pkgDir, 'icons'),
-                    path.join(pkgDir, 'www', 'icons-mfd-png'),
-                    path.join(pkgDir, 'www', 'icons-mfd-svg'),
-                    path.join(pkgDir, 'icons-mfd-png'),
-                    path.join(pkgDir, 'icons-mfd-svg'),
-                    path.join(pkgDir, 'widgets', 'icons-mfd-png')
-                ];
-                for (const dir of candidates) {
-                    try {
-                        if (fs.existsSync(dir)) {
-                            const files = fs.readdirSync(dir);
-                            const iconFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.svg'));
-                            if (iconFiles.length > 0) {
-                                const baseUrl = dir.includes('svg') ? '/icons-mfd-svg/' : '/icons-mfd-png/';
-                                results.push({ dir, baseUrl, count: iconFiles.length });
-                            }
-                        }
-                    } catch (e) {}
+    // === ПОИСК ПАПКИ С ИКОНКАМИ ===
+    findIconsDirectory() {
+        // Список возможных путей где может лежать адаптер icons-mfd-png
+        const searchPaths = [
+            path.join(__dirname, '..', 'iobroker.icons-mfd-png'),
+            path.join(__dirname, '..', 'iobroker.web', 'www', 'icons-mfd-png'),
+            '/opt/iobroker/node_modules/iobroker.icons-mfd-png',
+            '/opt/iobroker/node_modules/iobroker.web/www/icons-mfd-png',
+            '/usr/local/lib/node_modules/iobroker.icons-mfd-png'
+        ];
+        
+        for (const p of searchPaths) {
+            try {
+                if (fs.existsSync(p)) {
+                    const files = fs.readdirSync(p);
+                    const pngFiles = files.filter(f => f.endsWith('.png'));
+                    if (pngFiles.length > 0) {
+                        return p;
+                    }
                 }
-            }
+            } catch (e) {}
         }
-        return results;
+        return null;
     }
 
     buildApp() {
@@ -87,6 +86,12 @@ class FloorplanVisualizer extends utils.Adapter {
             res.header('Access-Control-Allow-Headers', 'Content-Type');
             next();
         });
+        
+        // Отдача иконок MFD (если найдены)
+        if (this.iconsDir) {
+            app.use('/icons-mfd-png', express.static(this.iconsDir));
+        }
+        
         app.use(express.static(path.join(__dirname, 'www')));
         app.get('/favicon.ico', (req, res) => res.status(204));
 
@@ -152,22 +157,28 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
+        // === ИСПРАВЛЕННЫЙ API для MFD-иконок ===
         app.get('/api/iobroker/icons', async (req, res) => {
             try {
-                const found = this.findIconDirs();
-                found.sort((a, b) => (a.baseUrl.includes('png') ? 0 : 1) - (b.baseUrl.includes('png') ? 0 : 1));
-                let icons = [], baseUrl = '/icons-mfd-png/', source = 'none';
-                if (found.length > 0) {
-                    const best = found[0];
-                    baseUrl = best.baseUrl;
-                    source = best.dir;
-                    icons = fs.readdirSync(best.dir)
-                        .filter(f => f.endsWith('.png') || f.endsWith('.svg'))
-                        .map(f => f.replace(/\.(png|svg)$/, ''))
-                        .sort();
+                if (!this.iconsDir) {
+                    res.json({ icons: [], count: 0, baseUrl: '/icons-mfd-png/', source: 'none', diagnostics: ['Icons directory not found'] });
+                    return;
                 }
-                this.log.info('MFD icons: ' + icons.length + ' from ' + source);
-                res.json({ icons, count: icons.length, baseUrl, source, diagnostics: found.map(f => f.dir + ' (' + f.count + ')') });
+                
+                const files = fs.readdirSync(this.iconsDir);
+                const icons = files
+                    .filter(f => f.endsWith('.png'))
+                    .map(f => f.replace(/\.png$/, ''))
+                    .sort();
+                
+                this.log.info('MFD icons loaded: ' + icons.length + ' from ' + this.iconsDir);
+                res.json({
+                    icons,
+                    count: icons.length,
+                    baseUrl: '/icons-mfd-png/',
+                    source: this.iconsDir,
+                    diagnostics: ['Found at: ' + this.iconsDir + ' (' + icons.length + ' icons)']
+                });
             } catch (e) {
                 this.log.error('Get icons error: ' + e);
                 res.status(500).json({ error: e.message });
