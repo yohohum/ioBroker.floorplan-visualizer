@@ -5,6 +5,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 class FloorplanVisualizer extends utils.Adapter {
     constructor(options = {}) {
@@ -12,12 +13,14 @@ class FloorplanVisualizer extends utils.Adapter {
         this.adminServer = null;
         this.presentationServer = null;
         this.iconsDir = null;
+        this.ioBrokerWebHost = '127.0.0.1';
+        this.ioBrokerWebPort = 8082;
         this.on('ready', this.onReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.3...');
+        this.log.info('Starting Floor Plan Visualizer v5.4...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -41,41 +44,60 @@ class FloorplanVisualizer extends utils.Adapter {
         const uploadDir = path.join(__dirname, 'www', 'uploads');
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
         
-        // Поиск папки с MFD-иконками
+        // Поиск папки с MFD-иконками в iobroker-data
         this.iconsDir = this.findIconsDirectory();
+        
+        // Получаем порт веб-адаптера из ioBroker
+        await this.detectWebPort();
+        
         if (this.iconsDir) {
             this.log.info('MFD icons found at: ' + this.iconsDir);
         } else {
-            this.log.warn('MFD icons not found. Install iobroker.icons-mfd-png adapter.');
+            this.log.info('MFD icons directory not found, will use proxy to ioBroker web server at ' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort);
         }
         
         this.startAdminServer();
         this.startPresentationServer();
     }
 
-    // === ПОИСК ПАПКИ С ИКОНКАМИ ===
+    // === ПОИСК ПАПКИ С ИКОНКАМИ В iobroker-data ===
     findIconsDirectory() {
-        // Список возможных путей где может лежать адаптер icons-mfd-png
         const searchPaths = [
-            path.join(__dirname, '..', 'iobroker.icons-mfd-png'),
-            path.join(__dirname, '..', 'iobroker.web', 'www', 'icons-mfd-png'),
-            '/opt/iobroker/node_modules/iobroker.icons-mfd-png',
-            '/opt/iobroker/node_modules/iobroker.web/www/icons-mfd-png',
-            '/usr/local/lib/node_modules/iobroker.icons-mfd-png'
+            '/opt/iobroker/iobroker-data/files/icons-mfd-png',
+            '/opt/iobroker/iobroker-data/files/icons-mfd-svg',
+            path.join(process.cwd(), 'iobroker-data', 'files', 'icons-mfd-png'),
+            path.join(process.cwd(), 'iobroker-data', 'files', 'icons-mfd-svg'),
+            path.join(__dirname, '..', '..', 'iobroker-data', 'files', 'icons-mfd-png'),
+            path.join(__dirname, '..', 'iobroker.icons-mfd-png')
         ];
         
         for (const p of searchPaths) {
             try {
                 if (fs.existsSync(p)) {
                     const files = fs.readdirSync(p);
-                    const pngFiles = files.filter(f => f.endsWith('.png'));
-                    if (pngFiles.length > 0) {
+                    const iconFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.svg'));
+                    if (iconFiles.length > 0) {
                         return p;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                this.log.debug('Cannot read ' + p + ': ' + e.message);
+            }
         }
         return null;
+    }
+
+    // === ОПРЕДЕЛЕНИЕ ПОРТА ВЕБ-АДАПТЕРА ===
+    async detectWebPort() {
+        try {
+            const webInstance = await this.getObjectAsync('system.adapter.web.0');
+            if (webInstance && webInstance.native && webInstance.native.port) {
+                this.ioBrokerWebPort = webInstance.native.port;
+                this.log.info('Detected ioBroker web adapter port: ' + this.ioBrokerWebPort);
+            }
+        } catch (e) {
+            this.log.debug('Cannot detect web port: ' + e.message);
+        }
     }
 
     buildApp() {
@@ -87,9 +109,48 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
         
-        // Отдача иконок MFD (если найдены)
+        // === ОТДАЧА ИКОНОК ===
         if (this.iconsDir) {
+            // Если нашли папку - раздаём напрямую
             app.use('/icons-mfd-png', express.static(this.iconsDir));
+            app.use('/icons-mfd-svg', express.static(this.iconsDir));
+        } else {
+            // Если не нашли - проксируем к веб-серверу ioBroker
+            app.use('/icons-mfd-png', (req, res) => {
+                const iconPath = req.url;
+                const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png${iconPath}`;
+                
+                const proxyReq = http.get(proxyUrl, (proxyRes) => {
+                    res.set(proxyRes.headers);
+                    res.status(proxyRes.statusCode);
+                    proxyRes.pipe(res);
+                });
+                
+                proxyReq.on('error', (err) => {
+                    this.log.error('Proxy error for ' + iconPath + ': ' + err.message);
+                    res.status(404).send('Icon not found');
+                });
+                
+                proxyReq.end();
+            });
+            
+            app.use('/icons-mfd-svg', (req, res) => {
+                const iconPath = req.url;
+                const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-svg${iconPath}`;
+                
+                const proxyReq = http.get(proxyUrl, (proxyRes) => {
+                    res.set(proxyRes.headers);
+                    res.status(proxyRes.statusCode);
+                    proxyRes.pipe(res);
+                });
+                
+                proxyReq.on('error', (err) => {
+                    this.log.error('Proxy error for ' + iconPath + ': ' + err.message);
+                    res.status(404).send('Icon not found');
+                });
+                
+                proxyReq.end();
+            });
         }
         
         app.use(express.static(path.join(__dirname, 'www')));
@@ -157,27 +218,52 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // === ИСПРАВЛЕННЫЙ API для MFD-иконок ===
+        // === API для MFD-иконок ===
         app.get('/api/iobroker/icons', async (req, res) => {
             try {
-                if (!this.iconsDir) {
-                    res.json({ icons: [], count: 0, baseUrl: '/icons-mfd-png/', source: 'none', diagnostics: ['Icons directory not found'] });
-                    return;
+                let icons = [];
+                let source = 'none';
+                let baseUrl = '/icons-mfd-png/';
+                
+                if (this.iconsDir) {
+                    const files = fs.readdirSync(this.iconsDir);
+                    icons = files
+                        .filter(f => f.endsWith('.png'))
+                        .map(f => f.replace(/\.png$/, ''))
+                        .sort();
+                    source = this.iconsDir;
+                } else {
+                    // Пробуем получить список через прокси к index.html
+                    const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png/index.html`;
+                    try {
+                        const response = await new Promise((resolve, reject) => {
+                            http.get(proxyUrl, (res) => {
+                                let data = '';
+                                res.on('data', chunk => data += chunk);
+                                res.on('end', () => resolve(data));
+                            }).on('error', reject);
+                        });
+                        
+                        // Парсим HTML чтобы извлечь имена иконок
+                        const matches = response.match(/[a-z0-9_-]+\.png/gi);
+                        if (matches) {
+                            icons = [...new Set(matches.map(f => f.replace(/\.png$/, '')))].sort();
+                        }
+                        source = 'proxy:' + proxyUrl;
+                    } catch (e) {
+                        this.log.warn('Cannot fetch icons list from proxy: ' + e.message);
+                        icons = [];
+                        source = 'error:' + e.message;
+                    }
                 }
                 
-                const files = fs.readdirSync(this.iconsDir);
-                const icons = files
-                    .filter(f => f.endsWith('.png'))
-                    .map(f => f.replace(/\.png$/, ''))
-                    .sort();
-                
-                this.log.info('MFD icons loaded: ' + icons.length + ' from ' + this.iconsDir);
+                this.log.info('MFD icons: ' + icons.length + ' from ' + source);
                 res.json({
                     icons,
                     count: icons.length,
-                    baseUrl: '/icons-mfd-png/',
-                    source: this.iconsDir,
-                    diagnostics: ['Found at: ' + this.iconsDir + ' (' + icons.length + ' icons)']
+                    baseUrl,
+                    source,
+                    diagnostics: [source]
                 });
             } catch (e) {
                 this.log.error('Get icons error: ' + e);
