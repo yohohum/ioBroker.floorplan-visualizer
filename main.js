@@ -19,7 +19,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.5...');
+        this.log.info('Starting Floor Plan Visualizer v5.6...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -99,30 +99,33 @@ class FloorplanVisualizer extends utils.Adapter {
         app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Accept');
             next();
         });
         
-        // === ОТДАЧА ИКОНОК ===
+        // === ОТДАЧА ИКОНОК С ПРАВИЛЬНЫМИ HEADERS ===
         const serveIcon = (req, res) => {
             const iconName = req.params.name;
             
+            // Устанавливаем правильные заголовки ДО отправки данных
+            res.setHeader('Content-Type', 'image/png');
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            
             if (this.iconsDir) {
-                const filePath = path.join(this.iconsDir, iconName);
-                this.log.debug('Serving icon from file: ' + filePath);
+                const filePath = path.join(this.iconsDir, iconName + '.png');
                 
                 if (fs.existsSync(filePath)) {
-                    res.sendFile(filePath);
+                    const fileStream = fs.createReadStream(filePath);
+                    fileStream.pipe(res);
                 } else {
                     this.log.warn('Icon file not found: ' + filePath);
                     res.status(404).send('Icon not found');
                 }
             } else {
-                const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png/${iconName}`;
+                const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png/${iconName}.png`;
                 this.log.debug('Proxying icon from: ' + proxyUrl);
                 
                 const proxyReq = http.get(proxyUrl, (proxyRes) => {
-                    res.set('Content-Type', 'image/png');
                     res.status(proxyRes.statusCode);
                     proxyRes.pipe(res);
                 });
@@ -141,7 +144,6 @@ class FloorplanVisualizer extends utils.Adapter {
         };
         
         app.get('/icons-mfd-png/:name', serveIcon);
-        app.get('/icons-mfd-svg/:name', serveIcon);
         
         app.use(express.static(path.join(__dirname, 'www')));
         app.get('/favicon.ico', (req, res) => res.status(204));
