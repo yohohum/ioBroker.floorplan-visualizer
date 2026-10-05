@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Редактор плана этажа</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
@@ -46,7 +46,7 @@
     <div class="container">
         <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v4.1</h1>
+            <h1>Редактор плана этажа v4.3</h1>
             <p>Настройка типов элементов, этажей, слоев и устройств</p>
         </div>
 
@@ -80,7 +80,6 @@
         var config = null;
         var socket = null;
 
-        // ---------- ДИАГНОСТИКА ----------
         function showDebug(msg) {
             var banner = document.getElementById('debugBanner');
             if (banner) {
@@ -93,7 +92,6 @@
             showDebug('JS ошибка: ' + e.message + ' (строка ' + e.lineno + ')');
         });
 
-        // ---------- ВСПОМОГАТЕЛЬНЫЕ ----------
         function esc(s) {
             if (s === undefined || s === null) return '';
             return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -115,7 +113,6 @@
             el.className = 'status ' + (connected ? 'connected' : 'disconnected');
         }
 
-        // ---------- СТАРТ ----------
         document.addEventListener('DOMContentLoaded', function () {
             loadConfig();
             try { connectSocket(); } catch (e) { showDebug('Socket: ' + e.message); }
@@ -162,7 +159,6 @@
             renderStructure();
         }
 
-        // ---------- ВКЛАДКИ ----------
         function showTab(tabName, el) {
             var contents = document.querySelectorAll('.tab-content');
             for (var i = 0; i < contents.length; i++) contents[i].style.display = 'none';
@@ -173,7 +169,6 @@
             if (el) el.classList.add('active');
         }
 
-        // ---------- ТИПЫ ЭЛЕМЕНТОВ ----------
         function buildTypeHtml(t, i) {
             var c = t.colors || {};
             var f = t.font || {};
@@ -254,7 +249,6 @@
             saveConfig();
         }
 
-        // ---------- ЭТАЖИ / СЛОИ / УСТРОЙСТВА ----------
         function buildDeviceHtml(dev, fIdx, lIdx) {
             var p = 'updateDevice(' + fIdx + ',' + lIdx + ',\'' + dev.id + '\',';
             var html = '<div class="device-item">';
@@ -411,3 +405,35 @@
                     body: JSON.stringify({ filename: filename, base64Data: e.target.result })
                 }).then(function (res) { return res.json(); }).then(function (data) {
                     if (data.success) {
+                        config.floors[fIdx].image = data.url;
+                        saveConfig(renderAll);
+                    } else {
+                        showDebug('Ошибка загрузки изображения');
+                    }
+                }).catch(function (err) {
+                    showDebug('Ошибка сети: ' + err.message);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        window.showTab = showTab;
+        window.addElementType = addElementType;
+        window.removeType = removeType;
+        window.updateType = updateType;
+        window.updateTypeFont = updateTypeFont;
+        window.updateTypeColor = updateTypeColor;
+        window.addFloor = addFloor;
+        window.removeFloor = removeFloor;
+        window.updateFloor = updateFloor;
+        window.addLayer = addLayer;
+        window.removeLayer = removeLayer;
+        window.updateLayer = updateLayer;
+        window.addDevice = addDevice;
+        window.removeDevice = removeDevice;
+        window.updateDevice = updateDevice;
+        window.handleImageUpload = handleImageUpload;
+        window.splitList = splitList;
+    </script>
+</body>
+</html>

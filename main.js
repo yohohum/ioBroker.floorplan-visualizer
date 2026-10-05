@@ -7,12 +7,6 @@ const socketIO = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 
-// Путь к клиентскому файлу socket.io (резервная раздача)
-let socketIoClientPath = null;
-try {
-    socketIoClientPath = require.resolve('socket.io/client-dist/socket.io.js');
-} catch (e) { /* не критично */ }
-
 class FloorplanVisualizer extends utils.Adapter {
     constructor(options = {}) {
         super({ ...options, name: 'floorplan-visualizer' });
@@ -28,7 +22,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v4.2...');
+        this.log.info('Starting Floor Plan Visualizer v4.3...');
 
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
@@ -72,23 +66,11 @@ class FloorplanVisualizer extends utils.Adapter {
         this.startPresentationServer();
     }
 
-    // Резервная раздача клиентского скрипта socket.io
-    addSocketClientRoute(app) {
-        app.get('/socket.io/socket.io.js', (req, res) => {
-            if (socketIoClientPath && fs.existsSync(socketIoClientPath)) {
-                res.sendFile(socketIoClientPath);
-            } else {
-                res.status(404).send('socket.io client not found');
-            }
-        });
-    }
-
-    // ГЛАВНОЕ ИСПРАВЛЕНИЕ: socket.io подключается к серверу ДО Express
     createServer(app, port, bind, name) {
-        const server = http.createServer();               // сервер БЕЗ обработчика
+        const server = http.createServer();
         const io = socketIO(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
         this.setupSocket(io);
-        server.on('request', app);                        // Express ПОСЛЕ socket.io
+        server.on('request', app);
         server.listen(port, bind, () => this.log.info(name + ' listening on http://' + bind + ':' + port));
         server.on('error', (e) => this.log.error(name + ' error: ' + e));
         return { server, io };
@@ -106,7 +88,6 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
 
-        this.addSocketClientRoute(app);
         app.use(express.static(path.join(__dirname, 'www')));
 
         app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
@@ -167,7 +148,6 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
 
-        this.addSocketClientRoute(app);
         app.use(express.static(path.join(__dirname, 'www')));
 
         app.get('/api/config', async (req, res) => {
