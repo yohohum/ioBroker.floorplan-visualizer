@@ -19,7 +19,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.6...');
+        this.log.info('Starting Floor Plan Visualizer v5.7...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -103,29 +103,42 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
         
-        // === ОТДАЧА ИКОНОК С ПРАВИЛЬНЫМИ HEADERS ===
+        // === ОТДАЧА ИКОНОК (ИСПРАВЛЕНО: расширение не дублируется) ===
         const serveIcon = (req, res) => {
-            const iconName = req.params.name;
+            // req.params.name приходит КАК В URL: "light_on.png" или "light_on"
+            let iconName = req.params.name;
             
-            // Устанавливаем правильные заголовки ДО отправки данных
-            res.setHeader('Content-Type', 'image/png');
+            // Защита от выхода за пределы папки
+            iconName = path.basename(iconName);
+            
+            // Добавляем .png ТОЛЬКО если расширения нет в запросе
+            if (!/\.(png|svg)$/i.test(iconName)) {
+                iconName += '.png';
+            }
+            
             res.setHeader('Cache-Control', 'public, max-age=86400');
             
             if (this.iconsDir) {
-                const filePath = path.join(this.iconsDir, iconName + '.png');
+                const filePath = path.join(this.iconsDir, iconName);
                 
                 if (fs.existsSync(filePath)) {
+                    res.setHeader('Content-Type', iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
                     const fileStream = fs.createReadStream(filePath);
                     fileStream.pipe(res);
                 } else {
                     this.log.warn('Icon file not found: ' + filePath);
-                    res.status(404).send('Icon not found');
+                    res.status(404).send('Icon not found: ' + iconName);
                 }
             } else {
-                const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png/${iconName}.png`;
+                const proxyUrl = `http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png/${iconName}`;
                 this.log.debug('Proxying icon from: ' + proxyUrl);
                 
                 const proxyReq = http.get(proxyUrl, (proxyRes) => {
+                    if (proxyRes.headers['content-type']) {
+                        res.setHeader('Content-Type', proxyRes.headers['content-type']);
+                    } else {
+                        res.setHeader('Content-Type', iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
+                    }
                     res.status(proxyRes.statusCode);
                     proxyRes.pipe(res);
                 });
@@ -144,6 +157,7 @@ class FloorplanVisualizer extends utils.Adapter {
         };
         
         app.get('/icons-mfd-png/:name', serveIcon);
+        app.get('/icons-mfd-svg/:name', serveIcon);
         
         app.use(express.static(path.join(__dirname, 'www')));
         app.get('/favicon.ico', (req, res) => res.status(204));
