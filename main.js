@@ -11,44 +11,34 @@ class FloorplanVisualizer extends utils.Adapter {
         super({ ...options, name: 'floorplan-visualizer' });
         this.adminServer = null;
         this.presentationServer = null;
-
         this.on('ready', this.onReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.0...');
-
+        this.log.info('Starting Floor Plan Visualizer v5.1...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
             native: {}
         });
-
         const configState = await this.getStateAsync('config');
         if (!configState || !configState.val) {
             const defaultConfig = {
                 elementTypes: [
-                    {
-                        id: 'lighting', name: 'Освещение', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom',
-                        colors: { active: '#f39c12', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                        font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' }
-                    },
-                    {
-                        id: 'sensor', name: 'Датчики', iconSize: 56, iconOpacity: 0.9, textPosition: 'overlay',
-                        colors: { active: '#3498db', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                        font: { family: 'Arial, sans-serif', weight: 'bold', size: '14px', color: '#ffffff' }
-                    }
+                    { id: 'lighting', name: 'Освещение', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom',
+                      colors: { active: '#f39c12', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
+                      font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' } },
+                    { id: 'sensor', name: 'Датчики', iconSize: 56, iconOpacity: 0.9, textPosition: 'overlay',
+                      colors: { active: '#3498db', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
+                      font: { family: 'Arial, sans-serif', weight: 'bold', size: '14px', color: '#ffffff' } }
                 ],
                 floors: []
             };
             await this.setStateAsync('config', { val: JSON.stringify(defaultConfig, null, 2), ack: true });
-            this.log.info('Default configuration created.');
         }
-
         const uploadDir = path.join(__dirname, 'www', 'uploads');
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
         this.startAdminServer();
         this.startPresentationServer();
     }
@@ -64,7 +54,6 @@ class FloorplanVisualizer extends utils.Adapter {
         app.use(express.static(path.join(__dirname, 'www')));
         app.get('/favicon.ico', (req, res) => res.status(204));
 
-        // --- Базовые API ---
         app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
             try {
                 const { filename, base64Data } = req.body;
@@ -106,9 +95,7 @@ class FloorplanVisualizer extends utils.Adapter {
             } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
-        // --- Новые API для редактора v5 ---
-        
-        // Получение дерева объектов ioBroker
+        // Дерево объектов ioBroker (плоский список с путями)
         app.get('/api/iobroker/objects', async (req, res) => {
             try {
                 const objects = await this.getForeignObjectsAsync('*', 'state');
@@ -116,11 +103,12 @@ class FloorplanVisualizer extends utils.Adapter {
                 for (const id in objects) {
                     const obj = objects[id];
                     if (obj && obj.common) {
+                        const name = typeof obj.common.name === 'object'
+                            ? (obj.common.name.ru || obj.common.name.en || obj.common.name.de || id)
+                            : (obj.common.name || id);
                         result.push({
                             id: id,
-                            name: typeof obj.common.name === 'object'
-                                ? (obj.common.name.ru || obj.common.name.en || obj.common.name.de || id)
-                                : (obj.common.name || id),
+                            name: name,
                             type: obj.common.type || 'unknown',
                             role: obj.common.role || ''
                         });
@@ -134,29 +122,89 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // Получение списка MFD-иконок
+        // === ИСПРАВЛЕННЫЙ API для MFD-иконок: многоуровневый поиск с диагностикой ===
         app.get('/api/iobroker/icons', async (req, res) => {
             try {
-                const searchPaths = [
-                    path.join(process.cwd(), 'node_modules', '@iobroker', 'icons-mfd-svg', 'icons'),
-                    path.join(process.cwd(), 'node_modules', 'iobroker.vis', 'www', 'icons-mfd-png'),
-                    path.join(process.cwd(), 'node_modules', 'iobroker.icons-mfd-png', 'icons'),
-                    '/opt/iobroker/node_modules/@iobroker/icons-mfd-svg/icons',
-                    '/opt/iobroker/node_modules/iobroker.vis/www/icons-mfd-png'
-                ];
-                
                 let icons = [];
-                for (const p of searchPaths) {
-                    if (fs.existsSync(p)) {
-                        const files = fs.readdirSync(p);
-                        icons = files
-                            .filter(f => f.endsWith('.png') || f.endsWith('.svg'))
-                            .map(f => f.replace(/\.(png|svg)$/, ''))
-                            .sort();
-                        if (icons.length > 0) break;
+                let source = 'none';
+                const diagnostics = [];
+
+                // Метод 1: через ioBroker objects API (работает в любом ioBroker)
+                const prefixes = [
+                    'icons-mfd-png.0.', 'icons-mfd-svg.0.',
+                    'icons-mfd-png.', 'icons-mfd-svg.',
+                    'vis.0.icons-mfd-png.', 'vis.0.icons-mfd-svg.'
+                ];
+                for (const prefix of prefixes) {
+                    try {
+                        const objects = await this.getForeignObjectsAsync(prefix + '*', 'state');
+                        const found = [];
+                        for (const id in objects) {
+                            const parts = id.split('.');
+                            const name = parts[parts.length - 1];
+                            if (name && !['length', 'control', 'info'].includes(name) && !found.includes(name)) {
+                                found.push(name);
+                            }
+                        }
+                        if (found.length > 0) {
+                            icons = found;
+                            source = 'ioBroker objects (' + prefix + ')';
+                            diagnostics.push(prefix + ': ' + found.length + ' icons');
+                            break;
+                        } else {
+                            diagnostics.push(prefix + ': 0 icons');
+                        }
+                    } catch (e) {
+                        diagnostics.push(prefix + ': error (' + e.message + ')');
                     }
                 }
-                res.json({ icons: icons, count: icons.length });
+
+                // Метод 2: файловая система (резерв)
+                if (icons.length === 0) {
+                    const searchPaths = [
+                        path.join(process.cwd(), 'node_modules', '@iobroker', 'icons-mfd-svg', 'icons'),
+                        path.join(process.cwd(), 'node_modules', '@iobroker', 'icons-mfd-png', 'icons'),
+                        path.join(process.cwd(), 'node_modules', 'iobroker.vis', 'www', 'icons-mfd-png'),
+                        path.join(process.cwd(), 'node_modules', 'iobroker.vis', 'widgets', 'icons-mfd-png'),
+                        path.join(process.cwd(), 'node_modules', 'iobroker.icons-mfd-png', 'icons'),
+                        '/opt/iobroker/node_modules/@iobroker/icons-mfd-svg/icons',
+                        '/opt/iobroker/node_modules/@iobroker/icons-mfd-png/icons',
+                        '/opt/iobroker/node_modules/iobroker.vis/www/icons-mfd-png',
+                        '/opt/iobroker/node_modules/iobroker.vis/widgets/icons-mfd-png',
+                        path.join(__dirname, 'node_modules', '@iobroker', 'icons-mfd-svg', 'icons'),
+                        path.join(__dirname, 'node_modules', '@iobroker', 'icons-mfd-png', 'icons'),
+                        path.join(__dirname, '..', '..', 'iobroker.vis', 'www', 'icons-mfd-png')
+                    ];
+                    for (const p of searchPaths) {
+                        try {
+                            if (fs.existsSync(p)) {
+                                const files = fs.readdirSync(p);
+                                const found = files
+                                    .filter(f => f.endsWith('.png') || f.endsWith('.svg'))
+                                    .map(f => f.replace(/\.(png|svg)$/, ''));
+                                if (found.length > 0) {
+                                    icons = found;
+                                    source = 'filesystem (' + p + ')';
+                                    diagnostics.push('fs ' + p + ': ' + found.length + ' icons');
+                                    break;
+                                } else {
+                                    diagnostics.push('fs ' + p + ': 0 icons');
+                                }
+                            }
+                        } catch (e) {
+                            diagnostics.push('fs ' + p + ': error');
+                        }
+                    }
+                }
+
+                icons.sort();
+                this.log.info('MFD icons loaded: ' + icons.length + ' from ' + source);
+                res.json({
+                    icons: icons,
+                    count: icons.length,
+                    source: source,
+                    diagnostics: diagnostics
+                });
             } catch (e) {
                 this.log.error('Get icons error: ' + e);
                 res.status(500).json({ error: e.message });
@@ -170,7 +218,6 @@ class FloorplanVisualizer extends utils.Adapter {
         const port = this.config.adminPort || 8083;
         const bind = this.config.bind || '0.0.0.0';
         const app = this.buildApp();
-
         this.adminServer = http.createServer(app);
         this.adminServer.listen(port, bind, () => this.log.info('Admin server listening on http://' + bind + ':' + port));
         this.adminServer.on('error', (e) => this.log.error('Admin server error: ' + e));
@@ -180,7 +227,6 @@ class FloorplanVisualizer extends utils.Adapter {
         const port = this.config.presentationPort || 8084;
         const bind = this.config.bind || '0.0.0.0';
         const app = this.buildApp();
-
         this.presentationServer = http.createServer(app);
         this.presentationServer.listen(port, bind, () => this.log.info('Presentation server listening on http://' + bind + ':' + port));
         this.presentationServer.on('error', (e) => this.log.error('Presentation server error: ' + e));

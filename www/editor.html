@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор плана этажа v5</title>
+    <title>Редактор плана этажа v5.1</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
@@ -37,14 +37,12 @@
         .btn-small { padding: 5px 10px; font-size: 12px; }
         .btn-mini { padding: 3px 8px; font-size: 11px; }
 
-        /* Floors tabs (editor) */
         .floor-tabs-container { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
         .floor-tab-editor { padding: 8px 16px; background: #ecf0f1; border: 2px solid transparent; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; }
         .floor-tab-editor.active { background: #667eea; color: white; }
         .floor-tab-editor .close-tab { background: rgba(0,0,0,0.2); border: none; color: inherit; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .floor-tab-editor .close-tab:hover { background: #e74c3c; }
 
-        /* Floor editor workspace */
         .floor-workspace { display: flex; flex-direction: column; gap: 15px; }
         .floor-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px; background: #ecf0f1; border-radius: 8px; }
         .floor-toolbar input[type="text"] { flex: 1; min-width: 200px; padding: 6px 10px; border: 2px solid #d0d0d0; border-radius: 6px; }
@@ -53,7 +51,6 @@
         .layer-chip.active { background: #667eea; color: white; border-color: #667eea; }
         .layer-chip .remove-layer { background: none; border: none; color: inherit; cursor: pointer; font-size: 14px; }
 
-        /* Plan area */
         .plan-editor-area { position: relative; width: 100%; background: #2c3e50; border-radius: 8px; overflow: hidden; min-height: 500px; }
         .plan-editor-area img { width: 100%; height: auto; display: block; user-select: none; pointer-events: none; }
         .plan-empty { display: flex; align-items: center; justify-content: center; min-height: 500px; color: #95a5a6; font-size: 16px; flex-direction: column; gap: 10px; }
@@ -65,7 +62,6 @@
         .plan-marker img.mfd-icon { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         .plan-marker .marker-label { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none; }
 
-        /* Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal { background: white; border-radius: 12px; padding: 25px; max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
@@ -73,20 +69,27 @@
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
         .modal-large { max-width: 900px; }
 
-        /* Object tree */
-        .object-tree-search { margin-bottom: 10px; }
-        .object-tree { border: 2px solid #e0e0e0; border-radius: 6px; max-height: 400px; overflow-y: auto; background: #fafafa; }
-        .tree-node { padding: 6px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        /* === ДЕРЕВО ОБЪЕКТОВ IOBROKER === */
+        .object-tree-search { margin-bottom: 10px; display: flex; gap: 5px; }
+        .object-tree-search input { flex: 1; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; }
+        .object-tree { border: 2px solid #e0e0e0; border-radius: 6px; max-height: 450px; overflow-y: auto; background: #fafafa; font-size: 13px; }
+        .tree-branch-header { padding: 6px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; user-select: none; }
+        .tree-branch-header:hover { background: #ecf5ff; }
+        .branch-toggle { display: inline-block; width: 14px; color: #667eea; font-size: 10px; }
+        .branch-name { font-weight: 600; color: #2c3e50; }
+        .branch-count { color: #95a5a6; font-size: 11px; }
+        .tree-node { padding: 5px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .tree-node:hover { background: #ecf5ff; }
         .tree-node.selected { background: #667eea; color: white; }
-        .tree-node .tree-id { font-family: 'Consolas', monospace; font-size: 12px; color: #666; }
+        .tree-node .tree-id { font-family: 'Consolas', monospace; font-size: 11px; color: #666; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tree-node.selected .tree-id { color: #ddd; }
-        .tree-group { padding: 4px 10px; background: #ecf0f1; font-weight: 600; font-size: 12px; color: #555; cursor: pointer; }
-        .tree-group:hover { background: #d0d7df; }
+        .tree-node.current { background: #fff3cd; border-left: 4px solid #f39c12; }
+        .tree-node.current.selected { background: #667eea; border-left-color: #f39c12; }
         .tree-loading { padding: 20px; text-align: center; color: #95a5a6; }
+        .tree-empty { padding: 20px; text-align: center; color: #95a5a6; }
 
-        /* Icon palette */
-        .icon-palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; max-height: 350px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 6px; padding: 10px; background: #fafafa; }
+        /* === ПАЛИТРА ИКОНОК === */
+        .icon-palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; max-height: 400px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 6px; padding: 10px; background: #fafafa; }
         .icon-option { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; border-radius: 6px; cursor: pointer; padding: 5px; transition: 0.2s; gap: 4px; background: white; }
         .icon-option:hover { background: #ecf5ff; border-color: #667eea; }
         .icon-option.selected { background: #667eea; border-color: #667eea; }
@@ -100,13 +103,23 @@
         .current-icon-preview { display: inline-flex; align-items: center; gap: 10px; padding: 8px; background: #f9f9f9; border-radius: 6px; margin-top: 5px; }
         .current-icon-preview .preview-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #e0e0e0; border-radius: 50%; font-size: 24px; }
         .current-icon-preview .preview-box img { width: 32px; height: 32px; }
+
+        /* === ДОПОЛНИТЕЛЬНЫЕ ID === */
+        .extra-id-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
+        .extra-id-row input { flex: 1; padding: 6px 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 13px; }
+        .extra-id-row .btn { margin: 0; padding: 6px 10px; font-size: 12px; }
+        .extra-ids-label { font-size: 12px; color: #666; margin-top: 10px; margin-bottom: 5px; }
+
+        .mfd-diagnostics { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 10px; font-size: 12px; }
+        .mfd-diagnostics strong { display: block; margin-bottom: 5px; }
+        .mfd-diagnostics ul { margin-left: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v5.0</h1>
+            <h1>Редактор плана этажа v5.1</h1>
             <p>Интерактивный редактор с визуальным размещением объектов</p>
         </div>
 
@@ -116,7 +129,6 @@
         </div>
 
         <div class="content">
-            <!-- Типы элементов -->
             <div id="tab-types" class="tab-content">
                 <div class="section">
                     <h2>Типы элементов</h2>
@@ -125,7 +137,6 @@
                 </div>
             </div>
 
-            <!-- Этажи -->
             <div id="tab-floors" class="tab-content" style="display:none;">
                 <div class="section">
                     <h2>Этажи</h2>
@@ -144,13 +155,23 @@
                 <label>Название устройства</label>
                 <input type="text" id="deviceName" placeholder="Например: Люстра в гостиной">
             </div>
+
+            <!-- Основное состояние -->
             <div class="form-group">
-                <label>ID состояния ioBroker</label>
+                <label>Основное состояние ioBroker</label>
                 <div class="id-input-wrapper">
                     <input type="text" id="deviceId" placeholder="например: hue.0.lights.1.state">
-                    <button class="btn btn-secondary" onclick="openObjectTree()">🔍 Обзор</button>
+                    <button class="btn btn-secondary" onclick="openObjectTree('main', -1)">🔍 Обзор</button>
                 </div>
             </div>
+
+            <!-- Дополнительные состояния -->
+            <div class="form-group">
+                <div class="extra-ids-label">Дополнительные состояния (для датчиков с несколькими значениями):</div>
+                <div id="extraIdsContainer"></div>
+                <button class="btn btn-secondary btn-small" onclick="addExtraIdRow()" style="margin-top:5px;">+ Добавить состояние</button>
+            </div>
+
             <div class="form-group">
                 <label>Тип иконки</label>
                 <select id="deviceIconType" onchange="onIconTypeChange()">
@@ -180,15 +201,11 @@
                 <input type="hidden" id="deviceIconName">
             </div>
             <div class="form-group">
-                <label>Дополнительные ID состояний (через запятую, для датчиков)</label>
-                <input type="text" id="deviceExtraIds" placeholder="например: humidity.0, battery.0">
-            </div>
-            <div class="form-group">
-                <label>Префиксы (через запятую)</label>
+                <label>Префиксы значений (через запятую, по порядку состояний)</label>
                 <input type="text" id="devicePrefixes" placeholder="Темп:,Влаж:">
             </div>
             <div class="form-group">
-                <label>Постфиксы (через запятую)</label>
+                <label>Постфиксы значений (через запятую)</label>
                 <input type="text" id="devicePostfixes" placeholder="°C,%">
             </div>
             <div class="modal-actions">
@@ -203,7 +220,9 @@
         <div class="modal modal-large">
             <h2>Выбор объекта ioBroker</h2>
             <div class="object-tree-search">
-                <input type="text" id="treeSearch" placeholder="🔍 Быстрый поиск (например: hue или temp)" oninput="filterTree()">
+                <input type="text" id="treeSearch" placeholder="🔍 Поиск (ID или имя)" oninput="filterTree()">
+                <button class="btn btn-secondary" onclick="expandAllBranches()">Развернуть всё</button>
+                <button class="btn btn-secondary" onclick="collapseAllBranches()">Свернуть всё</button>
             </div>
             <div class="object-tree" id="objectTree">
                 <div class="tree-loading">Загрузка объектов...</div>
@@ -237,8 +256,9 @@
     <div class="modal-overlay" id="mfdModal">
         <div class="modal modal-large">
             <h2>Выбор MFD-иконки</h2>
+            <div id="mfdDiagnostics"></div>
             <div class="object-tree-search">
-                <input type="text" id="mfdSearch" placeholder="🔍 Поиск иконки (например: light или temp)" oninput="filterMfdPalette()">
+                <input type="text" id="mfdSearch" placeholder="🔍 Поиск иконки (например: light)" oninput="filterMfdPalette()">
             </div>
             <div class="icon-palette" id="mfdPalette">
                 <div class="tree-loading">Загрузка иконок...</div>
@@ -255,10 +275,12 @@
         var currentFloorId = null;
         var currentLayerId = null;
         var allIoBrokerObjects = null;
+        var ioBrokerTree = null; // построенное дерево
         var allMfdIcons = null;
-        var editingDeviceContext = null; // { fIdx, lIdx, devId }
+        var mfdSourceInfo = null;
+        var editingDeviceContext = null; // { fIdx, lIdx, devId, isNew }
+        var objectTreeContext = null;    // { target: 'main' | 'extra', extraIndex: number }
 
-        // Популярные emoji по категориям
         var emojiGroups = {
             'Освещение': ['💡','🔆','💫','🕯️','🌟','✨','🔅','🌙'],
             'Розетки/Энергия': ['🔌','⚡','🔋','📱','💻','🖥️','📺','🎮'],
@@ -268,22 +290,15 @@
             'Бытовая техника': ['🌀','🧺','🍳','☕','🚿','🛁','🚽','🧹']
         };
 
-        function showDebug(msg) {
-            var b = document.getElementById('debugBanner');
-            if (b) { b.style.display = 'block'; b.textContent = msg; }
-        }
-
+        function showDebug(msg) { var b = document.getElementById('debugBanner'); if (b) { b.style.display = 'block'; b.textContent = msg; } }
         window.addEventListener('error', function (e) { showDebug('JS: ' + e.message + ' (строка ' + e.lineno + ')'); });
-
-        function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+        function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
         function splitList(v) { return String(v || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean); }
-
         function ensureConfig() {
             if (!config || typeof config !== 'object') config = {};
             if (!Array.isArray(config.elementTypes)) config.elementTypes = [];
             if (!Array.isArray(config.floors)) config.floors = [];
         }
-
         document.addEventListener('DOMContentLoaded', loadConfig);
 
         function loadConfig() {
@@ -294,14 +309,11 @@
 
         function saveConfig(callback) {
             fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) })
-            .then(function () { if (callback) callback(); })
-            .catch(function (e) { showDebug('Ошибка сохранения: ' + e.message); });
+                .then(function () { if (callback) callback(); })
+                .catch(function (e) { showDebug('Ошибка сохранения: ' + e.message); });
         }
 
-        function renderAll() {
-            renderElementTypes();
-            renderFloorWorkspace();
-        }
+        function renderAll() { renderElementTypes(); renderFloorWorkspace(); }
 
         function showTab(tabName, el) {
             document.querySelectorAll('.tab-content').forEach(function(c) { c.style.display = 'none'; });
@@ -336,22 +348,18 @@
                 '<button class="btn btn-success" onclick="saveType(' + i + ')">💾 Сохранить тип</button>' +
                 '</div>';
         }
-
         function renderElementTypes() {
             var c = document.getElementById('types-container'); if (!c) return;
             var html = '';
             for (var i = 0; i < config.elementTypes.length; i++) html += buildTypeHtml(config.elementTypes[i], i);
             c.innerHTML = html || '<p>Нет типов. Добавьте первый.</p>';
         }
-
         function addElementType() {
             ensureConfig();
             config.elementTypes.push({ id: 'type_' + Date.now(), name: 'Новый тип', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom', colors: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' }, font: { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' } });
             renderElementTypes();
         }
-
         function removeType(i) { if (confirm('Удалить тип?')) { config.elementTypes.splice(i, 1); saveConfig(renderElementTypes); } }
-
         function saveType(i) {
             var t = config.elementTypes[i];
             t.name = document.getElementById('type-name-' + i).value || 'Без названия';
@@ -371,23 +379,20 @@
             saveConfig(function() { alert('Тип сохранён'); });
         }
 
-        // ============ ЭТАЖИ И РАБОЧЕЕ ПРОСТРАНСТВО ============
+        // ============ ЭТАЖИ ============
         function renderFloorTabs() {
-            var container = document.getElementById('floorTabsEditor');
-            if (!container) return;
+            var container = document.getElementById('floorTabsEditor'); if (!container) return;
             var html = '';
             for (var i = 0; i < config.floors.length; i++) {
                 var f = config.floors[i];
                 var isActive = f.id === currentFloorId;
                 html += '<div class="floor-tab-editor' + (isActive ? ' active' : '') + '" onclick="selectFloor(\'' + f.id + '\')">' +
                     '<span>' + esc(f.name) + '</span>' +
-                    '<button class="close-tab" onclick="removeFloor(' + i + ', event)" title="Удалить этаж">×</button>' +
-                    '</div>';
+                    '<button class="close-tab" onclick="removeFloor(' + i + ', event)" title="Удалить этаж">×</button></div>';
             }
             html += '<button class="btn btn-primary btn-small" onclick="addFloor()">+ Добавить этаж</button>';
             container.innerHTML = html;
         }
-
         function addFloor() {
             ensureConfig();
             var newId = 'floor_' + Date.now();
@@ -396,107 +401,63 @@
             currentLayerId = null;
             saveConfig(renderFloorWorkspace);
         }
-
         function removeFloor(i, event) {
             if (event) event.stopPropagation();
             if (!confirm('Удалить этаж "' + config.floors[i].name + '"?')) return;
             var removedId = config.floors[i].id;
             config.floors.splice(i, 1);
-            if (currentFloorId === removedId) {
-                currentFloorId = config.floors.length > 0 ? config.floors[0].id : null;
-                currentLayerId = null;
-            }
+            if (currentFloorId === removedId) { currentFloorId = config.floors.length > 0 ? config.floors[0].id : null; currentLayerId = null; }
             saveConfig(renderFloorWorkspace);
         }
-
-        function selectFloor(id) {
-            currentFloorId = id;
-            currentLayerId = null;
-            renderFloorWorkspace();
-        }
-
+        function selectFloor(id) { currentFloorId = id; currentLayerId = null; renderFloorWorkspace(); }
         function getCurrentFloor() {
-            for (var i = 0; i < config.floors.length; i++) {
-                if (config.floors[i].id === currentFloorId) return { floor: config.floors[i], idx: i };
-            }
+            for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) return { floor: config.floors[i], idx: i };
             return null;
         }
-
         function renderFloorWorkspace() {
             renderFloorTabs();
-            var workspace = document.getElementById('floorWorkspace');
-            if (!workspace) return;
-
+            var workspace = document.getElementById('floorWorkspace'); if (!workspace) return;
             var current = getCurrentFloor();
-            if (!current) {
-                workspace.innerHTML = '<div class="plan-empty"><div style="font-size:48px;">🏠</div><div>Добавьте первый этаж</div></div>';
-                return;
-            }
-            var floor = current.floor;
-            var fIdx = current.idx;
-
-            // Auto-выбор слоя
+            if (!current) { workspace.innerHTML = '<div class="plan-empty"><div style="font-size:48px;">🏠</div><div>Добавьте первый этаж</div></div>'; return; }
+            var floor = current.floor, fIdx = current.idx;
             if (!currentLayerId || !floor.layers.some(function(l) { return l.id === currentLayerId; })) {
                 currentLayerId = floor.layers.length > 0 ? floor.layers[0].id : null;
             }
-
-            // Toolbar
             var layerChips = '';
             for (var l = 0; l < floor.layers.length; l++) {
                 var layer = floor.layers[l];
                 var isActiveLayer = layer.id === currentLayerId;
                 layerChips += '<div class="layer-chip' + (isActiveLayer ? ' active' : '') + '" onclick="selectLayer(\'' + layer.id + '\')">' +
                     '<span>' + esc(layer.name) + '</span>' +
-                    '<button class="remove-layer" onclick="removeLayer(' + fIdx + ',' + l + ', event)" title="Удалить слой">×</button>' +
-                    '</div>';
+                    '<button class="remove-layer" onclick="removeLayer(' + fIdx + ',' + l + ', event)" title="Удалить слой">×</button></div>';
             }
-
             var html = '<div class="floor-toolbar">' +
                 '<input type="text" value="' + esc(floor.name) + '" id="floorNameInput" placeholder="Название этажа">' +
                 '<button class="btn btn-success btn-small" onclick="saveFloorName(' + fIdx + ')">💾 Сохранить</button>' +
                 '<button class="btn btn-secondary btn-small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️ Загрузить план</button>' +
                 '<input type="file" id="floorImageInput" accept="image/*" style="display:none;" onchange="handleImageUpload(this, ' + fIdx + ')">' +
                 '</div>';
-
-            html += '<div class="floor-toolbar">' +
-                '<strong style="margin-right:10px;">Слои:</strong>' +
-                '<div class="layer-selector">' + layerChips +
-                '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Слой</button>' +
-                '</div></div>';
-
-            // Plan area
+            html += '<div class="floor-toolbar"><strong style="margin-right:10px;">Слои:</strong><div class="layer-selector">' + layerChips +
+                '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Слой</button></div></div>';
             if (floor.image) {
-                html += '<div class="plan-editor-area" id="planEditorArea">' +
-                    '<img src="' + floor.image + '" id="planEditorImage">' +
-                    '</div>';
+                html += '<div class="plan-editor-area" id="planEditorArea"><img src="' + floor.image + '" id="planEditorImage"></div>';
                 html += '<div style="margin-top:10px;"><button class="btn btn-success" onclick="openAddDeviceModal(' + fIdx + ')">+ Добавить объект на план</button></div>';
             } else {
                 html += '<div class="plan-editor-area"><div class="plan-empty"><div style="font-size:48px;">🖼️</div><div>Загрузите изображение плана этажа</div></div></div>';
             }
-
             workspace.innerHTML = html;
-
-            if (floor.image) {
-                renderPlanMarkers(floor, fIdx);
-            }
+            if (floor.image) renderPlanMarkers(floor, fIdx);
         }
-
-        function selectLayer(id) {
-            currentLayerId = id;
-            renderFloorWorkspace();
-        }
-
+        function selectLayer(id) { currentLayerId = id; renderFloorWorkspace(); }
         function addLayer(fIdx) {
             var name = prompt('Название нового слоя:', 'Новый слой');
             if (!name) return;
-            var floor = config.floors[fIdx];
-            if (!floor.layers) floor.layers = [];
+            var floor = config.floors[fIdx]; if (!floor.layers) floor.layers = [];
             var newLayer = { id: 'layer_' + Date.now(), name: name, type: config.elementTypes[0] ? config.elementTypes[0].id : 'lighting', devices: [] };
             floor.layers.push(newLayer);
             currentLayerId = newLayer.id;
             saveConfig(renderFloorWorkspace);
         }
-
         function removeLayer(fIdx, lIdx, event) {
             if (event) event.stopPropagation();
             if (!confirm('Удалить слой "' + config.floors[fIdx].layers[lIdx].name + '" со всеми устройствами?')) return;
@@ -505,12 +466,7 @@
             if (currentLayerId === removedId) currentLayerId = null;
             saveConfig(renderFloorWorkspace);
         }
-
-        function saveFloorName(fIdx) {
-            config.floors[fIdx].name = document.getElementById('floorNameInput').value || 'Без названия';
-            saveConfig(renderFloorTabs);
-        }
-
+        function saveFloorName(fIdx) { config.floors[fIdx].name = document.getElementById('floorNameInput').value || 'Без названия'; saveConfig(renderFloorTabs); }
         function handleImageUpload(input, fIdx) {
             var file = input.files[0]; if (!file) return;
             var reader = new FileReader();
@@ -522,106 +478,67 @@
             reader.readAsDataURL(file);
         }
 
-        // ============ МАРКЕРЫ НА ПЛАНЕ (с Drag & Drop) ============
+        // ============ МАРКЕРЫ С DRAG & DROP ============
         function renderPlanMarkers(floor, fIdx) {
             var area = document.getElementById('planEditorArea');
             var img = document.getElementById('planEditorImage');
             if (!area || !img) return;
-
-            // Удалить старые маркеры
             area.querySelectorAll('.plan-marker').forEach(function(m) { m.remove(); });
-
             if (!currentLayerId) return;
             var layer = null, lIdx = -1;
-            for (var i = 0; i < floor.layers.length; i++) {
-                if (floor.layers[i].id === currentLayerId) { layer = floor.layers[i]; lIdx = i; break; }
-            }
+            for (var i = 0; i < floor.layers.length; i++) if (floor.layers[i].id === currentLayerId) { layer = floor.layers[i]; lIdx = i; break; }
             if (!layer) return;
-
             var ts = getTypeSettings(layer.type);
             var size = ts ? (ts.iconSize || 48) : 48;
-
             (layer.devices || []).forEach(function (dev) {
                 var marker = document.createElement('div');
                 marker.className = 'plan-marker';
                 marker.style.left = (dev.x || 50) + '%';
                 marker.style.top = (dev.y || 50) + '%';
-                marker.style.width = size + 'px';
-                marker.style.height = size + 'px';
+                marker.style.width = size + 'px'; marker.style.height = size + 'px';
                 marker.style.fontSize = (size * 0.6) + 'px';
-
                 if (dev.iconType === 'mfd' && dev.iconName) {
                     marker.innerHTML = '<img src="/icons-mfd-png/' + esc(dev.iconName) + '.png" class="mfd-icon">';
                 } else {
                     marker.innerHTML = '<span class="marker-icon">' + esc(dev.iconOn || '💡') + '</span>';
                 }
-
                 var label = document.createElement('div');
-                label.className = 'marker-label';
-                label.textContent = dev.name || 'Без имени';
+                label.className = 'marker-label'; label.textContent = dev.name || 'Без имени';
                 marker.appendChild(label);
-
-                // Drag & Drop
                 attachDrag(marker, dev, fIdx, lIdx);
-
-                // Двойной клик для редактирования
-                marker.addEventListener('dblclick', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openEditDeviceModal(fIdx, lIdx, dev.id);
-                });
-
+                marker.addEventListener('dblclick', function (e) { e.preventDefault(); e.stopPropagation(); openEditDeviceModal(fIdx, lIdx, dev.id); });
                 area.appendChild(marker);
             });
         }
-
         function attachDrag(marker, dev, fIdx, lIdx) {
-            var isDragging = false;
-            var dragStarted = false;
-
             marker.addEventListener('mousedown', function (e) {
                 if (e.button !== 0) return;
                 e.preventDefault();
-                isDragging = true;
-                dragStarted = false;
+                var dragStarted = false;
                 marker.classList.add('dragging');
-
-                var img = document.getElementById('planEditorImage');
-                if (!img) return;
-
+                var img = document.getElementById('planEditorImage'); if (!img) return;
                 function onMove(ev) {
                     var rect = img.getBoundingClientRect();
                     var x = ((ev.clientX - rect.left) / rect.width) * 100;
                     var y = ((ev.clientY - rect.top) / rect.height) * 100;
-                    x = Math.max(0, Math.min(100, x));
-                    y = Math.max(0, Math.min(100, y));
-                    dev.x = x;
-                    dev.y = y;
-                    marker.style.left = x + '%';
-                    marker.style.top = y + '%';
+                    x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
+                    dev.x = x; dev.y = y;
+                    marker.style.left = x + '%'; marker.style.top = y + '%';
                     dragStarted = true;
                 }
-
                 function onUp() {
                     document.removeEventListener('mousemove', onMove);
                     document.removeEventListener('mouseup', onUp);
                     marker.classList.remove('dragging');
-                    if (dragStarted) {
-                        saveConfig();
-                    }
-                    isDragging = false;
+                    if (dragStarted) saveConfig();
                 }
-
                 document.addEventListener('mousemove', onMove);
                 document.addEventListener('mouseup', onUp);
             });
         }
-
         function getTypeSettings(typeId) {
             if (!config || !config.elementTypes) return null;
-            for (var i = 0; i < config.elementTypes.length; i++) {
-                if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
-            }
+            for (var i = 0; i < config.elementTypes.length; i++) if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
             return config.elementTypes[0];
         }
 
@@ -636,59 +553,58 @@
             document.getElementById('deviceIconOn').value = '💡';
             document.getElementById('deviceIconOff').value = '🌑';
             document.getElementById('deviceIconName').value = '';
-            document.getElementById('deviceExtraIds').value = '';
             document.getElementById('devicePrefixes').value = '';
             document.getElementById('devicePostfixes').value = '';
+            clearExtraIdRows();
             updateIconPreviews();
             onIconTypeChange();
             document.getElementById('deviceModal').classList.add('active');
         }
-
         function openEditDeviceModal(fIdx, lIdx, devId) {
             var layer = config.floors[fIdx].layers[lIdx];
             var dev = null;
-            for (var i = 0; i < layer.devices.length; i++) {
-                if (layer.devices[i].id === devId) { dev = layer.devices[i]; break; }
-            }
+            for (var i = 0; i < layer.devices.length; i++) if (layer.devices[i].id === devId) { dev = layer.devices[i]; break; }
             if (!dev) return;
             editingDeviceContext = { fIdx: fIdx, lIdx: lIdx, devId: devId, isNew: false };
             document.getElementById('deviceModalTitle').textContent = 'Редактировать: ' + (dev.name || '');
             document.getElementById('deviceName').value = dev.name || '';
-            document.getElementById('deviceId').value = (dev.stateIds && dev.stateIds[0]) || '';
+            var mainId = (dev.stateIds && dev.stateIds.length > 0) ? dev.stateIds[0] : '';
+            document.getElementById('deviceId').value = mainId;
             document.getElementById('deviceIconType').value = dev.iconType || 'emoji';
             document.getElementById('deviceIconOn').value = dev.iconOn || '💡';
             document.getElementById('deviceIconOff').value = dev.iconOff || '🌑';
             document.getElementById('deviceIconName').value = dev.iconName || '';
-            document.getElementById('deviceExtraIds').value = (dev.stateIds && dev.stateIds.slice(1).join(', ')) || '';
             document.getElementById('devicePrefixes').value = (dev.prefixes || []).join(', ');
             document.getElementById('devicePostfixes').value = (dev.postfixes || []).join(', ');
+            // Восстановление дополнительных ID
+            clearExtraIdRows();
+            if (dev.stateIds && dev.stateIds.length > 1) {
+                for (var j = 1; j < dev.stateIds.length; j++) {
+                    addExtraIdRow(dev.stateIds[j]);
+                }
+            }
             updateIconPreviews();
             onIconTypeChange();
             document.getElementById('deviceModal').classList.add('active');
         }
-
         function getLayerIndex(fIdx, layerId) {
-            for (var i = 0; i < config.floors[fIdx].layers.length; i++) {
-                if (config.floors[fIdx].layers[i].id === layerId) return i;
-            }
+            for (var i = 0; i < config.floors[fIdx].layers.length; i++) if (config.floors[fIdx].layers[i].id === layerId) return i;
             return -1;
         }
-
-        function closeDeviceModal() {
-            document.getElementById('deviceModal').classList.remove('active');
-            editingDeviceContext = null;
-        }
-
+        function closeDeviceModal() { document.getElementById('deviceModal').classList.remove('active'); editingDeviceContext = null; }
         function saveDevice() {
             if (!editingDeviceContext) return;
             var ctx = editingDeviceContext;
             var name = document.getElementById('deviceName').value.trim();
             if (!name) { alert('Введите название'); return; }
-
             var mainId = document.getElementById('deviceId').value.trim();
-            var extraIds = splitList(document.getElementById('deviceExtraIds').value);
-            var stateIds = mainId ? [mainId].concat(extraIds) : extraIds;
-
+            var stateIds = [];
+            if (mainId) stateIds.push(mainId);
+            var extras = document.querySelectorAll('.extra-id-input');
+            for (var i = 0; i < extras.length; i++) {
+                var v = extras[i].value.trim();
+                if (v) stateIds.push(v);
+            }
             var data = {
                 id: ctx.devId || ('dev_' + Date.now()),
                 name: name,
@@ -700,126 +616,221 @@
                 prefixes: splitList(document.getElementById('devicePrefixes').value),
                 postfixes: splitList(document.getElementById('devicePostfixes').value)
             };
-
             var layer = config.floors[ctx.fIdx].layers[ctx.lIdx];
             if (!layer.devices) layer.devices = [];
-
             if (ctx.isNew) {
                 data.x = 50; data.y = 50;
                 layer.devices.push(data);
             } else {
-                for (var i = 0; i < layer.devices.length; i++) {
-                    if (layer.devices[i].id === ctx.devId) {
-                        data.x = layer.devices[i].x; data.y = layer.devices[i].y;
-                        layer.devices[i] = data;
-                        break;
+                for (var j = 0; j < layer.devices.length; j++) {
+                    if (layer.devices[j].id === ctx.devId) {
+                        data.x = layer.devices[j].x; data.y = layer.devices[j].y;
+                        layer.devices[j] = data; break;
                     }
                 }
             }
-
             closeDeviceModal();
             saveConfig(renderFloorWorkspace);
         }
-
         function onIconTypeChange() {
             var type = document.getElementById('deviceIconType').value;
             document.getElementById('emojiControls').style.display = type === 'emoji' ? 'block' : 'none';
             document.getElementById('mfdControls').style.display = type === 'mfd' ? 'block' : 'none';
         }
-
         function updateIconPreviews() {
             var on = document.getElementById('deviceIconOn').value || '💡';
             var off = document.getElementById('deviceIconOff').value || '🌑';
             document.getElementById('emojiOnPreview').textContent = on;
             document.getElementById('emojiOffPreview').textContent = off;
-
             var mfdName = document.getElementById('deviceIconName').value;
             var mfdBox = document.getElementById('mfdPreview');
             var mfdLabel = document.getElementById('mfdPreviewName');
             if (mfdName) {
                 mfdBox.innerHTML = '<img src="/icons-mfd-png/' + esc(mfdName) + '.png">';
                 mfdLabel.textContent = mfdName;
+            } else { mfdBox.innerHTML = ''; mfdLabel.textContent = 'не выбрано'; }
+        }
+
+        // ============ ДОПОЛНИТЕЛЬНЫЕ ID ============
+        function addExtraIdRow(initialValue) {
+            var container = document.getElementById('extraIdsContainer');
+            var idx = container.children.length;
+            var row = document.createElement('div');
+            row.className = 'extra-id-row';
+            row.innerHTML = '<input type="text" class="extra-id-input" placeholder="Например: zigbee.0.001.humidity" value="' + esc(initialValue || '') + '">' +
+                '<button class="btn btn-secondary btn-mini" onclick="openObjectTree(\'extra\', ' + idx + ')">🔍</button>' +
+                '<button class="btn btn-danger btn-mini" onclick="this.parentNode.remove()">×</button>';
+            container.appendChild(row);
+        }
+        function clearExtraIdRows() { document.getElementById('extraIdsContainer').innerHTML = ''; }
+        function setExtraIdValue(idx, value) {
+            var rows = document.querySelectorAll('.extra-id-input');
+            if (rows[idx]) rows[idx].value = value;
+        }
+
+        // ============ ДЕРЕВО ОБЪЕКТОВ IOBROKER (с иерархией) ============
+        function buildIoBrokerTree(objects) {
+            // Группируем по первой части ID (adapter)
+            var groups = {};
+            objects.forEach(function(obj) {
+                var parts = obj.id.split('.');
+                var adapter = parts[0];
+                if (!groups[adapter]) groups[adapter] = [];
+                groups[adapter].push(obj);
+            });
+            // Сортировка внутри групп по id
+            for (var key in groups) {
+                groups[key].sort(function(a, b) { return a.id.localeCompare(b.id); });
+            }
+            return groups;
+        }
+
+        function countInGroup(group) { return group.length; }
+
+        function renderTree(groups, filter, currentId) {
+            var filterLower = (filter || '').toLowerCase().trim();
+            var container = document.getElementById('objectTree');
+            var html = '';
+            var totalShown = 0;
+            var adapterKeys = Object.keys(groups).sort();
+
+            for (var a = 0; a < adapterKeys.length; a++) {
+                var adapter = adapterKeys[a];
+                var group = groups[adapter];
+                // Фильтруем группу
+                var filtered = group.filter(function(obj) {
+                    if (!filterLower) return true;
+                    return obj.id.toLowerCase().indexOf(filterLower) !== -1 ||
+                        (obj.name && String(obj.name).toLowerCase().indexOf(filterLower) !== -1);
+                });
+                if (filtered.length === 0) continue;
+
+                // Проверка: содержит ли эта группа currentId - тогда авто-раскрыть
+                var hasCurrent = currentId && filtered.some(function(o) { return o.id === currentId; });
+                var expandedByFilter = filterLower && filtered.length > 0;
+                var isExpanded = hasCurrent || expandedByFilter;
+
+                html += '<div class="tree-branch" data-adapter="' + esc(adapter) + '">' +
+                    '<div class="tree-branch-header" onclick="toggleBranch(this)" data-expanded="' + isExpanded + '">' +
+                    '<span class="branch-toggle">' + (isExpanded ? '▼' : '▶') + '</span>' +
+                    '<span class="branch-name">📁 ' + esc(adapter) + '</span>' +
+                    '<span class="branch-count">(' + filtered.length + ')</span>' +
+                    '</div>' +
+                    '<div class="tree-branch-content" style="' + (isExpanded ? '' : 'display:none;') + '">';
+
+                filtered.forEach(function(obj) {
+                    var isSelected = currentId && obj.id === currentId;
+                    html += '<div class="tree-node' + (isSelected ? ' selected current' : '') + '" data-id="' + esc(obj.id) + '" onclick="selectObject(\'' + esc(obj.id).replace(/'/g, "\\'") + '\')">' +
+                        '<span style="padding-left:25px;">' + esc(obj.name || obj.id) + '</span>' +
+                        '<span class="tree-id">' + esc(obj.id) + '</span></div>';
+                    totalShown++;
+                });
+                html += '</div></div>';
+            }
+
+            if (totalShown === 0) {
+                container.innerHTML = '<div class="tree-empty">Ничего не найдено</div>';
             } else {
-                mfdBox.innerHTML = '';
-                mfdLabel.textContent = 'не выбрано';
+                container.innerHTML = html;
+                // Автоскролл к текущему элементу
+                if (currentId) {
+                    var currentEl = container.querySelector('.tree-node.current');
+                    if (currentEl) {
+                        setTimeout(function() { currentEl.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 100);
+                    }
+                }
             }
         }
 
-        // ============ ДЕРЕВО ОБЪЕКТОВ IOBROKER ============
-        function openObjectTree() {
+        function toggleBranch(headerEl) {
+            var isExpanded = headerEl.getAttribute('data-expanded') === 'true';
+            var content = headerEl.nextElementSibling;
+            var toggle = headerEl.querySelector('.branch-toggle');
+            if (isExpanded) {
+                headerEl.setAttribute('data-expanded', 'false');
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
+                headerEl.setAttribute('data-expanded', 'true');
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            }
+        }
+
+        function expandAllBranches() {
+            document.querySelectorAll('.tree-branch-header').forEach(function(h) {
+                h.setAttribute('data-expanded', 'true');
+                h.nextElementSibling.style.display = 'block';
+                h.querySelector('.branch-toggle').textContent = '▼';
+            });
+        }
+        function collapseAllBranches() {
+            document.querySelectorAll('.tree-branch-header').forEach(function(h) {
+                h.setAttribute('data-expanded', 'false');
+                h.nextElementSibling.style.display = 'none';
+                h.querySelector('.branch-toggle').textContent = '▶';
+            });
+        }
+
+        function openObjectTree(target, extraIndex) {
+            objectTreeContext = { target: target, extraIndex: extraIndex };
             document.getElementById('treeModal').classList.add('active');
             document.getElementById('treeSearch').value = '';
+
+            // Определяем текущее значение для авто-раскрытия
+            var currentId = null;
+            if (target === 'main') {
+                currentId = document.getElementById('deviceId').value.trim();
+            } else if (target === 'extra') {
+                var rows = document.querySelectorAll('.extra-id-input');
+                if (rows[extraIndex]) currentId = rows[extraIndex].value.trim();
+            }
+
             if (allIoBrokerObjects === null) {
-                loadIoBrokerObjects();
+                loadIoBrokerObjects(currentId);
             } else {
-                renderObjectTree(allIoBrokerObjects);
+                renderTree(ioBrokerTree, '', currentId);
             }
         }
 
         function closeTreeModal() {
             document.getElementById('treeModal').classList.remove('active');
+            objectTreeContext = null;
         }
 
-        function loadIoBrokerObjects() {
+        function loadIoBrokerObjects(currentId) {
             document.getElementById('objectTree').innerHTML = '<div class="tree-loading">Загрузка объектов ioBroker...</div>';
             fetch('/api/iobroker/objects').then(function (r) { return r.json(); }).then(function (data) {
                 allIoBrokerObjects = data || [];
-                renderObjectTree(allIoBrokerObjects);
+                ioBrokerTree = buildIoBrokerTree(allIoBrokerObjects);
+                renderTree(ioBrokerTree, '', currentId);
             }).catch(function (e) {
-                document.getElementById('objectTree').innerHTML = '<div class="tree-loading">Ошибка загрузки: ' + e.message + '</div>';
+                document.getElementById('objectTree').innerHTML = '<div class="tree-loading">Ошибка: ' + e.message + '</div>';
             });
-        }
-
-        function renderObjectTree(objects) {
-            var search = (document.getElementById('treeSearch').value || '').toLowerCase().trim();
-            var container = document.getElementById('objectTree');
-            
-            var filtered = objects.filter(function (o) {
-                if (!search) return true;
-                return o.id.toLowerCase().indexOf(search) !== -1 || (o.name && String(o.name).toLowerCase().indexOf(search) !== -1);
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = '<div class="tree-loading">Ничего не найдено</div>';
-                return;
-            }
-
-            // Ограничение для производительности
-            var limit = 500;
-            var limited = filtered.slice(0, limit);
-
-            // Группировка по префиксу
-            var groups = {};
-            limited.forEach(function (o) {
-                var parts = o.id.split('.');
-                var prefix = parts.length >= 2 ? parts[0] + '.' + parts[1] : parts[0];
-                if (!groups[prefix]) groups[prefix] = [];
-                groups[prefix].push(o);
-            });
-
-            var html = '';
-            if (filtered.length > limit) {
-                html += '<div class="tree-loading">Показано ' + limit + ' из ' + filtered.length + '. Уточните поиск.</div>';
-            }
-            var keys = Object.keys(groups).sort();
-            keys.forEach(function (prefix) {
-                html += '<div class="tree-group">📁 ' + esc(prefix) + ' (' + groups[prefix].length + ')</div>';
-                groups[prefix].forEach(function (o) {
-                    html += '<div class="tree-node" onclick="selectObject(\'' + esc(o.id).replace(/'/g, "\\'") + '\')">' +
-                        '<span>' + esc(o.name || o.id) + '</span>' +
-                        '<span class="tree-id">' + esc(o.id) + '</span></div>';
-                });
-            });
-
-            container.innerHTML = html;
         }
 
         function filterTree() {
-            if (allIoBrokerObjects) renderObjectTree(allIoBrokerObjects);
+            if (!ioBrokerTree) return;
+            var filter = document.getElementById('treeSearch').value;
+            // При поиске не трогаем currentId, чтобы авто-раскрытие работало
+            var currentId = null;
+            if (objectTreeContext) {
+                if (objectTreeContext.target === 'main') currentId = document.getElementById('deviceId').value.trim();
+                else if (objectTreeContext.target === 'extra') {
+                    var rows = document.querySelectorAll('.extra-id-input');
+                    if (rows[objectTreeContext.extraIndex]) currentId = rows[objectTreeContext.extraIndex].value.trim();
+                }
+            }
+            renderTree(ioBrokerTree, filter, currentId);
         }
 
         function selectObject(id) {
-            document.getElementById('deviceId').value = id;
+            if (!objectTreeContext) return;
+            if (objectTreeContext.target === 'main') {
+                document.getElementById('deviceId').value = id;
+            } else if (objectTreeContext.target === 'extra') {
+                setExtraIdValue(objectTreeContext.extraIndex, id);
+            }
             closeTreeModal();
         }
 
@@ -836,18 +847,11 @@
             palette.innerHTML = html;
             document.getElementById('emojiModal').classList.add('active');
         }
-
-        function closeEmojiModal() {
-            document.getElementById('emojiModal').classList.remove('active');
-        }
-
+        function closeEmojiModal() { document.getElementById('emojiModal').classList.remove('active'); }
         function selectEmoji(emoji) {
             var mode = document.getElementById('emojiMode').value;
-            if (mode === 'on') {
-                document.getElementById('deviceIconOn').value = emoji;
-            } else {
-                document.getElementById('deviceIconOff').value = emoji;
-            }
+            if (mode === 'on') document.getElementById('deviceIconOn').value = emoji;
+            else document.getElementById('deviceIconOff').value = emoji;
             updateIconPreviews();
             closeEmojiModal();
         }
@@ -856,54 +860,57 @@
         function openMfdPalette() {
             document.getElementById('mfdModal').classList.add('active');
             document.getElementById('mfdSearch').value = '';
-            if (allMfdIcons === null) {
-                loadMfdIcons();
-            } else {
-                renderMfdPalette(allMfdIcons);
-            }
+            if (allMfdIcons === null) loadMfdIcons();
+            else renderMfdPalette(allMfdIcons);
         }
-
-        function closeMfdModal() {
-            document.getElementById('mfdModal').classList.remove('active');
-        }
-
+        function closeMfdModal() { document.getElementById('mfdModal').classList.remove('active'); }
         function loadMfdIcons() {
             document.getElementById('mfdPalette').innerHTML = '<div class="tree-loading">Загрузка иконок MFD...</div>';
+            document.getElementById('mfdDiagnostics').innerHTML = '';
             fetch('/api/iobroker/icons').then(function (r) { return r.json(); }).then(function (data) {
                 allMfdIcons = (data.icons || []);
+                mfdSourceInfo = data;
                 renderMfdPalette(allMfdIcons);
+                showMfdDiagnostics(data);
             }).catch(function (e) {
                 document.getElementById('mfdPalette').innerHTML = '<div class="tree-loading">Ошибка: ' + e.message + '</div>';
             });
         }
-
+        function showMfdDiagnostics(data) {
+            var box = document.getElementById('mfdDiagnostics');
+            if (data.count === 0) {
+                var html = '<div class="mfd-diagnostics"><strong>⚠️ MFD-иконки не найдены</strong>' +
+                    '<p>Установите адаптер <code>@iobroker/icons-mfd-png</code> или <code>icons-mfd-svg</code>.</p>' +
+                    '<p>Диагностика поиска:</p><ul>';
+                (data.diagnostics || []).forEach(function(d) { html += '<li>' + esc(d) + '</li>'; });
+                html += '</ul></div>';
+                box.innerHTML = html;
+            } else {
+                box.innerHTML = '<div class="mfd-diagnostics" style="background:#d4edda; border-color:#28a745;">' +
+                    '<strong>✅ Найдено ' + data.count + ' иконок</strong>' +
+                    '<p>Источник: ' + esc(data.source) + '</p></div>';
+            }
+        }
         function renderMfdPalette(icons) {
             var search = (document.getElementById('mfdSearch').value || '').toLowerCase().trim();
-            var filtered = icons.filter(function (name) {
-                return !search || name.toLowerCase().indexOf(search) !== -1;
-            });
-
+            var filtered = icons.filter(function (name) { return !search || name.toLowerCase().indexOf(search) !== -1; });
             var palette = document.getElementById('mfdPalette');
             if (filtered.length === 0) {
-                palette.innerHTML = '<div class="tree-loading">Иконки не найдены</div>';
+                palette.innerHTML = '<div class="tree-empty">Иконки не найдены. ' + (icons.length === 0 ? 'См. диагностику выше.' : '') + '</div>';
                 return;
             }
-
             var html = '';
             var current = document.getElementById('deviceIconName').value;
             filtered.slice(0, 500).forEach(function (name) {
                 var selected = name === current ? ' selected' : '';
                 html += '<div class="icon-option' + selected + '" onclick="selectMfdIcon(\'' + esc(name).replace(/'/g, "\\'") + '\')">' +
-                    '<div class="icon-preview"><img src="/icons-mfd-png/' + esc(name) + '.png"></div>' +
+                    '<div class="icon-preview"><img src="/icons-mfd-png/' + esc(name) + '.png" onerror="this.style.display=\'none\'"></div>' +
                     '<div class="icon-name">' + esc(name) + '</div></div>';
             });
+            if (filtered.length > 500) html += '<div style="grid-column:1/-1; text-align:center; color:#95a5a6; padding:10px;">Показано 500 из ' + filtered.length + '. Уточните поиск.</div>';
             palette.innerHTML = html;
         }
-
-        function filterMfdPalette() {
-            if (allMfdIcons) renderMfdPalette(allMfdIcons);
-        }
-
+        function filterMfdPalette() { if (allMfdIcons) renderMfdPalette(allMfdIcons); }
         function selectMfdIcon(name) {
             document.getElementById('deviceIconName').value = name;
             updateIconPreviews();
@@ -928,10 +935,13 @@
         window.closeDeviceModal = closeDeviceModal;
         window.saveDevice = saveDevice;
         window.onIconTypeChange = onIconTypeChange;
+        window.addExtraIdRow = addExtraIdRow;
         window.openObjectTree = openObjectTree;
         window.closeTreeModal = closeTreeModal;
         window.selectObject = selectObject;
         window.filterTree = filterTree;
+        window.expandAllBranches = expandAllBranches;
+        window.collapseAllBranches = collapseAllBranches;
         window.openEmojiPalette = openEmojiPalette;
         window.closeEmojiModal = closeEmojiModal;
         window.selectEmoji = selectEmoji;
