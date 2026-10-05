@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор плана этажа v5.11</title>
+    <title>Редактор плана этажа v5.12</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
@@ -57,6 +57,14 @@
         .plan-marker .marker-icon { pointer-events: none; line-height: 1; }
         .plan-marker img.mfd-icon { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         .plan-marker .marker-label { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none; }
+        /* Иконка через CSS-маску: перекрашивается в любой цвет */
+        .icon-mask {
+            display: inline-block; width: 100%; height: 100%;
+            -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+            -webkit-mask-position: center; mask-position: center;
+            -webkit-mask-size: contain; mask-size: contain;
+            pointer-events: none;
+        }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal { background: white; border-radius: 12px; padding: 25px; max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
@@ -85,14 +93,12 @@
         .icon-option:hover { background: #ecf5ff; border-color: #667eea; }
         .icon-option.selected { background: #667eea; border-color: #667eea; }
         .icon-option.selected * { color: white; }
-        .icon-option .icon-preview { font-size: 28px; line-height: 1; }
-        .icon-option .icon-preview img { width: 32px; height: 32px; }
+        .icon-option .icon-preview { line-height: 1; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
         .icon-option .icon-name { font-size: 9px; text-align: center; color: #666; word-break: break-all; line-height: 1.1; max-height: 22px; overflow: hidden; }
         .id-input-wrapper { display: flex; gap: 5px; }
         .id-input-wrapper input { flex: 1; }
         .current-icon-preview { display: inline-flex; align-items: center; gap: 10px; padding: 8px; background: #f9f9f9; border-radius: 6px; margin-top: 5px; }
         .current-icon-preview .preview-box { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #e0e0e0; border-radius: 50%; font-size: 24px; }
-        .current-icon-preview .preview-box img { width: 32px; height: 32px; }
         .extra-id-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
         .extra-id-row input { flex: 1; padding: 6px 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 13px; }
         .extra-id-row .btn { margin: 0; padding: 6px 10px; font-size: 12px; }
@@ -106,7 +112,7 @@
     <div class="container">
         <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v5.11</h1>
+            <h1>Редактор плана этажа v5.12</h1>
             <p>Интерактивный редактор с визуальным размещением объектов</p>
         </div>
         <div class="tabs">
@@ -134,28 +140,17 @@
     <div class="modal-overlay" id="deviceModal">
         <div class="modal">
             <h2 id="deviceModalTitle">Добавить устройство</h2>
-            <div class="form-group">
-                <label>Название устройства</label>
-                <input type="text" id="deviceName" placeholder="Например: Люстра в гостиной">
-            </div>
-            <div class="form-group">
-                <label>Основное состояние ioBroker</label>
-                <div class="id-input-wrapper">
-                    <input type="text" id="deviceId" placeholder="например: hue.0.lights.1.state">
-                    <button class="btn btn-secondary" onclick="openObjectTree('main', -1)">🔍 Обзор</button>
-                </div>
+            <div class="form-group"><label>Название устройства</label><input type="text" id="deviceName" placeholder="Например: Люстра в гостиной"></div>
+            <div class="form-group"><label>Основное состояние ioBroker</label>
+                <div class="id-input-wrapper"><input type="text" id="deviceId" placeholder="например: hue.0.lights.1.state"><button class="btn btn-secondary" onclick="openObjectTree('main', -1)">🔍 Обзор</button></div>
             </div>
             <div class="form-group">
                 <div class="extra-ids-label">Дополнительные состояния (для датчиков с несколькими значениями):</div>
                 <div id="extraIdsContainer"></div>
                 <button class="btn btn-secondary btn-small" onclick="addExtraIdRow()" style="margin-top:5px;">+ Добавить состояние</button>
             </div>
-            <div class="form-group">
-                <label>Тип иконки</label>
-                <select id="deviceIconType" onchange="onIconTypeChange()">
-                    <option value="emoji">Emoji</option>
-                    <option value="mfd">MFD (ioBroker)</option>
-                </select>
+            <div class="form-group"><label>Тип иконки</label>
+                <select id="deviceIconType" onchange="onIconTypeChange()"><option value="emoji">Emoji</option><option value="mfd">MFD (ioBroker)</option></select>
             </div>
             <div class="form-group" id="emojiControls">
                 <label>Emoji</label>
@@ -164,8 +159,7 @@
                     <div class="preview-box" id="emojiOnPreview">💡</div><span>ВКЛ</span>
                     <div class="preview-box" id="emojiOffPreview">🌑</div><span>ВЫКЛ</span>
                 </div>
-                <input type="hidden" id="deviceIconOn">
-                <input type="hidden" id="deviceIconOff">
+                <input type="hidden" id="deviceIconOn"><input type="hidden" id="deviceIconOff">
             </div>
             <div class="form-group" id="mfdControls" style="display:none;">
                 <label>MFD-иконка</label>
@@ -176,14 +170,8 @@
                 </div>
                 <input type="hidden" id="deviceIconName">
             </div>
-            <div class="form-group">
-                <label>Префиксы значений (через запятую, по порядку состояний)</label>
-                <input type="text" id="devicePrefixes" placeholder="Темп:,Влаж:">
-            </div>
-            <div class="form-group">
-                <label>Постфиксы значений (через запятую)</label>
-                <input type="text" id="devicePostfixes" placeholder="°C,%">
-            </div>
+            <div class="form-group"><label>Префиксы значений (через запятую, по порядку состояний)</label><input type="text" id="devicePrefixes" placeholder="Темп:,Влаж:"></div>
+            <div class="form-group"><label>Постфиксы значений (через запятую)</label><input type="text" id="devicePostfixes" placeholder="°C,%"></div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeDeviceModal()">Отменить</button>
                 <button class="btn btn-success" onclick="saveDevice()">💾 Сохранить</button>
@@ -207,10 +195,7 @@
     <div class="modal-overlay" id="emojiModal">
         <div class="modal">
             <h2>Выбор Emoji</h2>
-            <div class="form-group">
-                <label>Режим выбора</label>
-                <select id="emojiMode"><option value="on">Для ВКЛ</option><option value="off">Для ВЫКЛ</option></select>
-            </div>
+            <div class="form-group"><label>Режим выбора</label><select id="emojiMode"><option value="on">Для ВКЛ</option><option value="off">Для ВЫКЛ</option></select></div>
             <div class="icon-palette" id="emojiPalette"></div>
             <div class="modal-actions"><button class="btn btn-secondary" onclick="closeEmojiModal()">Закрыть</button></div>
         </div>
@@ -220,9 +205,7 @@
         <div class="modal modal-large">
             <h2>Выбор MFD-иконки</h2>
             <div id="mfdDiagnostics"></div>
-            <div class="object-tree-search">
-                <input type="text" id="mfdSearch" placeholder="🔍 Поиск иконки" oninput="filterMfdPalette()">
-            </div>
+            <div class="object-tree-search"><input type="text" id="mfdSearch" placeholder="🔍 Поиск иконки" oninput="filterMfdPalette()"></div>
             <div class="icon-palette" id="mfdPalette"><div class="tree-loading">Загрузка иконок...</div></div>
             <div class="modal-actions"><button class="btn btn-secondary" onclick="closeMfdModal()">Закрыть</button></div>
         </div>
@@ -237,12 +220,12 @@
         var CACHE_BUSTER = '?v=' + Date.now();
 
         var emojiGroups = {
-            'Освещение': ['💡','🔆','💫','🕯️','🌟','✨','🔅','🌙'],
-            'Розетки/Энергия': ['🔌','⚡','🔋','📱','💻','🖥️','📺','🎮'],
-            'Климат': ['🌡️','💧','❄️','🔥','🌬️','☀️','🌤️','⛅'],
-            'Безопасность': ['🔒','🔓','🚪','📹','🔔','🛡️','⚠️','🚨'],
-            'Мультимедиа': ['🔊','🔈','🎵','🎶','📻','📀','🎬','📺'],
-            'Бытовая техника': ['🌀','🧺','🍳','☕','🚿','🛁','🚽','🧹']
+            'Освещение': ['💡','🔆','💫','🕯️','','✨','','🌙'],
+            'Розетки/Энергия': ['🔌','⚡','','📱','💻','🖥️','📺',''],
+            'Климат': ['🌡️','','❄️','','🌬️','☀️','🌤️',''],
+            'Безопасность': ['🔒','','🚪','','🔔','️','⚠️','🚨'],
+            'Мультимедиа': ['🔊','','🎵','','📻','','🎬',''],
+            'Бытовая техника': ['🌀','🧺','','☕','','🛁','','🧹']
         };
 
         function showDebug(msg) { var b = document.getElementById('debugBanner'); if (b) { b.style.display = 'block'; b.textContent = msg; } }
@@ -253,6 +236,15 @@
             if (!config || typeof config !== 'object') config = {};
             if (!Array.isArray(config.elementTypes)) config.elementTypes = [];
             if (!Array.isArray(config.floors)) config.floors = [];
+        }
+        // Определяет ключ состояния: active / inactive / warning / safe
+        function getStateKey(layerType, stateVal) {
+            if (layerType === 'security') return stateVal ? 'warning' : 'safe';
+            if (layerType === 'sensor') {
+                if (typeof stateVal === 'boolean') return stateVal ? 'active' : 'inactive';
+                return 'safe';
+            }
+            return stateVal ? 'active' : 'inactive';
         }
         document.addEventListener('DOMContentLoaded', loadConfig);
 
@@ -273,14 +265,11 @@
             document.getElementById('tab-' + tabName).style.display = 'block';
             if (el) el.classList.add('active');
         }
-
-        function planImageError() {
-            showDebug('Файл изображения плана не найден на сервере. Загрузите план этажа заново кнопкой «Загрузить план».');
-        }
+        function planImageError() { showDebug('Файл изображения плана не найден на сервере. Загрузите план этажа заново кнопкой «Загрузить план».'); }
 
         // ===== ТИПЫ =====
         function buildTypeHtml(t, i) {
-            var c = t.colors || {}, f = t.font || {};
+            var c = t.colors || {}, f = t.font || {}, bg = t.bg || {}, ic = t.iconColor || {};
             return '<div class="type-card"><div class="type-header">' +
                 '<input type="text" value="' + esc(t.name) + '" id="type-name-' + i + '" placeholder="Название типа">' +
                 '<button class="btn btn-danger btn-small" onclick="removeType(' + i + ')">Удалить</button></div>' +
@@ -288,16 +277,26 @@
                 '<div class="form-group"><label>Размер (px)</label><input type="number" id="type-size-' + i + '" value="' + (t.iconSize || 48) + '"></div>' +
                 '<div class="form-group"><label>Прозрачность</label><input type="number" step="0.1" min="0" max="1" id="type-opacity-' + i + '" value="' + (t.iconOpacity !== undefined ? t.iconOpacity : 1) + '"></div>' +
                 '<div class="form-group"><label>Текст</label><select id="type-pos-' + i + '"><option value="bottom"' + (t.textPosition === 'bottom' ? ' selected' : '') + '>Снизу</option><option value="top"' + (t.textPosition === 'top' ? ' selected' : '') + '>Сверху</option><option value="overlay"' + (t.textPosition === 'overlay' ? ' selected' : '') + '>Поверх</option></select></div></div>' +
-                '<div class="form-group"><label>Шрифт</label><div class="settings-grid">' +
+                '<div class="form-group"><label>Шрифт значений</label><div class="settings-grid">' +
                 '<input type="text" id="type-font-fam-' + i + '" value="' + esc(f.family || 'Arial') + '" placeholder="Семейство">' +
                 '<input type="text" id="type-font-w-' + i + '" value="' + esc(f.weight || 'bold') + '" placeholder="Начертание">' +
                 '<input type="text" id="type-font-s-' + i + '" value="' + esc(f.size || '12px') + '" placeholder="Размер">' +
-                '<input type="color" id="type-font-c-' + i + '" value="' + esc(f.color || '#ffffff') + '" style="height:38px;padding:2px;"></div></div>' +
-                '<div class="form-group"><label>Цвета</label><div class="color-grid">' +
+                '<input type="color" id="type-font-c-' + i + '" value="' + esc(f.color || '#ffffff') + '" style="height:38px;padding:2px;" title="Цвет текста"></div></div>' +
+                '<div class="form-group"><label>Цвет рамки / свечения</label><div class="color-grid">' +
                 '<div class="color-item"><input type="color" id="type-c-act-' + i + '" value="' + esc(c.active || '#0cbaba') + '"><span>Вкл</span></div>' +
                 '<div class="color-item"><input type="color" id="type-c-in-' + i + '" value="' + esc(c.inactive || '#7f8c8d') + '"><span>Выкл</span></div>' +
                 '<div class="color-item"><input type="color" id="type-c-w-' + i + '" value="' + esc(c.warning || '#e74c3c') + '"><span>Тревога</span></div>' +
                 '<div class="color-item"><input type="color" id="type-c-s-' + i + '" value="' + esc(c.safe || '#2ecc71') + '"><span>Норма</span></div></div></div>' +
+                '<div class="form-group"><label>Цвет фона объекта</label><div class="color-grid">' +
+                '<div class="color-item"><input type="color" id="type-bg-act-' + i + '" value="' + esc(bg.active || '#ffffff') + '"><span>Вкл</span></div>' +
+                '<div class="color-item"><input type="color" id="type-bg-in-' + i + '" value="' + esc(bg.inactive || '#ffffff') + '"><span>Выкл</span></div>' +
+                '<div class="color-item"><input type="color" id="type-bg-w-' + i + '" value="' + esc(bg.warning || '#ffffff') + '"><span>Тревога</span></div>' +
+                '<div class="color-item"><input type="color" id="type-bg-s-' + i + '" value="' + esc(bg.safe || '#ffffff') + '"><span>Норма</span></div></div></div>' +
+                '<div class="form-group"><label>Цвет иконки (MFD)</label><div class="color-grid">' +
+                '<div class="color-item"><input type="color" id="type-ic-act-' + i + '" value="' + esc(ic.active || c.active || '#000000') + '"><span>Вкл</span></div>' +
+                '<div class="color-item"><input type="color" id="type-ic-in-' + i + '" value="' + esc(ic.inactive || c.inactive || '#000000') + '"><span>Выкл</span></div>' +
+                '<div class="color-item"><input type="color" id="type-ic-w-' + i + '" value="' + esc(ic.warning || c.warning || '#000000') + '"><span>Тревога</span></div>' +
+                '<div class="color-item"><input type="color" id="type-ic-s-' + i + '" value="' + esc(ic.safe || c.safe || '#000000') + '"><span>Норма</span></div></div></div>' +
                 '<button class="btn btn-success" onclick="saveType(' + i + ')">💾 Сохранить тип</button></div>';
         }
         function renderElementTypes() {
@@ -308,7 +307,13 @@
         }
         function addElementType() {
             ensureConfig();
-            config.elementTypes.push({ id: 'type_' + Date.now(), name: 'Новый тип', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom', colors: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' }, font: { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' } });
+            config.elementTypes.push({
+                id: 'type_' + Date.now(), name: 'Новый тип', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom',
+                colors: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
+                bg: { active: '#ffffff', inactive: '#ffffff', warning: '#ffffff', safe: '#ffffff' },
+                iconColor: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
+                font: { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' }
+            });
             renderElementTypes();
         }
         function removeType(i) { if (confirm('Удалить тип?')) { config.elementTypes.splice(i, 1); saveConfig(renderElementTypes); } }
@@ -328,6 +333,16 @@
             t.colors.inactive = document.getElementById('type-c-in-' + i).value;
             t.colors.warning = document.getElementById('type-c-w-' + i).value;
             t.colors.safe = document.getElementById('type-c-s-' + i).value;
+            if (!t.bg) t.bg = {};
+            t.bg.active = document.getElementById('type-bg-act-' + i).value;
+            t.bg.inactive = document.getElementById('type-bg-in-' + i).value;
+            t.bg.warning = document.getElementById('type-bg-w-' + i).value;
+            t.bg.safe = document.getElementById('type-bg-s-' + i).value;
+            if (!t.iconColor) t.iconColor = {};
+            t.iconColor.active = document.getElementById('type-ic-act-' + i).value;
+            t.iconColor.inactive = document.getElementById('type-ic-in-' + i).value;
+            t.iconColor.warning = document.getElementById('type-ic-w-' + i).value;
+            t.iconColor.safe = document.getElementById('type-ic-s-' + i).value;
             saveConfig(function() { alert('Тип сохранён'); });
         }
 
@@ -437,17 +452,24 @@
             if (!layer) return;
             var ts = getTypeSettings(layer.type);
             var size = ts ? (ts.iconSize || 48) : 48;
+            var colors = (ts && ts.colors) || {}, bgC = (ts && ts.bg) || {}, icC = (ts && ts.iconColor) || {};
             (layer.devices || []).forEach(function (dev) {
+                var stateVal = null;
+                if (dev.stateIds && dev.stateIds.length > 0) stateVal = !!stateVal; // в редакторе состояние не опрашивается
+                var stateKey = getStateKey(layer.type, stateVal);
                 var marker = document.createElement('div');
                 marker.className = 'plan-marker';
                 marker.style.left = (dev.x || 50) + '%';
                 marker.style.top = (dev.y || 50) + '%';
                 marker.style.width = size + 'px'; marker.style.height = size + 'px';
                 marker.style.fontSize = (size * 0.6) + 'px';
+                marker.style.backgroundColor = bgC[stateKey] || '#ffffff';
+                marker.style.borderColor = colors[stateKey] || '#667eea';
                 if (dev.iconType === 'mfd' && dev.iconName) {
                     var base = dev.iconBaseUrl || '/icons-mfd-png/';
-                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png' + CACHE_BUSTER + '" class="mfd-icon" ' +
-                        'onerror="console.error(\'Marker icon failed:\', this.src); this.style.border=\'2px solid red\';">';
+                    var url = base + esc(dev.iconName) + '.png' + CACHE_BUSTER;
+                    var iconColor = icC[stateKey] || colors[stateKey] || '#000000';
+                    marker.innerHTML = '<span class="icon-mask" style="background-color:' + iconColor + ';-webkit-mask-image:url(' + url + ');mask-image:url(' + url + ');"></span>';
                 } else {
                     marker.innerHTML = '<span class="marker-icon">' + esc(dev.iconOn || '💡') + '</span>';
                 }
@@ -579,10 +601,8 @@
             var mfdBox = document.getElementById('mfdPreview');
             var mfdLabel = document.getElementById('mfdPreviewName');
             if (mfdName) {
-                var iconUrl = mfdBaseUrl + esc(mfdName) + '.png' + CACHE_BUSTER;
-                mfdBox.innerHTML = '<img src="' + iconUrl + '" style="max-width:40px; max-height:40px;" ' +
-                    'onload="console.log(\'Preview loaded:\', this.src)" ' +
-                    'onerror="console.error(\'Preview failed:\', this.src); this.style.border=\'2px solid red\';">';
+                var url = mfdBaseUrl + esc(mfdName) + '.png' + CACHE_BUSTER;
+                mfdBox.innerHTML = '<span class="icon-mask" style="width:32px;height:32px;background-color:#000;-webkit-mask-image:url(' + url + ');mask-image:url(' + url + ');"></span>';
                 mfdLabel.textContent = mfdName;
             } else {
                 mfdBox.innerHTML = '';
@@ -611,7 +631,7 @@
             openObjectTree('extra', idx);
         }
 
-        // ===== МНОГОУРОВНЕВОЕ ДЕРЕВО =====
+        // ===== ДЕРЕВО =====
         function buildIoBrokerTree(objects) {
             var root = { children: {}, leaf: null };
             objects.forEach(function (obj) {
@@ -760,7 +780,7 @@
             updateIconPreviews(); closeEmojiModal();
         }
 
-        // ===== MFD =====
+        // ===== MFD (иконки в палитре — ЧЁРНЫЕ) =====
         function openMfdPalette() {
             CACHE_BUSTER = '?v=' + Date.now();
             document.getElementById('mfdModal').classList.add('active');
@@ -801,12 +821,10 @@
             var current = document.getElementById('deviceIconName').value;
             filtered.slice(0, 500).forEach(function (name) {
                 var selected = name === current ? ' selected' : '';
-                var iconUrl = mfdBaseUrl + esc(name) + '.png' + CACHE_BUSTER;
+                var url = mfdBaseUrl + esc(name) + '.png' + CACHE_BUSTER;
                 html += '<div class="icon-option' + selected + '" onclick="selectMfdIcon(\'' + esc(name).replace(/'/g, "\\'") + '\')">' +
-                    '<div class="icon-preview" style="background:#f0f0f0; min-height:32px;">' +
-                    '<img src="' + iconUrl + '" style="max-width:32px; max-height:32px;" ' +
-                    'onload="console.log(\'Loaded:\', this.src)" ' +
-                    'onerror="console.error(\'Failed:\', this.src); this.style.border=\'2px solid red\'; this.alt=\'X\';">' +
+                    '<div class="icon-preview">' +
+                    '<span class="icon-mask" style="width:32px;height:32px;background-color:#000;-webkit-mask-image:url(' + url + ');mask-image:url(' + url + ');"></span>' +
                     '</div>' +
                     '<div class="icon-name">' + esc(name) + '</div></div>';
             });

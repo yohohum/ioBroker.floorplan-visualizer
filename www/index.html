@@ -21,6 +21,13 @@
         .marker:hover { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; }
         .marker img.mfd-icon { width: 100%; height: 100%; object-fit: contain; }
         .marker .emoji-icon { font-size: inherit; line-height: 1; }
+        .icon-mask {
+            display: inline-block; width: 100%; height: 100%;
+            -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+            -webkit-mask-position: center; mask-position: center;
+            -webkit-mask-size: contain; mask-size: contain;
+            pointer-events: none;
+        }
         .marker .label { position: absolute; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; transition: 0.3s; pointer-events: none; font-weight: 600; z-index: 20; }
         .marker:hover .label { opacity: 1; }
         .label.pos-top { top: -35px; }
@@ -48,6 +55,14 @@
         var CACHE_BUSTER = '?v=' + Date.now();
 
         function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function getStateKey(layerType, stateVal) {
+            if (layerType === 'security') return stateVal ? 'warning' : 'safe';
+            if (layerType === 'sensor') {
+                if (typeof stateVal === 'boolean') return stateVal ? 'active' : 'inactive';
+                return 'safe';
+            }
+            return stateVal ? 'active' : 'inactive';
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
             loadConfig();
@@ -134,20 +149,24 @@
             var ts = getTypeSettings(currentLayerObj.type); if (!ts) return;
             var size = ts.iconSize || 48, opacity = (ts.iconOpacity !== undefined) ? ts.iconOpacity : 1.0;
             var font = ts.font || { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' };
-            var pos = ts.textPosition || 'bottom', colors = ts.colors || {};
+            var pos = ts.textPosition || 'bottom';
+            var colors = ts.colors || {}, bgC = ts.bg || {}, icC = ts.iconColor || {};
             (currentLayerObj.devices || []).forEach(function (dev) {
+                var stateVal = null;
+                if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
+                var stateKey = getStateKey(currentLayerObj.type, stateVal);
                 var marker = document.createElement('div'); marker.className = 'marker';
                 marker.style.left = dev.x + '%'; marker.style.top = dev.y + '%';
                 marker.style.width = size + 'px'; marker.style.height = size + 'px';
                 marker.style.fontSize = (size * 0.6) + 'px'; marker.style.opacity = opacity;
-                var stateVal = null;
-                if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
-                var borderColor = stateVal ? (colors.active || '#0cbaba') : (colors.inactive || '#7f8c8d');
-                marker.style.borderColor = borderColor;
-                if (stateVal) marker.style.boxShadow = '0 0 15px ' + (colors.active || '#0cbaba');
+                marker.style.backgroundColor = bgC[stateKey] || '#ffffff';
+                marker.style.borderColor = colors[stateKey] || '#2c3e50';
+                if (stateVal) marker.style.boxShadow = '0 0 15px ' + (colors[stateKey] || '#0cbaba');
                 if (dev.iconType === 'mfd' && dev.iconName) {
                     var base = dev.iconBaseUrl || '/icons-mfd-png/';
-                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png' + CACHE_BUSTER + '" class="mfd-icon" style="opacity:' + (stateVal ? 1 : 0.4) + ';filter:' + (stateVal ? 'none' : 'grayscale(100%)') + '">';
+                    var url = base + esc(dev.iconName) + '.png' + CACHE_BUSTER;
+                    var iconColor = icC[stateKey] || colors[stateKey] || '#000000';
+                    marker.innerHTML = '<span class="icon-mask" style="background-color:' + iconColor + ';-webkit-mask-image:url(' + url + ');mask-image:url(' + url + ');"></span>';
                 } else {
                     var emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
                     marker.innerHTML = '<span class="emoji-icon" style="filter:' + (stateVal ? 'none' : 'grayscale(100%) brightness(0.7)') + '">' + emoji + '</span>';
