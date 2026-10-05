@@ -10,40 +10,32 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 30px; border-radius: 12px; margin-bottom: 20px; }
+        #debugBanner { display: none; background: #e74c3c; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-weight: 600; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab { padding: 12px 24px; background: #e0e0e0; border: none; border-radius: 6px; color: #333; font-weight: 600; cursor: pointer; transition: 0.3s; }
         .tab:hover { background: #d0d0d0; }
         .tab.active { background: #667eea; color: white; }
         .content { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .section { margin-bottom: 30px; }
         .section h2 { color: #667eea; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e0e0e0; }
-        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 13px; }
         .form-group input, .form-group select { width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
-        
         .type-card { background: #f9f9f9; border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
         .type-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .type-header input { flex: 1; margin-right: 10px; font-size: 16px; font-weight: bold; }
-        
         .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
         .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
         .color-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .color-item input[type="color"] { width: 100%; height: 40px; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; padding: 2px; }
         .color-item span { font-size: 12px; color: #666; text-align: center; }
-
         .floor-card { background: #f0f4f8; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
         .layer-card { background: white; border: 1px solid #d0d0d0; border-radius: 6px; padding: 15px; margin: 10px 0 10px 20px; }
         .device-item { background: #f9f9f9; border-left: 4px solid #667eea; padding: 10px; margin: 10px 0; border-radius: 4px; }
-
         .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; margin-right: 8px; }
         .btn-primary { background: #667eea; color: white; }
-        .btn-primary:hover { background: #5568d3; }
         .btn-success { background: #27ae60; color: white; }
         .btn-danger { background: #e74c3c; color: white; }
         .btn-small { padding: 5px 10px; font-size: 12px; }
-
         .status { position: fixed; top: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; font-weight: 600; z-index: 10001; }
         .status.connected { background: #27ae60; color: white; }
         .status.disconnected { background: #e74c3c; color: white; }
@@ -52,19 +44,18 @@
 <body>
     <div class="status disconnected" id="connStatus">Отключено</div>
     <div class="container">
+        <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v4.0</h1>
+            <h1>Редактор плана этажа v4.1</h1>
             <p>Настройка типов элементов, этажей, слоев и устройств</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('types')">Типы элементов</button>
-            <button class="tab" onclick="showTab('structure')">Этажи и слои</button>
-            <button class="tab" onclick="showTab('ports')">Порты</button>
+            <button class="tab active" onclick="showTab('types', this)">Типы элементов</button>
+            <button class="tab" onclick="showTab('structure', this)">Этажи и слои</button>
         </div>
 
         <div class="content">
-            <!-- Вкладка Типы -->
             <div id="tab-types" class="tab-content">
                 <div class="section">
                     <h2>Типы элементов</h2>
@@ -73,7 +64,6 @@
                 </div>
             </div>
 
-            <!-- Вкладка Структура -->
             <div id="tab-structure" class="tab-content" style="display:none;">
                 <div class="section">
                     <h2>Структура плана</h2>
@@ -81,164 +71,153 @@
                     <button class="btn btn-primary" onclick="addFloor()">+ Добавить этаж</button>
                 </div>
             </div>
-
-            <!-- Вкладка Порты -->
-            <div id="tab-ports" class="tab-content" style="display:none;">
-                <div class="section">
-                    <h2>Настройки серверов</h2>
-                    <p>Изменение портов требует перезапуска адаптера в админке ioBroker.</p>
-                    <div class="settings-grid">
-                        <div class="form-group"><label>Порт редактора (Admin)</label><input type="number" id="adminPortDisplay" disabled></div>
-                        <div class="form-group"><label>Порт презентации</label><input type="number" id="presentationPortDisplay" disabled></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
     <script>
-        let config = null;
-        let socket = null;
+        'use strict';
 
-        // Инициализация
-        window.onload = () => {
-            connectSocket();
-            loadConfig();
-        };
+        var config = null;
+        var socket = null;
 
-        function connectSocket() {
-            socket = io();
-            socket.on('connect', () => { 
-                document.getElementById('connStatus').textContent = 'Подключено'; 
-                document.getElementById('connStatus').className = 'status connected'; 
-            });
-            socket.on('disconnect', () => { 
-                document.getElementById('connStatus').textContent = 'Отключено'; 
-                document.getElementById('connStatus').className = 'status disconnected'; 
-            });
-            socket.on('configChanged', (newConfig) => { 
-                console.log("Config updated via WebSocket");
-                config = newConfig; 
-                renderAll(); 
-            });
-        }
-
-        async function loadConfig() {
-            try {
-                const res = await fetch('/api/config');
-                if (!res.ok) throw new Error('Network response was not ok');
-                config = await res.json();
-                
-                // Гарантируем наличие структур
-                if (!config.elementTypes) config.elementTypes = [];
-                if (!config.floors) config.floors = [];
-                
-                renderAll();
-            } catch (e) { 
-                console.error("Error loading config:", e);
-                alert("Не удалось загрузить конфигурацию. Убедитесь, что адаптер запущен."); 
+        // ---------- ДИАГНОСТИКА ----------
+        function showDebug(msg) {
+            var banner = document.getElementById('debugBanner');
+            if (banner) {
+                banner.style.display = 'block';
+                banner.textContent = msg;
             }
         }
 
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            
-            const targetContent = document.getElementById('tab-' + tabName);
-            if(targetContent) targetContent.style.display = 'block';
-            
-            event.target.classList.add('active');
+        window.addEventListener('error', function (e) {
+            showDebug('JS ошибка: ' + e.message + ' (строка ' + e.lineno + ')');
+        });
+
+        // ---------- ВСПОМОГАТЕЛЬНЫЕ ----------
+        function esc(s) {
+            if (s === undefined || s === null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+
+        function splitList(v) {
+            return String(v).split(',').map(function (s) { return s.trim(); });
+        }
+
+        function ensureConfig() {
+            if (!config || typeof config !== 'object') config = {};
+            if (!Array.isArray(config.elementTypes)) config.elementTypes = [];
+            if (!Array.isArray(config.floors)) config.floors = [];
+        }
+
+        function setStatus(connected) {
+            var el = document.getElementById('connStatus');
+            el.textContent = connected ? 'Подключено' : 'Отключено';
+            el.className = 'status ' + (connected ? 'connected' : 'disconnected');
+        }
+
+        // ---------- СТАРТ ----------
+        document.addEventListener('DOMContentLoaded', function () {
+            loadConfig();
+            try { connectSocket(); } catch (e) { showDebug('Socket: ' + e.message); }
+        });
+
+        function connectSocket() {
+            if (typeof io === 'undefined') { showDebug('socket.io не загрузился'); return; }
+            socket = io();
+            socket.on('connect', function () { setStatus(true); });
+            socket.on('disconnect', function () { setStatus(false); });
+            socket.on('configChanged', function (newConfig) {
+                config = newConfig;
+                ensureConfig();
+                renderAll();
+            });
+        }
+
+        function loadConfig() {
+            fetch('/api/config').then(function (res) { return res.json(); }).then(function (data) {
+                config = data;
+                ensureConfig();
+                renderAll();
+            }).catch(function (e) {
+                ensureConfig();
+                renderAll();
+                showDebug('Ошибка загрузки конфигурации: ' + e.message);
+            });
+        }
+
+        function saveConfig(callback) {
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            }).then(function () {
+                if (callback) callback();
+            }).catch(function (e) {
+                showDebug('Ошибка сохранения: ' + e.message);
+            });
         }
 
         function renderAll() {
-            if (!config) return;
             renderElementTypes();
             renderStructure();
-            
-            // Обновляем поля портов (только для отображения)
-            const portInputAdmin = document.getElementById('adminPortDisplay');
-            const portInputPres = document.getElementById('presentationPortDisplay');
-            if(portInputAdmin) portInputAdmin.value = "8083 (см. настройки адаптера)";
-            if(portInputPres) portInputPres.value = "8084 (см. настройки адаптера)";
         }
 
-        // --- ФУНКЦИИ ДЛЯ ТИПОВ ЭЛЕМЕНТОВ ---
+        // ---------- ВКЛАДКИ ----------
+        function showTab(tabName, el) {
+            var contents = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < contents.length; i++) contents[i].style.display = 'none';
+            var tabs = document.querySelectorAll('.tabs .tab');
+            for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+            var target = document.getElementById('tab-' + tabName);
+            if (target) target.style.display = 'block';
+            if (el) el.classList.add('active');
+        }
+
+        // ---------- ТИПЫ ЭЛЕМЕНТОВ ----------
+        function buildTypeHtml(t, i) {
+            var c = t.colors || {};
+            var f = t.font || {};
+            var html = '<div class="type-card">';
+            html += '<div class="type-header">';
+            html += '<input type="text" value="' + esc(t.name) + '" onchange="updateType(' + i + ', \'name\', this.value)" placeholder="Название типа">';
+            html += '<button class="btn btn-danger btn-small" onclick="removeType(' + i + ')">Удалить тип</button>';
+            html += '</div>';
+            html += '<div class="settings-grid">';
+            html += '<div class="form-group"><label>Размер (px)</label><input type="number" value="' + (t.iconSize || 48) + '" onchange="updateType(' + i + ', \'iconSize\', +this.value)"></div>';
+            html += '<div class="form-group"><label>Прозрачность (0-1)</label><input type="number" step="0.1" min="0" max="1" value="' + (t.iconOpacity !== undefined ? t.iconOpacity : 1) + '" onchange="updateType(' + i + ', \'iconOpacity\', +this.value)"></div>';
+            html += '<div class="form-group"><label>Расположение текста</label><select onchange="updateType(' + i + ', \'textPosition\', this.value)">';
+            html += '<option value="bottom"' + (t.textPosition === 'bottom' ? ' selected' : '') + '>Снизу</option>';
+            html += '<option value="top"' + (t.textPosition === 'top' ? ' selected' : '') + '>Сверху</option>';
+            html += '<option value="overlay"' + (t.textPosition === 'overlay' ? ' selected' : '') + '>Поверх иконки</option>';
+            html += '</select></div></div>';
+            html += '<div class="form-group"><label>Шрифт значений (семейство / начертание / размер / цвет)</label><div class="settings-grid">';
+            html += '<input type="text" value="' + esc(f.family || 'Arial, sans-serif') + '" onchange="updateTypeFont(' + i + ', \'family\', this.value)">';
+            html += '<input type="text" value="' + esc(f.weight || 'bold') + '" onchange="updateTypeFont(' + i + ', \'weight\', this.value)">';
+            html += '<input type="text" value="' + esc(f.size || '12px') + '" onchange="updateTypeFont(' + i + ', \'size\', this.value)">';
+            html += '<input type="color" value="' + esc(f.color || '#ffffff') + '" onchange="updateTypeFont(' + i + ', \'color\', this.value)" style="height:38px;padding:2px;">';
+            html += '</div></div>';
+            html += '<div class="form-group"><label>Цвета состояний</label><div class="color-grid">';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.active || '#0cbaba') + '" onchange="updateTypeColor(' + i + ', \'active\', this.value)"><span>Вкл / Норма</span></div>';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.inactive || '#7f8c8d') + '" onchange="updateTypeColor(' + i + ', \'inactive\', this.value)"><span>Выкл</span></div>';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.warning || '#e74c3c') + '" onchange="updateTypeColor(' + i + ', \'warning\', this.value)"><span>Высокий / Тревога</span></div>';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.safe || '#2ecc71') + '" onchange="updateTypeColor(' + i + ', \'safe\', this.value)"><span>Низкий / Безопасно</span></div>';
+            html += '</div></div></div>';
+            return html;
+        }
 
         function renderElementTypes() {
-            const container = document.getElementById('types-container');
+            var container = document.getElementById('types-container');
             if (!container) return;
-            container.innerHTML = '';
-            
-            if (!config.elementTypes || config.elementTypes.length === 0) {
-                container.innerHTML = '<p>Нет типов элементов. Нажмите кнопку ниже, чтобы добавить первый.</p>';
-                return;
+            var html = '';
+            for (var i = 0; i < config.elementTypes.length; i++) {
+                html += buildTypeHtml(config.elementTypes[i], i);
             }
-
-            config.elementTypes.forEach((type, tIdx) => {
-                const html = `
-                    <div class="type-card">
-                        <div class="type-header">
-                            <input type="text" value="${type.name}" onchange="updateType(${tIdx}, 'name', this.value)" placeholder="Название типа">
-                            <button class="btn btn-danger btn-small" onclick="removeType(${tIdx})">Удалить тип</button>
-                        </div>
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label>Размер (px)</label>
-                                <input type="number" value="${type.iconSize || 48}" onchange="updateType(${tIdx}, 'iconSize', +this.value)">
-                            </div>
-                            <div class="form-group">
-                                <label>Прозрачность (0-1)</label>
-                                <input type="number" step="0.1" min="0" max="1" value="${type.iconOpacity !== undefined ? type.iconOpacity : 1.0}" onchange="updateType(${tIdx}, 'iconOpacity', +this.value)">
-                            </div>
-                            <div class="form-group">
-                                <label>Расположение текста</label>
-                                <select onchange="updateType(${tIdx}, 'textPosition', this.value)">
-                                    <option value="bottom" ${type.textPosition === 'bottom' ? 'selected' : ''}>Снизу</option>
-                                    <option value="top" ${type.textPosition === 'top' ? 'selected' : ''}>Сверху</option>
-                                    <option value="overlay" ${type.textPosition === 'overlay' ? 'selected' : ''}>Поверх иконки</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Шрифт значений</label>
-                            <div class="settings-grid">
-                                <input type="text" value="${type.font?.family || 'Arial'}" onchange="updateTypeFont(${tIdx}, 'family', this.value)" placeholder="Family">
-                                <input type="text" value="${type.font?.weight || 'bold'}" onchange="updateTypeFont(${tIdx}, 'weight', this.value)" placeholder="Weight">
-                                <input type="text" value="${type.font?.size || '12px'}" onchange="updateTypeFont(${tIdx}, 'size', this.value)" placeholder="Size">
-                                <input type="color" value="${type.font?.color || '#ffffff'}" onchange="updateTypeFont(${tIdx}, 'color', this.value)" style="height:38px; padding:2px;">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Цвета состояний</label>
-                            <div class="color-grid">
-                                <div class="color-item">
-                                    <input type="color" value="${type.colors?.active || '#0cbaba'}" onchange="updateTypeColor(${tIdx}, 'active', this.value)">
-                                    <span>Вкл / Норма</span>
-                                </div>
-                                <div class="color-item">
-                                    <input type="color" value="${type.colors?.inactive || '#7f8c8d'}" onchange="updateTypeColor(${tIdx}, 'inactive', this.value)">
-                                    <span>Выкл</span>
-                                </div>
-                                <div class="color-item">
-                                    <input type="color" value="${type.colors?.warning || '#e74c3c'}" onchange="updateTypeColor(${tIdx}, 'warning', this.value)">
-                                    <span>Высокий / Тревога</span>
-                                </div>
-                                <div class="color-item">
-                                    <input type="color" value="${type.colors?.safe || '#2ecc71'}" onchange="updateTypeColor(${tIdx}, 'safe', this.value)">
-                                    <span>Низкий / Безопасно</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', html);
-            });
+            if (html === '') html = '<p>Нет типов элементов. Добавьте первый.</p>';
+            container.innerHTML = html;
         }
 
         function addElementType() {
-            if (!config.elementTypes) config.elementTypes = [];
+            ensureConfig();
             config.elementTypes.push({
                 id: 'type_' + Date.now(),
                 name: 'Новый тип',
@@ -248,246 +227,187 @@
                 colors: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
                 font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' }
             });
-            saveConfigAndRender();
+            saveConfig(renderAll);
         }
 
-        function removeType(tIdx) {
+        function removeType(i) {
             if (confirm('Удалить этот тип?')) {
-                config.elementTypes.splice(tIdx, 1);
-                saveConfigAndRender();
+                config.elementTypes.splice(i, 1);
+                saveConfig(renderAll);
             }
         }
 
-        function updateType(tIdx, field, value) {
-            config.elementTypes[tIdx][field] = value;
-            saveConfigOnly(); // Сохраняем без полной перерисовки для скорости
+        function updateType(i, field, value) {
+            config.elementTypes[i][field] = value;
+            saveConfig();
         }
 
-        function updateTypeFont(tIdx, field, value) {
-            if (!config.elementTypes[tIdx].font) config.elementTypes[tIdx].font = {};
-            config.elementTypes[tIdx].font[field] = value;
-            saveConfigOnly();
+        function updateTypeFont(i, field, value) {
+            if (!config.elementTypes[i].font) config.elementTypes[i].font = {};
+            config.elementTypes[i].font[field] = value;
+            saveConfig();
         }
 
-        function updateTypeColor(tIdx, field, value) {
-            if (!config.elementTypes[tIdx].colors) config.elementTypes[tIdx].colors = {};
-            config.elementTypes[tIdx].colors[field] = value;
-            saveConfigOnly();
+        function updateTypeColor(i, field, value) {
+            if (!config.elementTypes[i].colors) config.elementTypes[i].colors = {};
+            config.elementTypes[i].colors[field] = value;
+            saveConfig();
         }
 
-        // --- ФУНКЦИИ ДЛЯ СТРУКТУРЫ (ЭТАЖИ/СЛОИ/УСТРОЙСТВА) ---
+        // ---------- ЭТАЖИ / СЛОИ / УСТРОЙСТВА ----------
+        function buildDeviceHtml(dev, fIdx, lIdx) {
+            var p = 'updateDevice(' + fIdx + ',' + lIdx + ',\'' + dev.id + '\',';
+            var html = '<div class="device-item">';
+            html += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;">';
+            html += '<strong>' + esc(dev.name || 'Без названия') + '</strong>';
+            html += '<button class="btn btn-danger btn-small" onclick="removeDevice(' + fIdx + ',' + lIdx + ',\'' + dev.id + '\')">Удалить</button>';
+            html += '</div><div class="settings-grid">';
+            html += '<div class="form-group"><label>Название</label><input type="text" value="' + esc(dev.name) + '" onchange="' + p + '\'name\', this.value)"></div>';
+            html += '<div class="form-group"><label>ID состояний (через запятую)</label><input type="text" value="' + esc((dev.stateIds || []).join(', ')) + '" onchange="' + p + '\'stateIds\', splitList(this.value))"></div>';
+            html += '<div class="form-group"><label>Тип иконки</label><select onchange="' + p + '\'iconType\', this.value)">';
+            html += '<option value="emoji"' + (dev.iconType === 'emoji' ? ' selected' : '') + '>Emoji</option>';
+            html += '<option value="mfd"' + (dev.iconType === 'mfd' ? ' selected' : '') + '>MFD (ioBroker)</option>';
+            html += '</select></div>';
+            if (dev.iconType === 'mfd') {
+                html += '<div class="form-group"><label>Имя иконки (без .png)</label><input type="text" value="' + esc(dev.iconName) + '" onchange="' + p + '\'iconName\', this.value)"></div>';
+            } else {
+                html += '<div class="form-group"><label>Emoji ВКЛ</label><input type="text" value="' + esc(dev.iconOn || '💡') + '" onchange="' + p + '\'iconOn\', this.value)"></div>';
+                html += '<div class="form-group"><label>Emoji ВЫКЛ</label><input type="text" value="' + esc(dev.iconOff || '🌑') + '" onchange="' + p + '\'iconOff\', this.value)"></div>';
+            }
+            html += '<div class="form-group"><label>Префиксы (через запятую)</label><input type="text" value="' + esc((dev.prefixes || []).join(', ')) + '" onchange="' + p + '\'prefixes\', splitList(this.value))"></div>';
+            html += '<div class="form-group"><label>Постфиксы (через запятую)</label><input type="text" value="' + esc((dev.postfixes || []).join(', ')) + '" onchange="' + p + '\'postfixes\', splitList(this.value))"></div>';
+            html += '<div class="form-group"><label>X (%)</label><input type="number" value="' + (dev.x || 50) + '" min="0" max="100" onchange="' + p + '\'x\', +this.value)"></div>';
+            html += '<div class="form-group"><label>Y (%)</label><input type="number" value="' + (dev.y || 50) + '" min="0" max="100" onchange="' + p + '\'y\', +this.value)"></div>';
+            html += '</div></div>';
+            return html;
+        }
+
+        function buildLayerHtml(layer, fIdx, lIdx) {
+            var options = '';
+            for (var t = 0; t < config.elementTypes.length; t++) {
+                var et = config.elementTypes[t];
+                options += '<option value="' + esc(et.id) + '"' + (layer.type === et.id ? ' selected' : '') + '>' + esc(et.name) + '</option>';
+            }
+            var html = '<div class="layer-card">';
+            html += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
+            html += '<input type="text" value="' + esc(layer.name) + '" onchange="updateLayer(' + fIdx + ',' + lIdx + ',\'name\', this.value)" style="flex:1;" placeholder="Название слоя">';
+            html += '<select onchange="updateLayer(' + fIdx + ',' + lIdx + ',\'type\', this.value)" style="width:200px;">' + options + '</select>';
+            html += '<button class="btn btn-danger btn-small" onclick="removeLayer(' + fIdx + ',' + lIdx + ')">Удалить слой</button>';
+            html += '</div><div>';
+            for (var d = 0; d < (layer.devices || []).length; d++) {
+                html += buildDeviceHtml(layer.devices[d], fIdx, lIdx);
+            }
+            html += '<button class="btn btn-success btn-small" onclick="addDevice(' + fIdx + ',' + lIdx + ')">+ Добавить устройство</button>';
+            html += '</div></div>';
+            return html;
+        }
+
+        function buildFloorHtml(floor, fIdx) {
+            var html = '<div class="floor-card">';
+            html += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
+            html += '<input type="text" value="' + esc(floor.name) + '" onchange="updateFloor(' + fIdx + ',\'name\', this.value)" style="flex:1;" placeholder="Название этажа">';
+            html += '<button class="btn btn-danger btn-small" onclick="removeFloor(' + fIdx + ')">Удалить этаж</button>';
+            html += '</div>';
+            html += '<div class="form-group"><label>Изображение плана:</label>';
+            html += '<input type="file" accept="image/*" onchange="handleImageUpload(this, ' + fIdx + ')">';
+            if (floor.image) html += '<div style="font-size:12px;color:green;margin-top:5px;">Загружено</div>';
+            html += '</div><div style="margin-top:15px;">';
+            for (var l = 0; l < (floor.layers || []).length; l++) {
+                html += buildLayerHtml(floor.layers[l], fIdx, l);
+            }
+            html += '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Добавить слой</button>';
+            html += '</div></div>';
+            return html;
+        }
 
         function renderStructure() {
-            const container = document.getElementById('floors-container');
+            var container = document.getElementById('floors-container');
             if (!container) return;
-            container.innerHTML = '';
-
-            if (!config.floors || config.floors.length === 0) {
-                container.innerHTML = '<p>Нет этажей. Добавьте первый.</p>';
-                return;
+            var html = '';
+            for (var i = 0; i < config.floors.length; i++) {
+                html += buildFloorHtml(config.floors[i], i);
             }
-
-            config.floors.forEach((floor, fIdx) => {
-                const layersHtml = (floor.layers || []).map((layer, lIdx) => {
-                    const devicesHtml = (layer.devices || []).map(dev => `
-                        <div class="device-item">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                                <strong>${dev.name || 'Без названия'}</strong>
-                                <button class="btn btn-danger btn-small" onclick="removeDevice(${fIdx}, ${lIdx}, '${dev.id}')">Удалить</button>
-                            </div>
-                            <div class="settings-grid">
-                                <div class="form-group"><label>Название</label><input type="text" value="${dev.name}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'name', this.value)"></div>
-                                <div class="form-group"><label>ID состояний (через запятую)</label><input type="text" value="${(dev.stateIds || []).join(', ')}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'stateIds', this.value.split(',').map(s=>s.trim()))"></div>
-                                <div class="form-group"><label>Тип иконки</label>
-                                    <select onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'iconType', this.value)">
-                                        <option value="emoji" ${dev.iconType === 'emoji' ? 'selected' : ''}>Emoji</option>
-                                        <option value="mfd" ${dev.iconType === 'mfd' ? 'selected' : ''}>MFD (ioBroker)</option>
-                                    </select>
-                                </div>
-                                ${dev.iconType === 'mfd' ? 
-                                    `<div class="form-group"><label>Имя иконки (без .png)</label><input type="text" value="${dev.iconName || ''}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'iconName', this.value)"></div>` :
-                                    `<div class="form-group"><label>Emoji ВКЛ</label><input type="text" value="${dev.iconOn || '💡'}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'iconOn', this.value)"></div>
-                                     <div class="form-group"><label>Emoji ВЫКЛ</label><input type="text" value="${dev.iconOff || '🌑'}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'iconOff', this.value)"></div>`
-                                }
-                                <div class="form-group"><label>Префиксы</label><input type="text" value="${(dev.prefixes || []).join(', ')}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'prefixes', this.value.split(',').map(s=>s.trim()))"></div>
-                                <div class="form-group"><label>Постфиксы</label><input type="text" value="${(dev.postfixes || []).join(', ')}" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'postfixes', this.value.split(',').map(s=>s.trim()))"></div>
-                                <div class="form-group"><label>X (%)</label><input type="number" value="${dev.x || 50}" min="0" max="100" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'x', +this.value)"></div>
-                                <div class="form-group"><label>Y (%)</label><input type="number" value="${dev.y || 50}" min="0" max="100" onchange="updateDevice(${fIdx}, ${lIdx}, '${dev.id}', 'y', +this.value)"></div>
-                            </div>
-                        </div>
-                    `).join('');
-
-                    return `
-                        <div class="layer-card">
-                            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                                <input type="text" value="${layer.name}" onchange="updateLayer(${fIdx}, ${lIdx}, 'name', this.value)" style="flex:1;" placeholder="Название слоя">
-                                <select onchange="updateLayer(${fIdx}, ${lIdx}, 'type', this.value)" style="width:200px;">
-                                    ${(config.elementTypes || []).map(t => `<option value="${t.id}" ${layer.type === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
-                                </select>
-                                <button class="btn btn-danger btn-small" onclick="removeLayer(${fIdx}, ${lIdx})">Удалить слой</button>
-                            </div>
-                            <div>
-                                ${devicesHtml}
-                                <button class="btn btn-success btn-small" onclick="addDevice(${fIdx}, ${lIdx})">+ Добавить устройство</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="floor-card">
-                        <div style="display:flex; gap:10px; margin-bottom:10px;">
-                            <input type="text" value="${floor.name}" onchange="updateFloor(${fIdx}, 'name', this.value)" style="flex:1;" placeholder="Название этажа">
-                            <button class="btn btn-danger btn-small" onclick="removeFloor(${fIdx})">Удалить этаж</button>
-                        </div>
-                        <div class="form-group">
-                            <label>Изображение плана:</label>
-                            <input type="file" accept="image/*" onchange="handleImageUpload(this, ${fIdx})">
-                            ${floor.image ? `<div style="font-size:12px; color:green; margin-top:5px;">✓ Загружено</div>` : ''}
-                        </div>
-                        <div style="margin-top:15px;">
-                            ${layersHtml}
-                            <button class="btn btn-primary btn-small" onclick="addLayer(${fIdx})">+ Добавить слой</button>
-                        </div>
-                    </div>
-                `);
-            });
+            if (html === '') html = '<p>Нет этажей. Добавьте первый.</p>';
+            container.innerHTML = html;
         }
 
         function addFloor() {
-            if (!config.floors) config.floors = [];
-            config.floors.push({
-                id: 'floor_' + Date.now(),
-                name: 'Новый этаж',
-                image: '',
-                layers: []
-            });
-            saveConfigAndRender();
+            ensureConfig();
+            config.floors.push({ id: 'floor_' + Date.now(), name: 'Новый этаж', image: '', layers: [] });
+            saveConfig(renderAll);
         }
 
-        function removeFloor(fIdx) {
+        function removeFloor(i) {
             if (confirm('Удалить этаж?')) {
-                config.floors.splice(fIdx, 1);
-                saveConfigAndRender();
+                config.floors.splice(i, 1);
+                saveConfig(renderAll);
             }
         }
 
-        function updateFloor(fIdx, field, value) {
-            config.floors[fIdx][field] = value;
-            saveConfigOnly();
+        function updateFloor(i, field, value) {
+            config.floors[i][field] = value;
+            saveConfig();
         }
 
         function addLayer(fIdx) {
+            ensureConfig();
             if (!config.floors[fIdx].layers) config.floors[fIdx].layers = [];
-            const firstTypeId = config.elementTypes && config.elementTypes.length > 0 ? config.elementTypes[0].id : 'lighting';
-            config.floors[fIdx].layers.push({
-                id: 'layer_' + Date.now(),
-                name: 'Новый слой',
-                type: firstTypeId,
-                devices: []
-            });
-            saveConfigAndRender();
+            var firstType = config.elementTypes.length > 0 ? config.elementTypes[0].id : 'lighting';
+            config.floors[fIdx].layers.push({ id: 'layer_' + Date.now(), name: 'Новый слой', type: firstType, devices: [] });
+            saveConfig(renderAll);
         }
 
         function removeLayer(fIdx, lIdx) {
             if (confirm('Удалить слой?')) {
                 config.floors[fIdx].layers.splice(lIdx, 1);
-                saveConfigAndRender();
+                saveConfig(renderAll);
             }
         }
 
         function updateLayer(fIdx, lIdx, field, value) {
             config.floors[fIdx].layers[lIdx][field] = value;
-            saveConfigOnly();
+            saveConfig();
         }
 
         function addDevice(fIdx, lIdx) {
-            const layer = config.floors[fIdx].layers[lIdx];
+            var layer = config.floors[fIdx].layers[lIdx];
             if (!layer.devices) layer.devices = [];
             layer.devices.push({
-                id: 'dev_' + Date.now(),
-                name: 'Новое устройство',
-                stateIds: [''],
-                iconType: 'emoji',
-                iconOn: '💡',
-                iconOff: '🌑',
-                x: 50,
-                y: 50,
-                prefixes: [''],
-                postfixes: ['']
+                id: 'dev_' + Date.now(), name: 'Новое устройство', stateIds: [''],
+                iconType: 'emoji', iconOn: '💡', iconOff: '🌑', x: 50, y: 50, prefixes: [''], postfixes: ['']
             });
-            saveConfigAndRender();
+            saveConfig(renderAll);
         }
 
         function removeDevice(fIdx, lIdx, devId) {
             if (confirm('Удалить устройство?')) {
-                const layer = config.floors[fIdx].layers[lIdx];
-                layer.devices = layer.devices.filter(d => d.id !== devId);
-                saveConfigAndRender();
+                var layer = config.floors[fIdx].layers[lIdx];
+                layer.devices = layer.devices.filter(function (d) { return d.id !== devId; });
+                saveConfig(renderAll);
             }
         }
 
         function updateDevice(fIdx, lIdx, devId, field, value) {
-            const device = config.floors[fIdx].layers[lIdx].devices.find(d => d.id === devId);
-            if (device) {
-                device[field] = value;
-                saveConfigOnly();
-            }
-        }
-
-        async function handleImageUpload(input, fIdx) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const base64Data = e.target.result;
-                const filename = `floor_${fIdx}_${Date.now()}.png`;
-                
-                try {
-                    const res = await fetch('/api/upload', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ filename, base64Data })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        config.floors[fIdx].image = data.url;
-                        saveConfigAndRender();
-                    } else {
-                        alert('Ошибка загрузки изображения');
-                    }
-                } catch (error) {
-                    alert('Ошибка сети при загрузке');
+            var layer = config.floors[fIdx].layers[lIdx];
+            if (!layer || !layer.devices) return;
+            for (var i = 0; i < layer.devices.length; i++) {
+                if (layer.devices[i].id === devId) {
+                    layer.devices[i][field] = value;
+                    break;
                 }
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // --- СОХРАНЕНИЕ ---
-
-        async function saveConfigAndRender() {
-            await saveConfigToServer();
-            renderAll();
-        }
-
-        async function saveConfigOnly() {
-            await saveConfigToServer();
-            // Не перерисовываем всё дерево, чтобы не терять фокус ввода
-        }
-
-        async function saveConfigToServer() {
-            try {
-                await fetch('/api/config', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify(config) 
-                });
-            } catch (e) {
-                console.error("Save failed", e);
             }
+            saveConfig();
         }
 
-    </script>
-</body>
-</html>
+        function handleImageUpload(input, fIdx) {
+            var file = input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var filename = 'floor_' + fIdx + '_' + Date.now() + '.png';
+                fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: filename, base64Data: e.target.result })
+                }).then(function (res) { return res.json(); }).then(function (data) {
+                    if (data.success) {
