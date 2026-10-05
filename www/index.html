@@ -45,6 +45,7 @@
         var config = null, currentFloorId = null, currentLayerId = null, deviceStates = {}, lastConfigJson = '';
         var urlParams = new URLSearchParams(window.location.search);
         var requestedFloorId = urlParams.get('floor');
+        var CACHE_BUSTER = '?v=' + Date.now();
 
         function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -66,7 +67,7 @@
         function pollConfig() {
             fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
                 var s = JSON.stringify(data);
-                if (s !== lastConfigJson) { lastConfigJson = s; config = data; renderStructure(); }
+                if (s !== lastConfigJson) { lastConfigJson = s; config = data; CACHE_BUSTER = '?v=' + Date.now(); renderStructure(); }
             }).catch(function () { });
         }
         function collectAllStateIds() {
@@ -122,7 +123,7 @@
         function renderPlan(floor) {
             var container = document.getElementById('planContainer');
             if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
-            container.innerHTML = '<img src="' + floor.image + '" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';
+            container.innerHTML = '<img src="' + floor.image + CACHE_BUSTER + '" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';
             renderDevices(floor);
         }
         function renderDevices(floor) {
@@ -146,7 +147,7 @@
                 if (stateVal) marker.style.boxShadow = '0 0 15px ' + (colors.active || '#0cbaba');
                 if (dev.iconType === 'mfd' && dev.iconName) {
                     var base = dev.iconBaseUrl || '/icons-mfd-png/';
-                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png" class="mfd-icon" style="opacity:' + (stateVal ? 1 : 0.4) + ';filter:' + (stateVal ? 'none' : 'grayscale(100%)') + '">';
+                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png' + CACHE_BUSTER + '" class="mfd-icon" style="opacity:' + (stateVal ? 1 : 0.4) + ';filter:' + (stateVal ? 'none' : 'grayscale(100%)') + '">';
                 } else {
                     var emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
                     marker.innerHTML = '<span class="emoji-icon" style="filter:' + (stateVal ? 'none' : 'grayscale(100%) brightness(0.7)') + '">' + emoji + '</span>';

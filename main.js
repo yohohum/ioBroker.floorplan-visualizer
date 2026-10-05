@@ -20,7 +20,7 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.10...');
+        this.log.info('Starting Floor Plan Visualizer v5.11...');
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
             common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
@@ -44,7 +44,6 @@ class FloorplanVisualizer extends utils.Adapter {
 
         this.uploadsDir = this.getUploadsDir();
         this.migrateOldUploads();
-
         this.iconsDir = this.findIconsDirectory();
         await this.detectWebPort();
         this.removeConflictingIconsFolder();
@@ -59,7 +58,6 @@ class FloorplanVisualizer extends utils.Adapter {
         this.startPresentationServer();
     }
 
-    // Удаляем конфликтующую папку icons-mfd-png из www если она там есть
     removeConflictingIconsFolder() {
         const wwwIconsDir = path.join(__dirname, 'www', 'icons-mfd-png');
         try {
@@ -150,7 +148,6 @@ class FloorplanVisualizer extends utils.Adapter {
     buildApp() {
         const app = express();
         
-        // CORS headers для всех запросов
         app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -162,68 +159,72 @@ class FloorplanVisualizer extends utils.Adapter {
             next();
         });
 
-        // === МАРКЕР ВЕРСИИ ===
         app.get('/api/version', (req, res) => {
-            res.json({ version: '5.10' });
+            res.json({ version: '5.11' });
         });
 
-        // === РАЗДАЧА ИКОНОК MFD (ДО express.static чтобы не было конфликтов) ===
+        // === РАЗДАЧА ИКОНОК MFD С NO-CACHE ===
         const serveIcon = (req, res) => {
             let iconName = path.basename(req.params.name);
             if (!/\.(png|svg)$/i.test(iconName)) iconName += '.png';
 
-            this.log.debug('Icon request: ' + iconName);
+            this.log.info('Icon request: ' + iconName + ' from ' + req.ip);
+
+            // NO-CACHE заголовки для обхода кеша
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
 
             if (this.iconsDir) {
                 const filePath = path.join(this.iconsDir, iconName);
                 
                 if (!fs.existsSync(filePath)) {
-                    this.log.warn('Icon file not found: ' + filePath);
-                    res.status(404).send('Icon not found: ' + iconName);
+                    this.log.error('Icon file NOT FOUND: ' + filePath);
+                    res.status(404).json({ error: 'Icon not found', name: iconName, path: filePath });
                     return;
                 }
 
-                const stat = fs.statSync(filePath);
-                const contentType = iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-                
-                res.setHeader('Content-Type', contentType);
-                res.setHeader('Content-Length', stat.size);
-                res.setHeader('Cache-Control', 'public, max-age=86400');
-                res.setHeader('Accept-Ranges', 'bytes');
-                
-                const stream = fs.createReadStream(filePath);
-                stream.pipe(res);
-                stream.on('error', (err) => {
-                    this.log.error('Stream error for ' + iconName + ': ' + err.message);
-                    if (!res.headersSent) res.status(500).send('Stream error');
-                });
+                try {
+                    const stat = fs.statSync(filePath);
+                    const contentType = iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+                    
+                    res.setHeader('Content-Type', contentType);
+                    res.setHeader('Content-Length', stat.size);
+                    
+                    this.log.info('Serving icon: ' + iconName + ' (' + stat.size + ' bytes)');
+                    
+                    const stream = fs.createReadStream(filePath);
+                    stream.pipe(res);
+                    stream.on('error', (err) => {
+                        this.log.error('Stream error for ' + iconName + ': ' + err.message);
+                        if (!res.headersSent) res.status(500).json({ error: 'Stream error', message: err.message });
+                    });
+                } catch (e) {
+                    this.log.error('Error serving icon ' + iconName + ': ' + e.message);
+                    res.status(500).json({ error: 'Server error', message: e.message });
+                }
             } else {
                 const proxyUrl = 'http://' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort + '/icons-mfd-png/' + iconName;
-                this.log.debug('Proxying icon from: ' + proxyUrl);
+                this.log.info('Proxying icon from: ' + proxyUrl);
                 
                 const proxyReq = http.get(proxyUrl, (proxyRes) => {
-                    if (proxyRes.headers['content-type']) {
-                        res.setHeader('Content-Type', proxyRes.headers['content-type']);
-                    } else {
-                        res.setHeader('Content-Type', iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
-                    }
+                    res.setHeader('Content-Type', proxyRes.headers['content-type'] || (iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png'));
                     if (proxyRes.headers['content-length']) {
                         res.setHeader('Content-Length', proxyRes.headers['content-length']);
                     }
-                    res.setHeader('Cache-Control', 'public, max-age=86400');
                     res.status(proxyRes.statusCode);
                     proxyRes.pipe(res);
                 });
                 
                 proxyReq.on('error', (err) => {
                     this.log.error('Proxy error for ' + iconName + ': ' + err.message);
-                    if (!res.headersSent) res.status(500).send('Proxy error');
+                    if (!res.headersSent) res.status(500).json({ error: 'Proxy error', message: err.message });
                 });
                 
                 proxyReq.setTimeout(5000, () => {
                     this.log.error('Proxy timeout for ' + iconName);
                     proxyReq.destroy();
-                    if (!res.headersSent) res.status(504).send('Proxy timeout');
+                    if (!res.headersSent) res.status(504).json({ error: 'Proxy timeout' });
                 });
             }
         };
@@ -231,27 +232,26 @@ class FloorplanVisualizer extends utils.Adapter {
         app.get('/icons-mfd-png/:name', serveIcon);
         app.get('/icons-mfd-svg/:name', serveIcon);
 
-        // === РАЗДАЧА ЗАГРУЗОК (ДО express.static) ===
-        app.use('/uploads', express.static(this.uploadsDir, { maxAge: '1h' }));
+        app.use('/uploads', express.static(this.uploadsDir, { maxAge: 0 }));
         app.get('/uploads/:name', (req, res) => {
             const name = path.basename(req.params.name);
             const filePath = path.join(this.uploadsDir, name);
+            
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            
             if (fs.existsSync(filePath)) {
-                const stat = fs.statSync(filePath);
-                res.setHeader('Content-Length', stat.size);
                 res.sendFile(filePath);
             } else {
                 this.log.warn('Upload not found: ' + filePath);
-                res.status(404).send('Upload not found: ' + name + '. Re-upload the floor plan in the editor.');
+                res.status(404).json({ error: 'Upload not found', name: name });
             }
         });
 
-        // === СТАТИЧЕСКИЕ ФАЙЛЫ (ПОСЛЕ всех API маршрутов) ===
-        app.use(express.static(path.join(__dirname, 'www'), { fallthrough: true }));
-        
+        app.use(express.static(path.join(__dirname, 'www'), { maxAge: 0, fallthrough: true }));
         app.get('/favicon.ico', (req, res) => res.status(204));
 
-        // === API МАРШРУТЫ ===
         app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
             try {
                 const { filename, base64Data } = req.body;
@@ -354,9 +354,8 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // Fallback для всех остальных маршрутов
         app.use((req, res) => {
-            res.status(404).send('Not found: ' + req.url);
+            res.status(404).json({ error: 'Not found', url: req.url });
         });
 
         return app;

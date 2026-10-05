@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор плана этажа v5.8</title>
+    <title>Редактор плана этажа v5.11</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
@@ -106,7 +106,7 @@
     <div class="container">
         <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v5.8</h1>
+            <h1>Редактор плана этажа v5.11</h1>
             <p>Интерактивный редактор с визуальным размещением объектов</p>
         </div>
         <div class="tabs">
@@ -234,14 +234,15 @@
         var allIoBrokerObjects = null, ioBrokerTree = null, expandedPaths = new Set();
         var allMfdIcons = null, mfdSourceInfo = null, mfdBaseUrl = '/icons-mfd-png/';
         var editingDeviceContext = null, objectTreeContext = null;
+        var CACHE_BUSTER = '?v=' + Date.now();
 
         var emojiGroups = {
-            'Освещение': ['💡','🔆','💫','🕯️','🌟','✨','🔅',''],
+            'Освещение': ['💡','🔆','💫','🕯️','🌟','✨','🔅','🌙'],
             'Розетки/Энергия': ['🔌','⚡','🔋','📱','💻','🖥️','📺','🎮'],
-            'Климат': ['🌡️','💧','❄️','🔥','🌬️','☀️','🌤️',''],
-            'Безопасность': ['🔒','','🚪','','🔔','️','⚠️','🚨'],
-            'Мультимедиа': ['🔊','','🎵','','📻','','🎬',''],
-            'Бытовая техника': ['🌀','🧺','','☕','','🛁','','🧹']
+            'Климат': ['🌡️','💧','❄️','🔥','🌬️','☀️','🌤️','⛅'],
+            'Безопасность': ['🔒','🔓','🚪','📹','🔔','🛡️','⚠️','🚨'],
+            'Мультимедиа': ['🔊','🔈','🎵','🎶','📻','📀','🎬','📺'],
+            'Бытовая техника': ['🌀','🧺','🍳','☕','🚿','🛁','🚽','🧹']
         };
 
         function showDebug(msg) { var b = document.getElementById('debugBanner'); if (b) { b.style.display = 'block'; b.textContent = msg; } }
@@ -273,9 +274,8 @@
             if (el) el.classList.add('active');
         }
 
-        // Сообщение, если файл плана не найден на сервере
         function planImageError() {
-            showDebug('Файл изображения плана не найден на сервере (возможно, удалён при обновлении адаптера). Загрузите план этажа заново кнопкой «Загрузить план».');
+            showDebug('Файл изображения плана не найден на сервере. Загрузите план этажа заново кнопкой «Загрузить план».');
         }
 
         // ===== ТИПЫ =====
@@ -388,7 +388,7 @@
             html += '<div class="floor-toolbar"><strong style="margin-right:10px;">Слои:</strong><div class="layer-selector">' + layerChips +
                 '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Слой</button></div></div>';
             if (floor.image) {
-                html += '<div class="plan-editor-area" id="planEditorArea"><img src="' + floor.image + '" id="planEditorImage" onerror="planImageError()"></div>';
+                html += '<div class="plan-editor-area" id="planEditorArea"><img src="' + floor.image + CACHE_BUSTER + '" id="planEditorImage" onerror="planImageError()"></div>';
                 html += '<div style="margin-top:10px;"><button class="btn btn-success" onclick="openAddDeviceModal(' + fIdx + ')">+ Добавить объект на план</button></div>';
             } else {
                 html += '<div class="plan-editor-area"><div class="plan-empty"><div style="font-size:48px;">🖼️</div><div>Загрузите изображение плана этажа</div></div></div>';
@@ -446,7 +446,7 @@
                 marker.style.fontSize = (size * 0.6) + 'px';
                 if (dev.iconType === 'mfd' && dev.iconName) {
                     var base = dev.iconBaseUrl || '/icons-mfd-png/';
-                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png" class="mfd-icon" ' +
+                    marker.innerHTML = '<img src="' + base + esc(dev.iconName) + '.png' + CACHE_BUSTER + '" class="mfd-icon" ' +
                         'onerror="console.error(\'Marker icon failed:\', this.src); this.style.border=\'2px solid red\';">';
                 } else {
                     marker.innerHTML = '<span class="marker-icon">' + esc(dev.iconOn || '💡') + '</span>';
@@ -579,7 +579,7 @@
             var mfdBox = document.getElementById('mfdPreview');
             var mfdLabel = document.getElementById('mfdPreviewName');
             if (mfdName) {
-                var iconUrl = mfdBaseUrl + esc(mfdName) + '.png';
+                var iconUrl = mfdBaseUrl + esc(mfdName) + '.png' + CACHE_BUSTER;
                 mfdBox.innerHTML = '<img src="' + iconUrl + '" style="max-width:40px; max-height:40px;" ' +
                     'onload="console.log(\'Preview loaded:\', this.src)" ' +
                     'onerror="console.error(\'Preview failed:\', this.src); this.style.border=\'2px solid red\';">';
@@ -762,6 +762,7 @@
 
         // ===== MFD =====
         function openMfdPalette() {
+            CACHE_BUSTER = '?v=' + Date.now();
             document.getElementById('mfdModal').classList.add('active');
             document.getElementById('mfdSearch').value = '';
             if (allMfdIcons === null) loadMfdIcons(); else renderMfdPalette(allMfdIcons);
@@ -800,12 +801,12 @@
             var current = document.getElementById('deviceIconName').value;
             filtered.slice(0, 500).forEach(function (name) {
                 var selected = name === current ? ' selected' : '';
-                var iconUrl = mfdBaseUrl + esc(name) + '.png';
+                var iconUrl = mfdBaseUrl + esc(name) + '.png' + CACHE_BUSTER;
                 html += '<div class="icon-option' + selected + '" onclick="selectMfdIcon(\'' + esc(name).replace(/'/g, "\\'") + '\')">' +
                     '<div class="icon-preview" style="background:#f0f0f0; min-height:32px;">' +
                     '<img src="' + iconUrl + '" style="max-width:32px; max-height:32px;" ' +
                     'onload="console.log(\'Loaded:\', this.src)" ' +
-                    'onerror="console.error(\'Failed to load:\', this.src); this.style.border=\'2px solid red\'; this.alt=\'X\';">' +
+                    'onerror="console.error(\'Failed:\', this.src); this.style.border=\'2px solid red\'; this.alt=\'X\';">' +
                     '</div>' +
                     '<div class="icon-name">' + esc(name) + '</div></div>';
             });
