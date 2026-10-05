@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>План умного дома</title>
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a1a; color: #ecf0f1; padding: 20px; }
@@ -31,14 +30,10 @@
         .sensor-values.pos-top { top: -35px; left: 50%; transform: translateX(-50%); }
         .sensor-values.pos-bottom { bottom: -35px; left: 50%; transform: translateX(-50%); }
         .sensor-value-line { display: block; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
-        .status { position: fixed; top: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 10001; }
-        .status.connected { background: #27ae60; color: #fff; }
-        .status.disconnected { background: #e67e22; color: #fff; }
         .loading { display: flex; align-items: center; justify-content: center; min-height: 400px; font-size: 18px; color: #95a5a6; }
     </style>
 </head>
 <body>
-    <div class="status disconnected" id="connStatus">Подключение...</div>
     <div class="wrapper">
         <div class="tabs" id="floorTabs"></div>
         <div class="tabs" id="layerTabs"></div>
@@ -47,178 +42,83 @@
 
     <script>
         'use strict';
-        var config = null, socket = null, socketConnected = false;
-        var currentFloorId = null, currentLayerId = null;
-        var deviceStates = {};
-        var lastConfigJson = '';
-
+        var config = null, currentFloorId = null, currentLayerId = null, deviceStates = {}, lastConfigJson = '';
         var urlParams = new URLSearchParams(window.location.search);
         var requestedFloorId = urlParams.get('floor');
 
         document.addEventListener('DOMContentLoaded', function () {
             loadConfig();
-            try { connectSocket(); } catch (e) { }
             setInterval(pollStates, 2000);
             setInterval(pollConfig, 5000);
         });
 
-        function setStatus(connected) {
-            socketConnected = connected;
-            var el = document.getElementById('connStatus');
-            if (connected) {
-                el.textContent = 'Подключено (live)';
-                el.className = 'status connected';
-            } else {
-                el.textContent = 'HTTP-режим (опрос)';
-                el.className = 'status disconnected';
-            }
-        }
-
-        function connectSocket() {
-            if (typeof io === 'undefined') { setStatus(false); return; }
-            socket = io();
-            socket.on('connect', function () { setStatus(true); subscribe(); });
-            socket.on('disconnect', function () { setStatus(false); });
-            socket.on('connect_error', function () { setStatus(false); });
-            socket.on('stateChange', function (id, state) {
-                if (deviceStates[id] !== state.val) {
-                    deviceStates[id] = state.val;
-                    rerenderDevices();
-                }
-            });
-            socket.on('configChanged', function (newConfig) {
-                lastConfigJson = JSON.stringify(newConfig);
-                config = newConfig;
-                renderStructure();
-            });
-        }
-
         function loadConfig() {
             fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
-                lastConfigJson = JSON.stringify(data);
-                config = data;
-                renderStructure();
-            }).catch(function (e) {
-                document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки конфигурации</div>';
-            });
+                lastConfigJson = JSON.stringify(data); config = data; renderStructure();
+            }).catch(function () { document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки</div>'; });
         }
 
         function pollConfig() {
             fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
                 var s = JSON.stringify(data);
-                if (s !== lastConfigJson) {
-                    lastConfigJson = s;
-                    config = data;
-                    renderStructure();
-                    if (socketConnected) subscribe();
-                }
+                if (s !== lastConfigJson) { lastConfigJson = s; config = data; renderStructure(); }
             }).catch(function () { });
         }
 
         function collectAllStateIds() {
             var ids = [];
             if (!config || !config.floors) return ids;
-            config.floors.forEach(function (f) {
-                (f.layers || []).forEach(function (l) {
-                    (l.devices || []).forEach(function (d) {
-                        (d.stateIds || []).forEach(function (sid) {
-                            if (sid && ids.indexOf(sid) === -1) ids.push(sid);
-                        });
-                    });
-                });
-            });
+            config.floors.forEach(function (f) { (f.layers || []).forEach(function (l) { (l.devices || []).forEach(function (d) { (d.stateIds || []).forEach(function (sid) { if (sid && ids.indexOf(sid) === -1) ids.push(sid); }); }); }); });
             return ids;
         }
 
         function pollStates() {
-            if (socketConnected || !config) return;
+            if (!config) return;
             collectAllStateIds().forEach(function (sid) {
                 fetch('/api/state/' + sid).then(function (r) { return r.json(); }).then(function (data) {
-                    if (data && deviceStates[sid] !== data.val) {
-                        deviceStates[sid] = data.val;
-                        rerenderDevices();
-                    }
+                    if (data && deviceStates[sid] !== data.val) { deviceStates[sid] = data.val; rerenderDevices(); }
                 }).catch(function () { });
-            });
-        }
-
-        function subscribe() {
-            if (!socket || !socketConnected) return;
-            collectAllStateIds().forEach(function (sid) {
-                socket.emit('subscribe', sid);
-                socket.emit('getState', sid, function (err, state) {
-                    if (!err && state && deviceStates[sid] !== state.val) {
-                        deviceStates[sid] = state.val;
-                        rerenderDevices();
-                    }
-                });
             });
         }
 
         function rerenderDevices() {
             if (!config || !config.floors) return;
             var floor = null;
-            for (var i = 0; i < config.floors.length; i++) {
-                if (config.floors[i].id === currentFloorId) { floor = config.floors[i]; break; }
-            }
+            for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) { floor = config.floors[i]; break; }
             if (floor) renderDevices(floor);
         }
 
         function getTypeSettings(typeId) {
-            if (!config || !config.elementTypes || config.elementTypes.length === 0) return null;
-            for (var i = 0; i < config.elementTypes.length; i++) {
-                if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
-            }
+            if (!config || !config.elementTypes) return null;
+            for (var i = 0; i < config.elementTypes.length; i++) if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
             return config.elementTypes[0];
         }
 
         function renderStructure() {
-            if (!config || !config.floors || config.floors.length === 0) {
-                document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен. Откройте редактор.</div>';
-                return;
-            }
-
-            var floorTabs = document.getElementById('floorTabs');
-            floorTabs.innerHTML = '';
+            if (!config || !config.floors || config.floors.length === 0) { document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен.</div>'; return; }
+            var floorTabs = document.getElementById('floorTabs'); floorTabs.innerHTML = '';
             if (!currentFloorId) currentFloorId = requestedFloorId || config.floors[0].id;
 
             config.floors.forEach(function (floor) {
-                var btn = document.createElement('button');
-                btn.className = 'tab floor' + (floor.id === currentFloorId ? ' active' : '');
-                btn.textContent = floor.name;
-                btn.onclick = function () { currentFloorId = floor.id; currentLayerId = null; renderStructure(); };
-                floorTabs.appendChild(btn);
+                var btn = document.createElement('button'); btn.className = 'tab floor' + (floor.id === currentFloorId ? ' active' : ''); btn.textContent = floor.name;
+                btn.onclick = function () { currentFloorId = floor.id; currentLayerId = null; renderStructure(); }; floorTabs.appendChild(btn);
             });
 
             var currentFloor = null;
-            for (var i = 0; i < config.floors.length; i++) {
-                if (config.floors[i].id === currentFloorId) { currentFloor = config.floors[i]; break; }
-            }
+            for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) { currentFloor = config.floors[i]; break; }
 
-            var layerTabs = document.getElementById('layerTabs');
-            layerTabs.innerHTML = '';
-
+            var layerTabs = document.getElementById('layerTabs'); layerTabs.innerHTML = '';
             if (currentFloor && currentFloor.layers && currentFloor.layers.length > 0) {
                 var layerExists = false;
-                for (var l = 0; l < currentFloor.layers.length; l++) {
-                    if (currentFloor.layers[l].id === currentLayerId) layerExists = true;
-                }
+                for (var l = 0; l < currentFloor.layers.length; l++) if (currentFloor.layers[l].id === currentLayerId) layerExists = true;
                 if (!currentLayerId || !layerExists) currentLayerId = currentFloor.layers[0].id;
 
                 currentFloor.layers.forEach(function (layer) {
-                    var btn = document.createElement('button');
-                    var isActive = layer.id === currentLayerId;
-                    btn.className = 'layer-btn' + (isActive ? ' active' : '');
-                    btn.textContent = layer.name;
-
-                    var ts = getTypeSettings(layer.type);
-                    var colors = (ts && ts.colors) ? ts.colors : {};
+                    var btn = document.createElement('button'); var isActive = layer.id === currentLayerId; btn.className = 'layer-btn' + (isActive ? ' active' : ''); btn.textContent = layer.name;
+                    var ts = getTypeSettings(layer.type); var colors = (ts && ts.colors) ? ts.colors : {};
                     var color = isActive ? (colors.active || '#0cbaba') : (colors.inactive || '#34495e');
-                    btn.style.backgroundColor = color;
-                    btn.style.borderColor = color;
-
-                    btn.onclick = function () { currentLayerId = layer.id; renderStructure(); };
-                    layerTabs.appendChild(btn);
+                    btn.style.backgroundColor = color; btn.style.borderColor = color;
+                    btn.onclick = function () { currentLayerId = layer.id; renderStructure(); }; layerTabs.appendChild(btn);
                 });
             }
             renderPlan(currentFloor);
@@ -226,43 +126,27 @@
 
         function renderPlan(floor) {
             var container = document.getElementById('planContainer');
-            if (!floor || !floor.image) {
-                container.innerHTML = '<div class="loading">Изображение плана не загружено</div>';
-                return;
-            }
+            if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
             container.innerHTML = '<img src="' + floor.image + '" class="plan-image"><div id="devicesLayer"></div>';
             renderDevices(floor);
         }
 
         function renderDevices(floor) {
-            var layer = document.getElementById('devicesLayer');
-            if (!layer) return;
-            layer.innerHTML = '';
-
+            var layer = document.getElementById('devicesLayer'); if (!layer) return; layer.innerHTML = '';
             var currentLayerObj = null;
-            for (var i = 0; i < (floor.layers || []).length; i++) {
-                if (floor.layers[i].id === currentLayerId) { currentLayerObj = floor.layers[i]; break; }
-            }
+            for (var i = 0; i < (floor.layers || []).length; i++) if (floor.layers[i].id === currentLayerId) { currentLayerObj = floor.layers[i]; break; }
             if (!currentLayerObj) return;
 
-            var ts = getTypeSettings(currentLayerObj.type);
-            if (!ts) return;
-
-            var size = ts.iconSize || 48;
-            var opacity = (ts.iconOpacity !== undefined) ? ts.iconOpacity : 1.0;
-            var font = ts.font || { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' };
-            var pos = ts.textPosition || 'bottom';
-            var colors = ts.colors || {};
+            var ts = getTypeSettings(currentLayerObj.type); if (!ts) return;
+            var size = ts.iconSize || 48, opacity = (ts.iconOpacity !== undefined) ? ts.iconOpacity : 1.0;
+            var font = ts.font || { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' };
+            var pos = ts.textPosition || 'bottom', colors = ts.colors || {};
 
             (currentLayerObj.devices || []).forEach(function (dev) {
-                var marker = document.createElement('div');
-                marker.className = 'marker';
-                marker.style.left = dev.x + '%';
-                marker.style.top = dev.y + '%';
-                marker.style.width = size + 'px';
-                marker.style.height = size + 'px';
-                marker.style.fontSize = (size * 0.6) + 'px';
-                marker.style.opacity = opacity;
+                var marker = document.createElement('div'); marker.className = 'marker';
+                marker.style.left = dev.x + '%'; marker.style.top = dev.y + '%';
+                marker.style.width = size + 'px'; marker.style.height = size + 'px';
+                marker.style.fontSize = (size * 0.6) + 'px'; marker.style.opacity = opacity;
 
                 var stateVal = null;
                 if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
@@ -279,60 +163,31 @@
                 }
 
                 if (dev.stateIds && dev.stateIds.length > 0) {
-                    var valuesDiv = document.createElement('div');
-                    valuesDiv.className = 'sensor-values pos-' + pos;
-                    valuesDiv.style.fontFamily = font.family;
-                    valuesDiv.style.fontWeight = font.weight;
-                    valuesDiv.style.fontSize = font.size;
-                    valuesDiv.style.color = font.color;
-
+                    var valuesDiv = document.createElement('div'); valuesDiv.className = 'sensor-values pos-' + pos;
+                    valuesDiv.style.fontFamily = font.family; valuesDiv.style.fontWeight = font.weight; valuesDiv.style.fontSize = font.size; valuesDiv.style.color = font.color;
                     dev.stateIds.forEach(function (sid, idx) {
-                        var val = deviceStates[sid];
-                        var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : '';
-                        var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : '';
-                        var displayVal = (val !== undefined && val !== null) ? val : 'N/A';
-                        var line = document.createElement('span');
-                        line.className = 'sensor-value-line';
-                        line.textContent = prefix + displayVal + postfix;
-                        valuesDiv.appendChild(line);
+                        var val = deviceStates[sid]; var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : ''; var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : '';
+                        var line = document.createElement('span'); line.className = 'sensor-value-line'; line.textContent = prefix + ((val !== undefined && val !== null) ? val : 'N/A') + postfix; valuesDiv.appendChild(line);
                     });
                     marker.appendChild(valuesDiv);
                 }
 
-                var label = document.createElement('span');
-                label.className = 'label pos-' + pos;
-                label.textContent = dev.name || '';
-                marker.appendChild(label);
-
-                marker.onclick = function () { toggleDevice(dev, currentLayerObj.type); };
-                layer.appendChild(marker);
+                var label = document.createElement('span'); label.className = 'label pos-' + pos; label.textContent = dev.name || ''; marker.appendChild(label);
+                marker.onclick = function () { toggleDevice(dev, currentLayerObj.type); }; layer.appendChild(marker);
             });
         }
 
         function toggleDevice(dev, layerType) {
             if (!dev.stateIds || dev.stateIds.length === 0 || !dev.stateIds[0]) return;
-
             if (layerType === 'sensor') {
                 var msg = (dev.name || '') + ':\n';
-                dev.stateIds.forEach(function (sid, idx) {
-                    var val = deviceStates[sid];
-                    var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : '';
-                    var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : '';
-                    msg += prefix + ((val !== undefined) ? val : 'N/A') + postfix + '\n';
-                });
-                alert(msg);
-                return;
+                dev.stateIds.forEach(function (sid, idx) { var val = deviceStates[sid]; var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : ''; var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : ''; msg += prefix + ((val !== undefined) ? val : 'N/A') + postfix + '\n'; });
+                alert(msg); return;
             }
-
             var currentState = !!deviceStates[dev.stateIds[0]];
-            fetch('/api/state/' + dev.stateIds[0], {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ val: !currentState })
-            }).then(function () {
-                deviceStates[dev.stateIds[0]] = !currentState;
-                rerenderDevices();
-            }).catch(function () { alert('Ошибка управления'); });
+            fetch('/api/state/' + dev.stateIds[0], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ val: !currentState }) })
+            .then(function () { deviceStates[dev.stateIds[0]] = !currentState; rerenderDevices(); })
+            .catch(function () { alert('Ошибка управления'); });
         }
     </script>
 </body>

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Редактор плана этажа</title>
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
@@ -36,17 +35,13 @@
         .btn-success { background: #27ae60; color: white; }
         .btn-danger { background: #e74c3c; color: white; }
         .btn-small { padding: 5px 10px; font-size: 12px; }
-        .status { position: fixed; top: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; font-weight: 600; z-index: 10001; }
-        .status.connected { background: #27ae60; color: white; }
-        .status.disconnected { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
-    <div class="status disconnected" id="connStatus">Отключено</div>
     <div class="container">
         <div id="debugBanner"></div>
         <div class="header">
-            <h1>Редактор плана этажа v4.3</h1>
+            <h1>Редактор плана этажа v4.4</h1>
             <p>Настройка типов элементов, этажей, слоев и устройств</p>
         </div>
 
@@ -76,30 +71,17 @@
 
     <script>
         'use strict';
-
         var config = null;
-        var socket = null;
 
         function showDebug(msg) {
             var banner = document.getElementById('debugBanner');
-            if (banner) {
-                banner.style.display = 'block';
-                banner.textContent = msg;
-            }
+            if (banner) { banner.style.display = 'block'; banner.textContent = msg; }
         }
 
-        window.addEventListener('error', function (e) {
-            showDebug('JS ошибка: ' + e.message + ' (строка ' + e.lineno + ')');
-        });
+        window.addEventListener('error', function (e) { showDebug('JS ошибка: ' + e.message); });
 
-        function esc(s) {
-            if (s === undefined || s === null) return '';
-            return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-        }
-
-        function splitList(v) {
-            return String(v).split(',').map(function (s) { return s.trim(); });
-        }
+        function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+        function splitList(v) { return String(v).split(',').map(function (s) { return s.trim(); }); }
 
         function ensureConfig() {
             if (!config || typeof config !== 'object') config = {};
@@ -107,333 +89,142 @@
             if (!Array.isArray(config.floors)) config.floors = [];
         }
 
-        function setStatus(connected) {
-            var el = document.getElementById('connStatus');
-            el.textContent = connected ? 'Подключено' : 'Отключено';
-            el.className = 'status ' + (connected ? 'connected' : 'disconnected');
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            loadConfig();
-            try { connectSocket(); } catch (e) { showDebug('Socket: ' + e.message); }
-        });
-
-        function connectSocket() {
-            if (typeof io === 'undefined') { showDebug('socket.io не загрузился'); return; }
-            socket = io();
-            socket.on('connect', function () { setStatus(true); });
-            socket.on('disconnect', function () { setStatus(false); });
-            socket.on('configChanged', function (newConfig) {
-                config = newConfig;
-                ensureConfig();
-                renderAll();
-            });
-        }
+        document.addEventListener('DOMContentLoaded', loadConfig);
 
         function loadConfig() {
             fetch('/api/config').then(function (res) { return res.json(); }).then(function (data) {
-                config = data;
-                ensureConfig();
-                renderAll();
-            }).catch(function (e) {
-                ensureConfig();
-                renderAll();
-                showDebug('Ошибка загрузки конфигурации: ' + e.message);
-            });
+                config = data; ensureConfig(); renderAll();
+            }).catch(function (e) { ensureConfig(); renderAll(); showDebug('Ошибка загрузки: ' + e.message); });
         }
 
         function saveConfig(callback) {
-            fetch('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config)
-            }).then(function () {
-                if (callback) callback();
-            }).catch(function (e) {
-                showDebug('Ошибка сохранения: ' + e.message);
-            });
+            fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) })
+            .then(function () { if (callback) callback(); })
+            .catch(function (e) { showDebug('Ошибка сохранения: ' + e.message); });
         }
 
-        function renderAll() {
-            renderElementTypes();
-            renderStructure();
-        }
+        function renderAll() { renderElementTypes(); renderStructure(); }
 
         function showTab(tabName, el) {
-            var contents = document.querySelectorAll('.tab-content');
-            for (var i = 0; i < contents.length; i++) contents[i].style.display = 'none';
-            var tabs = document.querySelectorAll('.tabs .tab');
-            for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.style.display = 'none'; });
+            document.querySelectorAll('.tabs .tab').forEach(function(t) { t.classList.remove('active'); });
             var target = document.getElementById('tab-' + tabName);
             if (target) target.style.display = 'block';
             if (el) el.classList.add('active');
         }
 
         function buildTypeHtml(t, i) {
-            var c = t.colors || {};
-            var f = t.font || {};
-            var html = '<div class="type-card">';
-            html += '<div class="type-header">';
-            html += '<input type="text" value="' + esc(t.name) + '" onchange="updateType(' + i + ', \'name\', this.value)" placeholder="Название типа">';
-            html += '<button class="btn btn-danger btn-small" onclick="removeType(' + i + ')">Удалить тип</button>';
-            html += '</div>';
+            var c = t.colors || {}, f = t.font || {};
+            var html = '<div class="type-card"><div class="type-header">';
+            html += '<input type="text" value="' + esc(t.name) + '" onchange="updateType(' + i + ', \'name\', this.value)">';
+            html += '<button class="btn btn-danger btn-small" onclick="removeType(' + i + ')">Удалить</button></div>';
             html += '<div class="settings-grid">';
             html += '<div class="form-group"><label>Размер (px)</label><input type="number" value="' + (t.iconSize || 48) + '" onchange="updateType(' + i + ', \'iconSize\', +this.value)"></div>';
-            html += '<div class="form-group"><label>Прозрачность (0-1)</label><input type="number" step="0.1" min="0" max="1" value="' + (t.iconOpacity !== undefined ? t.iconOpacity : 1) + '" onchange="updateType(' + i + ', \'iconOpacity\', +this.value)"></div>';
-            html += '<div class="form-group"><label>Расположение текста</label><select onchange="updateType(' + i + ', \'textPosition\', this.value)">';
+            html += '<div class="form-group"><label>Прозрачность</label><input type="number" step="0.1" min="0" max="1" value="' + (t.iconOpacity !== undefined ? t.iconOpacity : 1) + '" onchange="updateType(' + i + ', \'iconOpacity\', +this.value)"></div>';
+            html += '<div class="form-group"><label>Текст</label><select onchange="updateType(' + i + ', \'textPosition\', this.value)">';
             html += '<option value="bottom"' + (t.textPosition === 'bottom' ? ' selected' : '') + '>Снизу</option>';
             html += '<option value="top"' + (t.textPosition === 'top' ? ' selected' : '') + '>Сверху</option>';
-            html += '<option value="overlay"' + (t.textPosition === 'overlay' ? ' selected' : '') + '>Поверх иконки</option>';
-            html += '</select></div></div>';
-            html += '<div class="form-group"><label>Шрифт значений (семейство / начертание / размер / цвет)</label><div class="settings-grid">';
-            html += '<input type="text" value="' + esc(f.family || 'Arial, sans-serif') + '" onchange="updateTypeFont(' + i + ', \'family\', this.value)">';
+            html += '<option value="overlay"' + (t.textPosition === 'overlay' ? ' selected' : '') + '>Поверх</option></select></div></div>';
+            html += '<div class="form-group"><label>Шрифт</label><div class="settings-grid">';
+            html += '<input type="text" value="' + esc(f.family || 'Arial') + '" onchange="updateTypeFont(' + i + ', \'family\', this.value)">';
             html += '<input type="text" value="' + esc(f.weight || 'bold') + '" onchange="updateTypeFont(' + i + ', \'weight\', this.value)">';
             html += '<input type="text" value="' + esc(f.size || '12px') + '" onchange="updateTypeFont(' + i + ', \'size\', this.value)">';
-            html += '<input type="color" value="' + esc(f.color || '#ffffff') + '" onchange="updateTypeFont(' + i + ', \'color\', this.value)" style="height:38px;padding:2px;">';
-            html += '</div></div>';
-            html += '<div class="form-group"><label>Цвета состояний</label><div class="color-grid">';
-            html += '<div class="color-item"><input type="color" value="' + esc(c.active || '#0cbaba') + '" onchange="updateTypeColor(' + i + ', \'active\', this.value)"><span>Вкл / Норма</span></div>';
+            html += '<input type="color" value="' + esc(f.color || '#ffffff') + '" onchange="updateTypeFont(' + i + ', \'color\', this.value)" style="height:38px;padding:2px;"></div></div>';
+            html += '<div class="form-group"><label>Цвета</label><div class="color-grid">';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.active || '#0cbaba') + '" onchange="updateTypeColor(' + i + ', \'active\', this.value)"><span>Вкл</span></div>';
             html += '<div class="color-item"><input type="color" value="' + esc(c.inactive || '#7f8c8d') + '" onchange="updateTypeColor(' + i + ', \'inactive\', this.value)"><span>Выкл</span></div>';
-            html += '<div class="color-item"><input type="color" value="' + esc(c.warning || '#e74c3c') + '" onchange="updateTypeColor(' + i + ', \'warning\', this.value)"><span>Высокий / Тревога</span></div>';
-            html += '<div class="color-item"><input type="color" value="' + esc(c.safe || '#2ecc71') + '" onchange="updateTypeColor(' + i + ', \'safe\', this.value)"><span>Низкий / Безопасно</span></div>';
-            html += '</div></div></div>';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.warning || '#e74c3c') + '" onchange="updateTypeColor(' + i + ', \'warning\', this.value)"><span>Тревога</span></div>';
+            html += '<div class="color-item"><input type="color" value="' + esc(c.safe || '#2ecc71') + '" onchange="updateTypeColor(' + i + ', \'safe\', this.value)"><span>Норма</span></div></div></div></div>';
             return html;
         }
 
         function renderElementTypes() {
-            var container = document.getElementById('types-container');
-            if (!container) return;
+            var c = document.getElementById('types-container'); if (!c) return;
             var html = '';
-            for (var i = 0; i < config.elementTypes.length; i++) {
-                html += buildTypeHtml(config.elementTypes[i], i);
-            }
-            if (html === '') html = '<p>Нет типов элементов. Добавьте первый.</p>';
-            container.innerHTML = html;
+            for (var i = 0; i < config.elementTypes.length; i++) html += buildTypeHtml(config.elementTypes[i], i);
+            c.innerHTML = html || '<p>Нет типов. Добавьте первый.</p>';
         }
 
         function addElementType() {
             ensureConfig();
-            config.elementTypes.push({
-                id: 'type_' + Date.now(),
-                name: 'Новый тип',
-                iconSize: 48,
-                iconOpacity: 1.0,
-                textPosition: 'bottom',
-                colors: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' }
-            });
+            config.elementTypes.push({ id: 'type_' + Date.now(), name: 'Новый тип', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom', colors: { active: '#0cbaba', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' }, font: { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' } });
             saveConfig(renderAll);
         }
-
-        function removeType(i) {
-            if (confirm('Удалить этот тип?')) {
-                config.elementTypes.splice(i, 1);
-                saveConfig(renderAll);
-            }
-        }
-
-        function updateType(i, field, value) {
-            config.elementTypes[i][field] = value;
-            saveConfig();
-        }
-
-        function updateTypeFont(i, field, value) {
-            if (!config.elementTypes[i].font) config.elementTypes[i].font = {};
-            config.elementTypes[i].font[field] = value;
-            saveConfig();
-        }
-
-        function updateTypeColor(i, field, value) {
-            if (!config.elementTypes[i].colors) config.elementTypes[i].colors = {};
-            config.elementTypes[i].colors[field] = value;
-            saveConfig();
-        }
+        function removeType(i) { if (confirm('Удалить тип?')) { config.elementTypes.splice(i, 1); saveConfig(renderAll); } }
+        function updateType(i, f, v) { config.elementTypes[i][f] = v; saveConfig(); }
+        function updateTypeFont(i, f, v) { if (!config.elementTypes[i].font) config.elementTypes[i].font = {}; config.elementTypes[i].font[f] = v; saveConfig(); }
+        function updateTypeColor(i, f, v) { if (!config.elementTypes[i].colors) config.elementTypes[i].colors = {}; config.elementTypes[i].colors[f] = v; saveConfig(); }
 
         function buildDeviceHtml(dev, fIdx, lIdx) {
             var p = 'updateDevice(' + fIdx + ',' + lIdx + ',\'' + dev.id + '\',';
-            var html = '<div class="device-item">';
-            html += '<div style="display:flex;justify-content:space-between;margin-bottom:5px;">';
+            var html = '<div class="device-item"><div style="display:flex;justify-content:space-between;margin-bottom:5px;">';
             html += '<strong>' + esc(dev.name || 'Без названия') + '</strong>';
-            html += '<button class="btn btn-danger btn-small" onclick="removeDevice(' + fIdx + ',' + lIdx + ',\'' + dev.id + '\')">Удалить</button>';
-            html += '</div><div class="settings-grid">';
+            html += '<button class="btn btn-danger btn-small" onclick="removeDevice(' + fIdx + ',' + lIdx + ',\'' + dev.id + '\')">Удалить</button></div><div class="settings-grid">';
             html += '<div class="form-group"><label>Название</label><input type="text" value="' + esc(dev.name) + '" onchange="' + p + '\'name\', this.value)"></div>';
-            html += '<div class="form-group"><label>ID состояний (через запятую)</label><input type="text" value="' + esc((dev.stateIds || []).join(', ')) + '" onchange="' + p + '\'stateIds\', splitList(this.value))"></div>';
-            html += '<div class="form-group"><label>Тип иконки</label><select onchange="' + p + '\'iconType\', this.value)">';
-            html += '<option value="emoji"' + (dev.iconType === 'emoji' ? ' selected' : '') + '>Emoji</option>';
-            html += '<option value="mfd"' + (dev.iconType === 'mfd' ? ' selected' : '') + '>MFD (ioBroker)</option>';
-            html += '</select></div>';
-            if (dev.iconType === 'mfd') {
-                html += '<div class="form-group"><label>Имя иконки (без .png)</label><input type="text" value="' + esc(dev.iconName) + '" onchange="' + p + '\'iconName\', this.value)"></div>';
-            } else {
-                html += '<div class="form-group"><label>Emoji ВКЛ</label><input type="text" value="' + esc(dev.iconOn || '💡') + '" onchange="' + p + '\'iconOn\', this.value)"></div>';
-                html += '<div class="form-group"><label>Emoji ВЫКЛ</label><input type="text" value="' + esc(dev.iconOff || '🌑') + '" onchange="' + p + '\'iconOff\', this.value)"></div>';
-            }
-            html += '<div class="form-group"><label>Префиксы (через запятую)</label><input type="text" value="' + esc((dev.prefixes || []).join(', ')) + '" onchange="' + p + '\'prefixes\', splitList(this.value))"></div>';
-            html += '<div class="form-group"><label>Постфиксы (через запятую)</label><input type="text" value="' + esc((dev.postfixes || []).join(', ')) + '" onchange="' + p + '\'postfixes\', splitList(this.value))"></div>';
+            html += '<div class="form-group"><label>ID состояний</label><input type="text" value="' + esc((dev.stateIds || []).join(', ')) + '" onchange="' + p + '\'stateIds\', splitList(this.value))"></div>';
+            html += '<div class="form-group"><label>Тип иконки</label><select onchange="' + p + '\'iconType\', this.value)"><option value="emoji"' + (dev.iconType === 'emoji' ? ' selected' : '') + '>Emoji</option><option value="mfd"' + (dev.iconType === 'mfd' ? ' selected' : '') + '>MFD</option></select></div>';
+            if (dev.iconType === 'mfd') html += '<div class="form-group"><label>Имя MFD</label><input type="text" value="' + esc(dev.iconName) + '" onchange="' + p + '\'iconName\', this.value)"></div>';
+            else { html += '<div class="form-group"><label>Emoji ВКЛ</label><input type="text" value="' + esc(dev.iconOn || '💡') + '" onchange="' + p + '\'iconOn\', this.value)"></div>'; html += '<div class="form-group"><label>Emoji ВЫКЛ</label><input type="text" value="' + esc(dev.iconOff || '🌑') + '" onchange="' + p + '\'iconOff\', this.value)"></div>'; }
+            html += '<div class="form-group"><label>Префиксы</label><input type="text" value="' + esc((dev.prefixes || []).join(', ')) + '" onchange="' + p + '\'prefixes\', splitList(this.value))"></div>';
+            html += '<div class="form-group"><label>Постфиксы</label><input type="text" value="' + esc((dev.postfixes || []).join(', ')) + '" onchange="' + p + '\'postfixes\', splitList(this.value))"></div>';
             html += '<div class="form-group"><label>X (%)</label><input type="number" value="' + (dev.x || 50) + '" min="0" max="100" onchange="' + p + '\'x\', +this.value)"></div>';
-            html += '<div class="form-group"><label>Y (%)</label><input type="number" value="' + (dev.y || 50) + '" min="0" max="100" onchange="' + p + '\'y\', +this.value)"></div>';
-            html += '</div></div>';
+            html += '<div class="form-group"><label>Y (%)</label><input type="number" value="' + (dev.y || 50) + '" min="0" max="100" onchange="' + p + '\'y\', +this.value)"></div></div></div>';
             return html;
         }
 
         function buildLayerHtml(layer, fIdx, lIdx) {
-            var options = '';
-            for (var t = 0; t < config.elementTypes.length; t++) {
-                var et = config.elementTypes[t];
-                options += '<option value="' + esc(et.id) + '"' + (layer.type === et.id ? ' selected' : '') + '>' + esc(et.name) + '</option>';
-            }
-            var html = '<div class="layer-card">';
-            html += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
-            html += '<input type="text" value="' + esc(layer.name) + '" onchange="updateLayer(' + fIdx + ',' + lIdx + ',\'name\', this.value)" style="flex:1;" placeholder="Название слоя">';
-            html += '<select onchange="updateLayer(' + fIdx + ',' + lIdx + ',\'type\', this.value)" style="width:200px;">' + options + '</select>';
-            html += '<button class="btn btn-danger btn-small" onclick="removeLayer(' + fIdx + ',' + lIdx + ')">Удалить слой</button>';
-            html += '</div><div>';
-            for (var d = 0; d < (layer.devices || []).length; d++) {
-                html += buildDeviceHtml(layer.devices[d], fIdx, lIdx);
-            }
-            html += '<button class="btn btn-success btn-small" onclick="addDevice(' + fIdx + ',' + lIdx + ')">+ Добавить устройство</button>';
-            html += '</div></div>';
+            var opts = '';
+            for (var t = 0; t < config.elementTypes.length; t++) opts += '<option value="' + esc(config.elementTypes[t].id) + '"' + (layer.type === config.elementTypes[t].id ? ' selected' : '') + '>' + esc(config.elementTypes[t].name) + '</option>';
+            var html = '<div class="layer-card"><div style="display:flex;gap:10px;margin-bottom:10px;">';
+            html += '<input type="text" value="' + esc(layer.name) + '" onchange="updateLayer(' + fIdx + ',' + lIdx + ',\'name\', this.value)" style="flex:1;">';
+            html += '<select onchange="updateLayer(' + fIdx + ',' + lIdx + ',\'type\', this.value)" style="width:200px;">' + opts + '</select>';
+            html += '<button class="btn btn-danger btn-small" onclick="removeLayer(' + fIdx + ',' + lIdx + ')">Удалить</button></div><div>';
+            for (var d = 0; d < (layer.devices || []).length; d++) html += buildDeviceHtml(layer.devices[d], fIdx, lIdx);
+            html += '<button class="btn btn-success btn-small" onclick="addDevice(' + fIdx + ',' + lIdx + ')">+ Устройство</button></div></div>';
             return html;
         }
 
         function buildFloorHtml(floor, fIdx) {
-            var html = '<div class="floor-card">';
-            html += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
-            html += '<input type="text" value="' + esc(floor.name) + '" onchange="updateFloor(' + fIdx + ',\'name\', this.value)" style="flex:1;" placeholder="Название этажа">';
-            html += '<button class="btn btn-danger btn-small" onclick="removeFloor(' + fIdx + ')">Удалить этаж</button>';
-            html += '</div>';
-            html += '<div class="form-group"><label>Изображение плана:</label>';
-            html += '<input type="file" accept="image/*" onchange="handleImageUpload(this, ' + fIdx + ')">';
+            var html = '<div class="floor-card"><div style="display:flex;gap:10px;margin-bottom:10px;">';
+            html += '<input type="text" value="' + esc(floor.name) + '" onchange="updateFloor(' + fIdx + ',\'name\', this.value)" style="flex:1;">';
+            html += '<button class="btn btn-danger btn-small" onclick="removeFloor(' + fIdx + ')">Удалить</button></div>';
+            html += '<div class="form-group"><label>Изображение:</label><input type="file" accept="image/*" onchange="handleImageUpload(this, ' + fIdx + ')">';
             if (floor.image) html += '<div style="font-size:12px;color:green;margin-top:5px;">Загружено</div>';
             html += '</div><div style="margin-top:15px;">';
-            for (var l = 0; l < (floor.layers || []).length; l++) {
-                html += buildLayerHtml(floor.layers[l], fIdx, l);
-            }
-            html += '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Добавить слой</button>';
-            html += '</div></div>';
+            for (var l = 0; l < (floor.layers || []).length; l++) html += buildLayerHtml(floor.layers[l], fIdx, l);
+            html += '<button class="btn btn-primary btn-small" onclick="addLayer(' + fIdx + ')">+ Слой</button></div></div>';
             return html;
         }
 
         function renderStructure() {
-            var container = document.getElementById('floors-container');
-            if (!container) return;
+            var c = document.getElementById('floors-container'); if (!c) return;
             var html = '';
-            for (var i = 0; i < config.floors.length; i++) {
-                html += buildFloorHtml(config.floors[i], i);
-            }
-            if (html === '') html = '<p>Нет этажей. Добавьте первый.</p>';
-            container.innerHTML = html;
+            for (var i = 0; i < config.floors.length; i++) html += buildFloorHtml(config.floors[i], i);
+            c.innerHTML = html || '<p>Нет этажей.</p>';
         }
 
-        function addFloor() {
-            ensureConfig();
-            config.floors.push({ id: 'floor_' + Date.now(), name: 'Новый этаж', image: '', layers: [] });
-            saveConfig(renderAll);
-        }
-
-        function removeFloor(i) {
-            if (confirm('Удалить этаж?')) {
-                config.floors.splice(i, 1);
-                saveConfig(renderAll);
-            }
-        }
-
-        function updateFloor(i, field, value) {
-            config.floors[i][field] = value;
-            saveConfig();
-        }
-
-        function addLayer(fIdx) {
-            ensureConfig();
-            if (!config.floors[fIdx].layers) config.floors[fIdx].layers = [];
-            var firstType = config.elementTypes.length > 0 ? config.elementTypes[0].id : 'lighting';
-            config.floors[fIdx].layers.push({ id: 'layer_' + Date.now(), name: 'Новый слой', type: firstType, devices: [] });
-            saveConfig(renderAll);
-        }
-
-        function removeLayer(fIdx, lIdx) {
-            if (confirm('Удалить слой?')) {
-                config.floors[fIdx].layers.splice(lIdx, 1);
-                saveConfig(renderAll);
-            }
-        }
-
-        function updateLayer(fIdx, lIdx, field, value) {
-            config.floors[fIdx].layers[lIdx][field] = value;
-            saveConfig();
-        }
-
-        function addDevice(fIdx, lIdx) {
-            var layer = config.floors[fIdx].layers[lIdx];
-            if (!layer.devices) layer.devices = [];
-            layer.devices.push({
-                id: 'dev_' + Date.now(), name: 'Новое устройство', stateIds: [''],
-                iconType: 'emoji', iconOn: '💡', iconOff: '🌑', x: 50, y: 50, prefixes: [''], postfixes: ['']
-            });
-            saveConfig(renderAll);
-        }
-
-        function removeDevice(fIdx, lIdx, devId) {
-            if (confirm('Удалить устройство?')) {
-                var layer = config.floors[fIdx].layers[lIdx];
-                layer.devices = layer.devices.filter(function (d) { return d.id !== devId; });
-                saveConfig(renderAll);
-            }
-        }
-
-        function updateDevice(fIdx, lIdx, devId, field, value) {
-            var layer = config.floors[fIdx].layers[lIdx];
-            if (!layer || !layer.devices) return;
-            for (var i = 0; i < layer.devices.length; i++) {
-                if (layer.devices[i].id === devId) {
-                    layer.devices[i][field] = value;
-                    break;
-                }
-            }
-            saveConfig();
-        }
+        function addFloor() { ensureConfig(); config.floors.push({ id: 'floor_' + Date.now(), name: 'Новый', image: '', layers: [] }); saveConfig(renderAll); }
+        function removeFloor(i) { if (confirm('Удалить?')) { config.floors.splice(i, 1); saveConfig(renderAll); } }
+        function updateFloor(i, f, v) { config.floors[i][f] = v; saveConfig(); }
+        function addLayer(fIdx) { ensureConfig(); if (!config.floors[fIdx].layers) config.floors[fIdx].layers = []; config.floors[fIdx].layers.push({ id: 'layer_' + Date.now(), name: 'Новый', type: config.elementTypes[0] ? config.elementTypes[0].id : 'lighting', devices: [] }); saveConfig(renderAll); }
+        function removeLayer(fIdx, lIdx) { if (confirm('Удалить?')) { config.floors[fIdx].layers.splice(lIdx, 1); saveConfig(renderAll); } }
+        function updateLayer(fIdx, lIdx, f, v) { config.floors[fIdx].layers[lIdx][f] = v; saveConfig(); }
+        function addDevice(fIdx, lIdx) { var l = config.floors[fIdx].layers[lIdx]; if (!l.devices) l.devices = []; l.devices.push({ id: 'dev_' + Date.now(), name: 'Устройство', stateIds: [''], iconType: 'emoji', iconOn: '💡', iconOff: '🌑', x: 50, y: 50, prefixes: [''], postfixes: [''] }); saveConfig(renderAll); }
+        function removeDevice(fIdx, lIdx, devId) { if (confirm('Удалить?')) { config.floors[fIdx].layers[lIdx].devices = config.floors[fIdx].layers[lIdx].devices.filter(function (d) { return d.id !== devId; }); saveConfig(renderAll); } }
+        function updateDevice(fIdx, lIdx, devId, f, v) { var l = config.floors[fIdx].layers[lIdx]; if (!l || !l.devices) return; for (var i = 0; i < l.devices.length; i++) if (l.devices[i].id === devId) { l.devices[i][f] = v; break; } saveConfig(); }
 
         function handleImageUpload(input, fIdx) {
-            var file = input.files[0];
-            if (!file) return;
+            var file = input.files[0]; if (!file) return;
             var reader = new FileReader();
             reader.onload = function (e) {
-                var filename = 'floor_' + fIdx + '_' + Date.now() + '.png';
-                fetch('/api/upload', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: filename, base64Data: e.target.result })
-                }).then(function (res) { return res.json(); }).then(function (data) {
-                    if (data.success) {
-                        config.floors[fIdx].image = data.url;
-                        saveConfig(renderAll);
-                    } else {
-                        showDebug('Ошибка загрузки изображения');
-                    }
-                }).catch(function (err) {
-                    showDebug('Ошибка сети: ' + err.message);
-                });
+                fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: 'floor_' + fIdx + '_' + Date.now() + '.png', base64Data: e.target.result }) })
+                .then(function (r) { return r.json(); }).then(function (data) { if (data.success) { config.floors[fIdx].image = data.url; saveConfig(renderAll); } })
+                .catch(function (err) { showDebug('Ошибка сети: ' + err.message); });
             };
             reader.readAsDataURL(file);
         }
 
-        window.showTab = showTab;
-        window.addElementType = addElementType;
-        window.removeType = removeType;
-        window.updateType = updateType;
-        window.updateTypeFont = updateTypeFont;
-        window.updateTypeColor = updateTypeColor;
-        window.addFloor = addFloor;
-        window.removeFloor = removeFloor;
-        window.updateFloor = updateFloor;
-        window.addLayer = addLayer;
-        window.removeLayer = removeLayer;
-        window.updateLayer = updateLayer;
-        window.addDevice = addDevice;
-        window.removeDevice = removeDevice;
-        window.updateDevice = updateDevice;
-        window.handleImageUpload = handleImageUpload;
-        window.splitList = splitList;
+        window.showTab = showTab; window.addElementType = addElementType; window.removeType = removeType; window.updateType = updateType; window.updateTypeFont = updateTypeFont; window.updateTypeColor = updateTypeColor; window.addFloor = addFloor; window.removeFloor = removeFloor; window.updateFloor = updateFloor; window.addLayer = addLayer; window.removeLayer = removeLayer; window.updateLayer = updateLayer; window.addDevice = addDevice; window.removeDevice = removeDevice; window.updateDevice = updateDevice; window.handleImageUpload = handleImageUpload; window.splitList = splitList;
     </script>
 </body>
 </html>

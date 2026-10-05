@@ -3,7 +3,6 @@
 const utils = require('@iobroker/adapter-core');
 const express = require('express');
 const http = require('http');
-const socketIO = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 
@@ -12,17 +11,13 @@ class FloorplanVisualizer extends utils.Adapter {
         super({ ...options, name: 'floorplan-visualizer' });
         this.adminServer = null;
         this.presentationServer = null;
-        this.adminIO = null;
-        this.presentationIO = null;
-        this.subscribedStates = new Set();
 
         this.on('ready', this.onReady.bind(this));
-        this.on('stateChange', this.onStateChange.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
 
     async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v4.3...');
+        this.log.info('Starting Floor Plan Visualizer v4.4 (REST only)...');
 
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
@@ -66,16 +61,6 @@ class FloorplanVisualizer extends utils.Adapter {
         this.startPresentationServer();
     }
 
-    createServer(app, port, bind, name) {
-        const server = http.createServer();
-        const io = socketIO(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
-        this.setupSocket(io);
-        server.on('request', app);
-        server.listen(port, bind, () => this.log.info(name + ' listening on http://' + bind + ':' + port));
-        server.on('error', (e) => this.log.error(name + ' error: ' + e));
-        return { server, io };
-    }
-
     startAdminServer() {
         const port = this.config.adminPort || 8083;
         const bind = this.config.bind || '0.0.0.0';
@@ -89,6 +74,7 @@ class FloorplanVisualizer extends utils.Adapter {
         });
 
         app.use(express.static(path.join(__dirname, 'www')));
+        app.get('/favicon.ico', (req, res) => res.status(204)); // Убираем ошибку 404 в консоли
 
         app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
             try {
@@ -113,8 +99,6 @@ class FloorplanVisualizer extends utils.Adapter {
         app.post('/api/config', express.json({ limit: '10mb' }), async (req, res) => {
             try {
                 await this.setStateAsync('config', { val: JSON.stringify(req.body, null, 2), ack: true });
-                if (this.adminIO) this.adminIO.emit('configChanged', req.body);
-                if (this.presentationIO) this.presentationIO.emit('configChanged', req.body);
                 res.json({ success: true });
             } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
@@ -133,9 +117,9 @@ class FloorplanVisualizer extends utils.Adapter {
             } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
-        const result = this.createServer(app, port, bind, 'Admin server');
-        this.adminServer = result.server;
-        this.adminIO = result.io;
+        this.adminServer = http.createServer(app);
+        this.adminServer.listen(port, bind, () => this.log.info('Admin server listening on http://' + bind + ':' + port));
+        this.adminServer.on('error', (e) => this.log.error('Admin server error: ' + e));
     }
 
     startPresentationServer() {
@@ -149,6 +133,7 @@ class FloorplanVisualizer extends utils.Adapter {
         });
 
         app.use(express.static(path.join(__dirname, 'www')));
+        app.get('/favicon.ico', (req, res) => res.status(204));
 
         app.get('/api/config', async (req, res) => {
             try {
@@ -171,39 +156,9 @@ class FloorplanVisualizer extends utils.Adapter {
             } catch (e) { res.status(500).json({ error: 'Failed' }); }
         });
 
-        const result = this.createServer(app, port, bind, 'Presentation server');
-        this.presentationServer = result.server;
-        this.presentationIO = result.io;
-    }
-
-    setupSocket(io) {
-        io.on('connection', (socket) => {
-            socket.on('subscribe', (stateId) => { this.subscribedStates.add(stateId); socket.join(stateId); });
-            socket.on('unsubscribe', (stateId) => { this.subscribedStates.delete(stateId); socket.leave(stateId); });
-            socket.on('getState', async (stateId, callback) => {
-                try { const state = await this.getForeignStateAsync(stateId); if (callback) callback(null, state); }
-                catch (e) { if (callback) callback(e, null); }
-            });
-            socket.on('setState', async (stateId, value, callback) => {
-                try { await this.setForeignStateAsync(stateId, value, false); if (callback) callback(null); }
-                catch (e) { if (callback) callback(e); }
-            });
-        });
-    }
-
-    async onStateChange(id, state) {
-        if (!state) return;
-        if (id === this.namespace + '.config') {
-            let config;
-            try { config = JSON.parse(state.val); } catch (e) { return; }
-            if (this.adminIO) this.adminIO.emit('configChanged', config);
-            if (this.presentationIO) this.presentationIO.emit('configChanged', config);
-            return;
-        }
-        if (this.subscribedStates.has(id)) {
-            if (this.adminIO) this.adminIO.to(id).emit('stateChange', id, state);
-            if (this.presentationIO) this.presentationIO.to(id).emit('stateChange', id, state);
-        }
+        this.presentationServer = http.createServer(app);
+        this.presentationServer.listen(port, bind, () => this.log.info('Presentation server listening on http://' + bind + ':' + port));
+        this.presentationServer.on('error', (e) => this.log.error('Presentation server error: ' + e));
     }
 
     async onUnload(callback) {
