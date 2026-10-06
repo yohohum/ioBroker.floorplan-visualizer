@@ -1,15 +1,13 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "11.0.0",
-    "news": {
-      "11.0.0": { "en": "Instance link, admin links, favicon, bar icons, font lists", "ru": "Ссылка на экземпляр, ссылки в настройках, фавикон, иконки кнопок, списки шрифтов" }
-    },
+    "version": "12.0.0",
+    "news": { "12.0.0": { "en": "Fix links, rooms/functions, full MFD palette", "ru": "Ссылки, комнаты/функции, полная палитра MFD" } },
     "title": "Floor Plan Visualizer",
     "titleLang": { "en": "Floor Plan Visualizer", "ru": "Визуализатор плана этажа" },
-    "desc": { "en": "Interactive floor plan visualization", "ru": "Интерактивная визуализация плана этажа" },
+    "desc": { "en": "Interactive floor plan", "ru": "Интерактивный план этажа" },
     "authors": ["YoHoHum <yohohum@gmail.com>"],
-    "keywords": ["floorplan","visualization","smart home"],
+    "keywords": ["floorplan", "visualization"],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -19,7 +17,7 @@
     "connectionType": "local",
     "dataSource": "push",
     "adminUI": { "config": "html" },
-    "localLink": "http://%ip%:8083/",
+    "localLink": "http://%ip%:8083/editor.html",
     "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
     "loglevel": "info",
     "tier": 3,
