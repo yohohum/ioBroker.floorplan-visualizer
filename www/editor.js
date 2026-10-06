@@ -5,6 +5,7 @@ var allIoBrokerObjects=null,ioBrokerTree=null,expandedPaths=new Set(),objectTree
 var allMfdIcons=null,mfdBaseUrl='/icons-mfd-png/';
 var editingDevice=null,editingLayerRef=null,editingIsNew=false,slotTarget=null,liveTimer=null,barIcon=null,iconTarget=null;
 var pickerTab='emoji',pickerIcon=null;
+var selectedDevices=new Set();
 var CACHE_BUSTER='?v='+Date.now(),PRES_PORT=8084;
 var DEF_VF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
 var DEF_NF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
@@ -35,6 +36,23 @@ function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Typ
 function moveFloor(i,dir){var a=config.floors;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function moveLayer(fIdx,i,dir){var a=config.floors[fIdx].layers;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function openPreview(fId){window.open('http://'+location.hostname+':'+PRES_PORT+'/?floor='+fId,'_blank');}
+// === ВЫДЕЛЕНИЕ И ВЫРАВНИВАНИЕ ===
+function handleMarkerClick(dev,e){
+if(e.shiftKey){if(selectedDevices.has(dev.id))selectedDevices.delete(dev.id);else selectedDevices.add(dev.id);}
+else{selectedDevices.clear();selectedDevices.add(dev.id);}
+updateSelectionVisuals();updateAlignPanel();}
+function clearSelection(){selectedDevices.clear();updateSelectionVisuals();updateAlignPanel();}
+function updateSelectionVisuals(){document.querySelectorAll('.marker').forEach(function(m){var id=m.dataset.devId;if(selectedDevices.has(id))m.classList.add('selected');else m.classList.remove('selected');});}
+function updateAlignPanel(){var p=$('alignPanel');if(selectedDevices.size>=2){p.classList.add('active');$('alignCount').textContent=selectedDevices.size;}else{p.classList.remove('active');}}
+function getSelectedDevices(){var cur=getCurrentFloor();if(!cur)return[];var layer=cur.floor.layers.find(function(l){return l.id===currentLayerId;});if(!layer)return[];return layer.devices.filter(function(d){return selectedDevices.has(d.id);});}
+function alignLeft(){var devs=getSelectedDevices();if(devs.length<2)return;var minX=Math.min.apply(null,devs.map(function(d){return d.x;}));devs.forEach(function(d){d.x=minX;});saveConfig(renderFloorWorkspace);}
+function alignRight(){var devs=getSelectedDevices();if(devs.length<2)return;var maxX=Math.max.apply(null,devs.map(function(d){return d.x;}));devs.forEach(function(d){d.x=maxX;});saveConfig(renderFloorWorkspace);}
+function alignCenterH(){var devs=getSelectedDevices();if(devs.length<2)return;var avgX=devs.reduce(function(s,d){return s+d.x;},0)/devs.length;devs.forEach(function(d){d.x=avgX;});saveConfig(renderFloorWorkspace);}
+function alignTop(){var devs=getSelectedDevices();if(devs.length<2)return;var minY=Math.min.apply(null,devs.map(function(d){return d.y;}));devs.forEach(function(d){d.y=minY;});saveConfig(renderFloorWorkspace);}
+function alignBottom(){var devs=getSelectedDevices();if(devs.length<2)return;var maxY=Math.max.apply(null,devs.map(function(d){return d.y;}));devs.forEach(function(d){d.y=maxY;});saveConfig(renderFloorWorkspace);}
+function alignCenterV(){var devs=getSelectedDevices();if(devs.length<2)return;var avgY=devs.reduce(function(s,d){return s+d.y;},0)/devs.length;devs.forEach(function(d){d.y=avgY;});saveConfig(renderFloorWorkspace);}
+function distributeH(){var devs=getSelectedDevices();if(devs.length<3)return;devs.sort(function(a,b){return a.x-b.x;});var minX=devs[0].x;var maxX=devs[devs.length-1].x;var step=(maxX-minX)/(devs.length-1);devs.forEach(function(d,i){d.x=minX+step*i;});saveConfig(renderFloorWorkspace);}
+function distributeV(){var devs=getSelectedDevices();if(devs.length<3)return;devs.sort(function(a,b){return a.y-b.y;});var minY=devs[0].y;var maxY=devs[devs.length-1].y;var step=(maxY-minY)/(devs.length-1);devs.forEach(function(d,i){d.y=minY+step*i;});saveConfig(renderFloorWorkspace);}
 // === ИКОНКИ ЭТАЖЕЙ/СЛОЁВ ===
 function iconHtml(icon,size){if(!icon)return'<span style="font-size:'+size+';line-height:1">📄</span>';if(icon.kind==='emoji')return'<span style="font-size:'+size+';line-height:1">'+esc(icon.value)+'</span>';var u=icon.kind==='mfd'?(mfdBaseUrl+icon.value+'.png'):icon.value;return'<span class="im" style="width:'+size+';height:'+size+';background-color:currentColor;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function openFloorIconModal(fIdx){iconTarget={type:'floor',idx:fIdx};pickerIcon=config.floors[fIdx].icon||null;pickerTab='emoji';$('pickerTitle').textContent='Иконка этажа: '+config.floors[fIdx].name;openIconPicker();}
@@ -60,7 +78,7 @@ function renderFloorTabs(){var c=$('fte');var h='';for(var i=0;i<config.floors.l
 h+='<button class="md-btn filled small" onclick="addFloor()">+ Этаж</button><span class="spacer"></span>'+(currentFloorId?'<button class="md-btn tonal small" onclick="openPreview(\''+currentFloorId+'\')">👁 Просмотр</button>':'');c.innerHTML=h;}
 function addFloor(){ensureConfig();var id='floor_'+Date.now();config.floors.push({id:id,name:'Новый этаж',image:'',layers:[]});currentFloorId=id;currentLayerId=null;saveConfig(renderFloorWorkspace);}
 function removeFloor(i,e){if(e)e.stopPropagation();if(!confirm('Удалить этаж?'))return;var rid=config.floors[i].id;config.floors.splice(i,1);if(currentFloorId===rid)currentFloorId=config.floors[0]?config.floors[0].id:null;saveConfig(renderFloorWorkspace);}
-function selectFloor(id){currentFloorId=id;currentLayerId=null;renderFloorWorkspace();}
+function selectFloor(id){currentFloorId=id;currentLayerId=null;clearSelection();renderFloorWorkspace();}
 function getCurrentFloor(){for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return{floor:config.floors[i],idx:i};return null;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
 function renderFloorWorkspace(){renderFloorTabs();var w=$('fw');var cur=getCurrentFloor();if(!cur){w.innerHTML='<div class="pempty" style="background:'+planBg()+'">🏠 Добавьте этаж</div>';stopLive();return;}
@@ -69,10 +87,11 @@ if(!currentLayerId||!floor.layers.some(function(l){return l.id===currentLayerId;
 var chips='';floor.layers.forEach(function(l,i){chips+='<div class="lc'+(l.id===currentLayerId?' active':'')+'" onclick="selectLayer(\''+l.id+'\')"><span class="icon-btn">'+iconHtml(l.icon,'14px')+'</span><span>'+esc(l.name)+'</span><button onclick="event.stopPropagation();renameLayer('+fIdx+','+i+')" title="Переименовать">✏️</button><button onclick="event.stopPropagation();openLayerIconModal('+fIdx+','+i+')" title="Иконка">🖼️</button><button onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',-1)">↑</button><button onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',1)">↓</button><button onclick="event.stopPropagation();removeLayer('+fIdx+',\''+l.id+'\',event)">×</button></div>';});
 var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
 h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
-if(floor.image)h+='<div class="pea" id="pea" style="background:'+planBg()+'"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div>';
+if(floor.image)h+='<div class="pea" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div>';
 else h+='<div class="pea" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
-w.innerHTML=h;if(floor.image){renderPlanMarkers(floor,fIdx);startLive();}else stopLive();}
-function selectLayer(id){currentLayerId=id;renderFloorWorkspace();}
+w.innerHTML=h;if(floor.image){renderPlanMarkers(floor,fIdx);startLive();}else stopLive();updateAlignPanel();}
+function handlePlanClick(e){if(e.target.id==='pea'||e.target.id==='peaImg'){clearSelection();}}
+function selectLayer(id){currentLayerId=id;clearSelection();renderFloorWorkspace();}
 function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
 function renameLayer(fIdx,lIdx){var f=config.floors[fIdx];var l=f.layers[lIdx];var n=prompt('Новое название слоя:',l.name);if(n&&n.trim()){l.name=n.trim();saveConfig(renderFloorWorkspace);}}
 function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой?'))return;var f=config.floors[fIdx];var i=f.layers.findIndex(function(l){return l.id===lId;});if(i>=0)f.layers.splice(i,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
@@ -104,7 +123,7 @@ function refreshMarkers(){var cur=getCurrentFloor();if(cur&&cur.floor.image)rend
 function slotHtml(slot,color){if(!slot)return'<span class="mi">•</span>';if(slot.kind==='emoji')return'<span class="mi">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBaseUrl+slot.value+'.png'):slot.value;return'<span class="im" style="width:100%;height:100%;background-color:'+color+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function previewSlot(slot){if(!slot)return'•';if(slot.kind==='emoji')return'<span style="font-size:22px">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBaseUrl+slot.value+'.png'):slot.value;return'<span class="im" style="width:28px;height:28px;background-color:#000;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function buildMarker(dev,stateVal){var ic=dev.icon||defaultIcon(dev.objType);var key=getStateKey(dev,stateVal);
-var m=document.createElement('div');m.className='marker';m.style.left=(dev.x||50)+'%';m.style.top=(dev.y||50)+'%';m.style.width=(ic.size||48)+'px';m.style.height=(ic.size||48)+'px';m.style.opacity=ic.opacity!=null?ic.opacity:1;
+var m=document.createElement('div');m.className='marker';m.dataset.devId=dev.id;m.style.left=(dev.x||50)+'%';m.style.top=(dev.y||50)+'%';m.style.width=(ic.size||48)+'px';m.style.height=(ic.size||48)+'px';m.style.opacity=ic.opacity!=null?ic.opacity:1;
 m.style.backgroundColor=(ic.bg&&ic.bg[key])||'#fff';m.style.borderColor=(ic.border&&ic.border[key])||defColor(key);
 if(stateVal)m.style.boxShadow='0 0 15px '+((ic.border&&ic.border[key])||defColor(key));
 m.innerHTML=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
@@ -117,12 +136,14 @@ function showCtxMenu(x,y,items){if(!ctxMenuEl){ctxMenuEl=document.createElement(
 function renderPlanMarkers(floor,fIdx){var area=$('pea');if(!area)return;area.querySelectorAll('.marker').forEach(function(m){m.remove();});if(!currentLayerId)return;
 var layer=null,lIdx=-1;for(var i=0;i<floor.layers.length;i++)if(floor.layers[i].id===currentLayerId){layer=floor.layers[i];lIdx=i;break;}if(!layer)return;
 (layer.devices||[]).forEach(function(dev){var m=buildMarker(dev,liveStates[dev.stateIds&&dev.stateIds[0]]);
+if(selectedDevices.has(dev.id))m.classList.add('selected');
 attachDrag(m,dev);
+m.addEventListener('click',function(e){e.stopPropagation();handleMarkerClick(dev,e);});
 m.addEventListener('dblclick',function(e){e.preventDefault();openEditDeviceModal(fIdx,lIdx,dev.id);});
 m.addEventListener('contextmenu',function(e){e.preventDefault();showCtxMenu(e.clientX,e.clientY,[{label:'✏️ Редактировать',action:function(){openEditDeviceModal(fIdx,lIdx,dev.id);}},{label:'⧉ Копировать',action:function(){copyDevice(fIdx,lIdx,dev.id);}},{label:'🗑 Удалить',danger:true,action:function(){deleteDeviceById(fIdx,lIdx,dev.id);}}]);});
 area.appendChild(m);});}
 function copyDevice(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var s=l.devices.find(function(d){return d.id===id;});if(!s)return;var c=JSON.parse(JSON.stringify(s));c.id='dev_'+Date.now();c.x=Math.min(100,(s.x||50)+4);c.y=Math.min(100,(s.y||50)+4);l.devices.push(c);saveConfig(renderFloorWorkspace);}
-function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(function(d){return d.id!==id;});saveConfig(renderFloorWorkspace);}
+function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(function(d){return d.id!==id;});selectedDevices.delete(id);saveConfig(renderFloorWorkspace);}
 function attachDrag(m,dev){m.addEventListener('mousedown',function(e){if(e.button!==0)return;e.preventDefault();var st=false;var img=$('peaImg');if(!img)return;function mv(ev){var r=img.getBoundingClientRect();dev.x=Math.max(0,Math.min(100,((ev.clientX-r.left)/r.width)*100));dev.y=Math.max(0,Math.min(100,((ev.clientY-r.top)/r.height)*100));m.style.left=dev.x+'%';m.style.top=dev.y+'%';st=true;}function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);if(st)saveConfig();}document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});}
 function fillTemplateSelect(){var s=$('templateSelect');var cur=s.value||'';s.innerHTML='<option value="">— не применять —</option>';(config.templates||[]).forEach(function(t){var o=document.createElement('option');o.value=t.name;o.textContent=t.name;s.appendChild(o);});s.value=cur;}
 function saveTemplate(){readDeviceFields();readIcon();var name=prompt('Имя шаблона:');if(!name)return;var d=JSON.parse(JSON.stringify(editingDevice));delete d.id;delete d.name;delete d.x;delete d.y;delete d.stateIds;
@@ -212,3 +233,4 @@ window.openAddDeviceModal=openAddDeviceModal;window.openEditDeviceModal=openEdit
 window.saveTemplate=saveTemplate;window.applyTemplate=applyTemplate;
 window.openObjectTree=openObjectTree;window.closeTreeModal=closeTreeModal;window.selectObject=selectObject;window.filterTree=filterTree;window.expandAllBranches=expandAllBranches;window.collapseAllBranches=collapseAllBranches;
 window.openEmojiForSlot=openEmojiForSlot;window.selectEmoji=selectEmoji;window.closeEmojiModal=closeEmojiModal;window.openMfdForSlot=openMfdForSlot;window.selectMfd=selectMfd;window.closeMfdModal=closeMfdModal;window.filterMfdPalette=filterMfdPalette;window.openDiskForSlot=openDiskForSlot;
+window.handleMarkerClick=handleMarkerClick;window.clearSelection=clearSelection;window.alignLeft=alignLeft;window.alignRight=alignRight;window.alignCenterH=alignCenterH;window.alignTop=alignTop;window.alignBottom=alignBottom;window.alignCenterV=alignCenterV;window.distributeH=distributeH;window.distributeV=distributeV;window.handlePlanClick=handlePlanClick;

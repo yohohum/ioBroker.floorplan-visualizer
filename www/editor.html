@@ -23,6 +23,7 @@
 .lc .icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
 .pea{position:relative;width:100%;border-radius:16px;overflow:hidden;min-height:500px}.pea img{width:100%;display:block;user-select:none;pointer-events:none}.pempty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--v)}
 .marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;z-index:10;transform:translate(-50%,-50%)}
+.marker.selected{border-color:var(--p);box-shadow:0 0 0 3px var(--pc);z-index:15}
 .marker .mi{line-height:1;pointer-events:none}
 .im{display:inline-block;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
 .lbl{position:absolute;pointer-events:none;white-space:nowrap;padding:2px 8px;border-radius:6px;z-index:21}
@@ -42,7 +43,6 @@
 .iw{display:flex;gap:6px}.iw input{flex:1}
 .er{display:flex;gap:6px;margin-bottom:8px;align-items:center}.er input{flex:1;padding:8px;border:1px solid var(--o);border-radius:8px}
 .cm{position:fixed;z-index:3000;background:var(--s);border-radius:12px;min-width:170px;padding:6px;display:none}.cm.active{display:block}.ci{padding:10px 16px;border-radius:8px;cursor:pointer}.ci:hover{background:var(--pc)}.ci.d{color:var(--e)}
-/* Универсальный пикер иконок */
 .picker-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--s2);padding:6px;border-radius:100px}
 .picker-tab{flex:1;padding:8px 14px;background:transparent;border:none;border-radius:100px;cursor:pointer;font-size:13px;font-weight:500;color:var(--v);font-family:inherit}
 .picker-tab:hover{background:var(--s)}
@@ -52,11 +52,38 @@
 .picker-preview .pv-name{flex:1;font-size:13px;color:var(--v);word-break:break-all}
 .picker-content{min-height:200px}
 .picker-file-area{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px;background:#fff;border:2px dashed var(--ov);border-radius:12px}
+/* Панель выравнивания */
+.align-panel{position:fixed;top:80px;right:20px;background:var(--s);border:1px solid var(--ov);border-radius:16px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:500;display:none;flex-direction:column;gap:8px}
+.align-panel.active{display:flex}
+.align-panel-title{font-size:12px;font-weight:500;color:var(--v);text-align:center;margin-bottom:4px}
+.align-panel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.align-btn{width:40px;height:40px;border:1px solid var(--ov);border-radius:8px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:.2s}
+.align-btn:hover{background:var(--pc);border-color:var(--p)}
+.align-btn:active{transform:scale(.95)}
+.align-divider{height:1px;background:var(--ov);margin:4px 0}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
 <div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none"><input type="file" id="barIconInput" accept="image/*" style="display:none"><input type="file" id="pickerFileInput" accept="image/*" style="display:none">
+<!-- Панель выравнивания -->
+<div class="align-panel" id="alignPanel">
+<div class="align-panel-title">Выравнивание (<span id="alignCount">0</span>)</div>
+<div class="align-panel-grid">
+<button class="align-btn" onclick="alignLeft()" title="По левому краю">⫷</button>
+<button class="align-btn" onclick="alignCenterH()" title="По центру (горизонтально)">⫿</button>
+<button class="align-btn" onclick="alignRight()" title="По правому краю">⫸</button>
+<button class="align-btn" onclick="alignTop()" title="По верхнему краю">⫠</button>
+<button class="align-btn" onclick="alignCenterV()" title="По центру (вертикально)">⫾</button>
+<button class="align-btn" onclick="alignBottom()" title="По нижнему краю">⫟</button>
+</div>
+<div class="align-divider"></div>
+<div class="align-panel-grid">
+<button class="align-btn" onclick="distributeH()" title="Распределить горизонтально" style="grid-column:1/3">⋯</button>
+<button class="align-btn" onclick="distributeV()" title="Распределить вертикально" style="grid-column:3/4">⋮</button>
+</div>
+<button class="md-btn text small" onclick="clearSelection()" style="margin-top:4px">Снять выделение</button>
+</div>
 <div class="mo" id="deviceModal"><div class="modal"><h2 id="dmt">Объект</h2>
 <div class="md-field"><label>Название</label><input id="deviceName"></div>
 <div class="settings-grid"><div class="md-field"><label>Тип</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="indicator">Индикатор</option><option value="value">Значение</option></select></div>
@@ -85,7 +112,6 @@
 <div class="md-section"><div class="md-section-title">Активная</div><div class="settings-grid"><div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-a-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-a-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-a-fc"></div></div></div>
 <div class="md-section"><div class="md-section-title">Неактивная</div><div class="settings-grid"><div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-i-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-i-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-i-fc"></div></div></div>
 <div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div></div></div>
-<!-- УНИВЕРСАЛЬНЫЙ ПИКЕР ИКОНОК -->
 <div class="mo" id="iconPickerModal"><div class="modal"><h2 id="pickerTitle">Выбор иконки</h2>
 <div class="picker-preview"><div class="pv-box" id="pickerPreviewBox">📄</div><div class="pv-name" id="pickerPreviewName">не выбрано</div><button class="md-btn danger small" onclick="clearPickerIcon()">✕ Удалить</button></div>
 <div class="picker-tabs">
