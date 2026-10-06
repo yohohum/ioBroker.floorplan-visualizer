@@ -42,11 +42,21 @@
 .iw{display:flex;gap:6px}.iw input{flex:1}
 .er{display:flex;gap:6px;margin-bottom:8px;align-items:center}.er input{flex:1;padding:8px;border:1px solid var(--o);border-radius:8px}
 .cm{position:fixed;z-index:3000;background:var(--s);border-radius:12px;min-width:170px;padding:6px;display:none}.cm.active{display:block}.ci{padding:10px 16px;border-radius:8px;cursor:pointer}.ci:hover{background:var(--pc)}.ci.d{color:var(--e)}
+/* Универсальный пикер иконок */
+.picker-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--s2);padding:6px;border-radius:100px}
+.picker-tab{flex:1;padding:8px 14px;background:transparent;border:none;border-radius:100px;cursor:pointer;font-size:13px;font-weight:500;color:var(--v);font-family:inherit}
+.picker-tab:hover{background:var(--s)}
+.picker-tab.active{background:var(--p);color:#fff}
+.picker-preview{display:flex;align-items:center;gap:14px;padding:14px;background:#fff;border:1px solid var(--ov);border-radius:12px;margin-bottom:14px}
+.picker-preview .pv-box{width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:12px;font-size:32px;overflow:hidden;flex:0 0 56px}
+.picker-preview .pv-name{flex:1;font-size:13px;color:var(--v);word-break:break-all}
+.picker-content{min-height:200px}
+.picker-file-area{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px;background:#fff;border:2px dashed var(--ov);border-radius:12px}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
 <div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
-<input type="file" id="diskIconInput" accept="image/*" style="display:none"><input type="file" id="barIconInput" accept="image/*" style="display:none"><input type="file" id="floorIconInput" accept="image/*" style="display:none"><input type="file" id="layerIconInput" accept="image/*" style="display:none">
+<input type="file" id="diskIconInput" accept="image/*" style="display:none"><input type="file" id="barIconInput" accept="image/*" style="display:none"><input type="file" id="pickerFileInput" accept="image/*" style="display:none">
 <div class="mo" id="deviceModal"><div class="modal"><h2 id="dmt">Объект</h2>
 <div class="md-field"><label>Название</label><input id="deviceName"></div>
 <div class="settings-grid"><div class="md-field"><label>Тип</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="indicator">Индикатор</option><option value="value">Значение</option></select></div>
@@ -75,10 +85,17 @@
 <div class="md-section"><div class="md-section-title">Активная</div><div class="settings-grid"><div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-a-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-a-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-a-fc"></div></div></div>
 <div class="md-section"><div class="md-section-title">Неактивная</div><div class="settings-grid"><div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-i-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-i-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-i-fc"></div></div></div>
 <div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div></div></div>
+<!-- УНИВЕРСАЛЬНЫЙ ПИКЕР ИКОНОК -->
+<div class="mo" id="iconPickerModal"><div class="modal"><h2 id="pickerTitle">Выбор иконки</h2>
+<div class="picker-preview"><div class="pv-box" id="pickerPreviewBox">📄</div><div class="pv-name" id="pickerPreviewName">не выбрано</div><button class="md-btn danger small" onclick="clearPickerIcon()">✕ Удалить</button></div>
+<div class="picker-tabs">
+<button class="picker-tab active" data-tab="emoji" onclick="switchPickerTab('emoji')">Emoji</button>
+<button class="picker-tab" data-tab="mfd" onclick="switchPickerTab('mfd')">MFD</button>
+<button class="picker-tab" data-tab="file" onclick="switchPickerTab('file')">📁 Файл</button></div>
+<div class="picker-content" id="pickerContent"></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconPicker()">Закрыть</button></div></div></div>
 <div class="mo" id="treeModal"><div class="modal ml"><h2>Объект ioBroker</h2><div class="ots"><input id="treeSearch" oninput="filterTree()"><button class="md-btn tonal small" onclick="expandAllBranches()">+</button><button class="md-btn tonal small" onclick="collapseAllBranches()">−</button></div><div class="ot" id="objectTree"><div class="tl">Загрузка</div></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div></div></div>
 <div class="mo" id="emojiModal"><div class="modal"><h2>Emoji</h2><div class="ip" id="emojiPalette"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div></div></div>
 <div class="mo" id="mfdModal"><div class="modal ml"><h2>MFD</h2><div class="ots"><input id="mfdSearch" oninput="filterMfdPalette()"></div><div class="ip" id="mfdPalette"><div class="tl">Загрузка</div></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeMfdModal()">Закрыть</button></div></div></div>
-<div class="mo" id="floorIconModal"><div class="modal"><h2>Иконка этажа</h2><div style="display:flex;gap:10px;margin-bottom:20px"><button class="md-btn tonal" onclick="openFloorIconEmoji()">Emoji</button><button class="md-btn tonal" onclick="openFloorIconMfd()">MFD</button><button class="md-btn tonal" onclick="openFloorIconDisk()">📁 Файл</button><button class="md-btn danger" onclick="clearFloorIcon()">✕ Удалить</button></div><div id="floorIconPreview" style="text-align:center;font-size:48px;margin:20px 0"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconModal()">Закрыть</button></div></div></div>
-<div class="mo" id="layerIconModal"><div class="modal"><h2>Иконка слоя</h2><div style="display:flex;gap:10px;margin-bottom:20px"><button class="md-btn tonal" onclick="openLayerIconEmoji()">Emoji</button><button class="md-btn tonal" onclick="openLayerIconMfd()">MFD</button><button class="md-btn tonal" onclick="openLayerIconDisk()">📁 Файл</button><button class="md-btn danger" onclick="clearLayerIcon()">✕ Удалить</button></div><div id="layerIconPreview" style="text-align:center;font-size:48px;margin:20px 0"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconModal()">Закрыть</button></div></div></div>
 <script src="editor.js"></script>
 </body></html>
