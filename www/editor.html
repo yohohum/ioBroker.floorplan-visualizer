@@ -35,6 +35,7 @@
 .ot{border:1px solid var(--ov);border-radius:12px;max-height:450px;overflow-y:auto;background:#fff;font-size:13px}
 .tbh{padding:6px 10px;cursor:pointer;display:flex;gap:8px;align-items:center;user-select:none}.tbh:hover{background:var(--pc)}.bt{width:14px;color:var(--p);font-size:10px}.bn{font-weight:500}.bc{color:var(--v);font-size:11px}.tm{color:var(--v);font-size:11px}
 .tn{padding:5px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}.tn:hover{background:var(--pc)}.tn.sel{background:var(--p);color:#fff}.tn .ti{font-family:Consolas,monospace;font-size:11px;color:var(--v);max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tn.sel .tm{color:rgba(255,255,255,.85)}
 .tl{padding:20px;text-align:center;color:var(--v)}
 .ip{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:400px;overflow-y:auto;border:1px solid var(--ov);border-radius:12px;padding:10px;background:#fff}
 .io{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid transparent;border-radius:10px;cursor:pointer;padding:5px;gap:4px}.io:hover{background:var(--pc)}.io .ipv{width:32px;height:32px;display:flex;align-items:center;justify-content:center}.io .in{font-size:9px;color:var(--v);word-break:break-all;max-height:22px;overflow:hidden;text-align:center}
@@ -43,7 +44,7 @@
 .cm{position:fixed;z-index:3000;background:var(--s);border-radius:12px;min-width:170px;padding:6px;display:none}.cm.active{display:block}.ci{padding:10px 16px;border-radius:8px;cursor:pointer}.ci:hover{background:var(--pc)}.ci.d{color:var(--e)}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
-<div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()"> Настройки</button></div>
+<div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none"><input type="file" id="barIconInput" accept="image/*" style="display:none"><input type="file" id="floorIconInput" accept="image/*" style="display:none"><input type="file" id="layerIconInput" accept="image/*" style="display:none">
 <div class="mo" id="deviceModal"><div class="modal"><h2 id="dmt">Объект</h2>
@@ -77,5 +78,7 @@
 <div class="mo" id="treeModal"><div class="modal ml"><h2>Объект ioBroker</h2><div class="ots"><input id="treeSearch" oninput="filterTree()"><button class="md-btn tonal small" onclick="expandAllBranches()">+</button><button class="md-btn tonal small" onclick="collapseAllBranches()">−</button></div><div class="ot" id="objectTree"><div class="tl">Загрузка</div></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div></div></div>
 <div class="mo" id="emojiModal"><div class="modal"><h2>Emoji</h2><div class="ip" id="emojiPalette"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div></div></div>
 <div class="mo" id="mfdModal"><div class="modal ml"><h2>MFD</h2><div class="ots"><input id="mfdSearch" oninput="filterMfdPalette()"></div><div class="ip" id="mfdPalette"><div class="tl">Загрузка</div></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeMfdModal()">Закрыть</button></div></div></div>
+<div class="mo" id="floorIconModal"><div class="modal"><h2>Иконка этажа</h2><div style="display:flex;gap:10px;margin-bottom:20px"><button class="md-btn tonal" onclick="openFloorIconEmoji()">Emoji</button><button class="md-btn tonal" onclick="openFloorIconMfd()">MFD</button><button class="md-btn tonal" onclick="openFloorIconDisk()">📁 Файл</button><button class="md-btn danger" onclick="clearFloorIcon()">✕ Удалить</button></div><div id="floorIconPreview" style="text-align:center;font-size:48px;margin:20px 0"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconModal()">Закрыть</button></div></div></div>
+<div class="mo" id="layerIconModal"><div class="modal"><h2>Иконка слоя</h2><div style="display:flex;gap:10px;margin-bottom:20px"><button class="md-btn tonal" onclick="openLayerIconEmoji()">Emoji</button><button class="md-btn tonal" onclick="openLayerIconMfd()">MFD</button><button class="md-btn tonal" onclick="openLayerIconDisk()">📁 Файл</button><button class="md-btn danger" onclick="clearLayerIcon()">✕ Удалить</button></div><div id="layerIconPreview" style="text-align:center;font-size:48px;margin:20px 0"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconModal()">Закрыть</button></div></div></div>
 <script src="editor.js"></script>
 </body></html>
