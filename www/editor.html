@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Редактор плана этажа v9.0</title>
+<title>Редактор плана этажа v10</title>
 <style>
-:root{--md-primary:#0061a4;--md-on-primary:#fff;--md-primary-container:#d1e4ff;--md-on-primary-container:#001d36;--md-secondary-container:#d8e2ec;--md-on-secondary-container:#101c26;--md-surface:#f7f9fc;--md-surface-c1:#eef1f6;--md-surface-c2:#e8ebf1;--md-surface-c3:#e2e6ec;--md-on-surface:#1a1c20;--md-on-variant:#43484e;--md-outline:#73777f;--md-outline-v:#c3c7cf;--md-error:#ba1a1a;--md-error-c:#f9dedc;--md-success:#146c2e;--md-success-c:#c4eed0;--md-r-xl:28px;--md-r-l:16px;--md-r-m:12px;--md-r-s:8px;--md-e2:0 2px 6px rgba(0,0,0,.14);--md-e3:0 6px 18px rgba(0,0,0,.16)}
+:root{--md-primary:#0061a4;--md-on-primary:#fff;--md-primary-container:#d1e4ff;--md-on-primary-container:#001d36;--md-secondary-container:#d8e2ec;--md-on-secondary-container:#101c26;--md-surface:#f7f9fc;--md-surface-c1:#eef1f6;--md-surface-c2:#e8ebf1;--md-surface-c3:#e2e6ec;--md-on-surface:#1a1c20;--md-on-variant:#43484e;--md-outline:#73777f;--md-outline-v:#c3c7cf;--md-error:#ba1a1a;--md-error-c:#f9dedc;--md-r-xl:28px;--md-r-l:16px;--md-r-m:12px;--md-r-s:8px;--md-e3:0 6px 18px rgba(0,0,0,.16)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-surface);color:var(--md-on-surface);padding:20px}
 .container{max-width:1600px;margin:0 auto}
@@ -30,7 +30,6 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .md-btn.text{background:transparent;color:var(--md-primary)}
 .md-btn.danger{background:var(--md-error-c);color:var(--md-error)}
 .md-btn.small{padding:6px 16px;font-size:13px}
-.md-btn.mini{padding:2px 8px;font-size:12px}
 .spacer{flex:1}
 .floor-tabs-container{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid var(--md-outline-v)}
 .floor-tab-editor{padding:8px 12px;background:var(--md-surface-c2);border-radius:100px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px}
@@ -43,10 +42,9 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .layer-chip{padding:6px 12px;background:var(--md-surface);border:1px solid var(--md-outline-v);border-radius:100px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px}
 .layer-chip.active{background:var(--md-primary);color:var(--md-on-primary)}
 .layer-chip button{background:rgba(0,0,0,.12);border:none;color:inherit;border-radius:50%;width:18px;height:18px;cursor:pointer}
-.plan-editor-area{position:relative;width:100%;background:var(--md-surface-c3);border-radius:var(--md-r-l);overflow:hidden;min-height:500px}
+.plan-editor-area{position:relative;width:100%;border-radius:var(--md-r-l);overflow:hidden;min-height:500px}
 .plan-editor-area img{width:100%;height:auto;display:block;user-select:none;pointer-events:none}
 .plan-empty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--md-on-variant);flex-direction:column;gap:10px}
-/* маркеры как на презентации */
 .marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;z-index:10;transform:translate(-50%,-50%)}
 .marker .marker-icon{line-height:1;pointer-events:none}
 .icon-mask{display:inline-block;width:100%;height:100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
@@ -55,7 +53,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .lbl-pos-top{bottom:100%;left:50%;transform:translate(-50%,-4px)}
 .lbl-pos-right{left:100%;top:50%;transform:translate(4px,-50%)}
 .lbl-pos-left{right:100%;top:50%;transform:translate(-4px,-50%)}
-.lbl-pos-overlay{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;white-space:normal;width:max-content;max-width:150%}
+.lbl-pos-overlay{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:max-content}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
 .modal{background:var(--md-surface-c2);border-radius:var(--md-r-xl);padding:24px;max-width:820px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:var(--md-e3)}
@@ -95,7 +93,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 <body>
 <div class="container">
  <div id="debugBanner"></div>
- <div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openBarModal()">⚙ Панели</button></div>
+ <div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
  <div class="content"><div class="floor-tabs-container" id="floorTabsEditor"></div><div class="floor-workspace" id="floorWorkspace"></div></div>
 </div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none">
@@ -104,11 +102,13 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
  <h2 id="deviceModalTitle">Объект</h2>
  <div class="md-field"><label>Название объекта</label><input type="text" id="deviceName"></div>
  <div class="settings-grid">
-  <div class="md-field"><label>Тип объекта</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="value_write">Значение (ввод)</option><option value="list">Список</option><option value="indicator">Индикатор</option><option value="value_read">Значение (чтение)</option></select></div>
-  <div class="md-field"><label>Слой отображения</label><select id="deviceLayer"></select></div>
- </div>
+  <div class="md-field"><label>Тип объекта</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="indicator">Индикатор</option><option value="value">Значение</option></select></div>
+  <div class="md-field"><label>Слой отображения</label><select id="deviceLayer"></select></div></div>
+ <div class="md-section"><div class="md-section-title">Шаблоны</div>
+  <div class="settings-grid">
+   <div class="md-field"><label>Применить шаблон</label><select id="templateSelect" onchange="applyTemplate(this.value)"><option value="">— не применять —</option></select></div>
+   <div class="md-field"><label>&nbsp;</label><button class="md-btn tonal" onclick="saveTemplate()">💾 Сохранить как шаблон</button></div></div></div>
  <div class="md-field"><label>Состояние ioBroker</label><div class="id-input-wrapper"><input type="text" id="deviceId"><button class="md-btn tonal small" onclick="openObjectTree('main',-1)">🔍 Обзор</button></div></div>
- <div class="md-field" id="listValuesField" style="display:none"><label>Значения списка (через запятую)</label><input type="text" id="deviceListValues"></div>
  <div class="md-field" id="thresholdFields" style="display:none"><div class="settings-grid">
   <div class="md-field"><label>Тревога мин (ниже)</label><input type="number" id="warnBelow"></div>
   <div class="md-field"><label>Тревога макс (выше)</label><input type="number" id="warnAbove"></div></div></div>
@@ -132,7 +132,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
    <div class="md-field"><label>Расположение</label><select id="vf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div></div>
   <label class="chk"><input type="checkbox" id="vf-nobg"> Фон прозрачный</label>
   <div class="settings-grid" style="margin-top:10px">
-   <div class="md-field"><label>Префиксы (через запятую, пробелы сохраняются)</label><input type="text" id="devicePrefixes"></div>
+   <div class="md-field"><label>Префиксы (пробелы сохраняются)</label><input type="text" id="devicePrefixes"></div>
    <div class="md-field"><label>Постфиксы</label><input type="text" id="devicePostfixes"></div></div></div>
  <div class="md-section"><div class="md-section-title">Шрифт названия</div>
   <label class="chk"><input type="checkbox" id="nf-show" checked> Выводить название</label>
@@ -147,9 +147,11 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
  <div class="md-actions"><button class="md-btn danger" id="btnDeleteDevice" onclick="deleteDevice()">Удалить</button><span class="spacer"></span><button class="md-btn text" onclick="cancelDevice()">Отменить</button><button class="md-btn filled" onclick="saveDevice()">Сохранить</button></div>
 </div></div>
 
-<div class="modal-overlay" id="barModal"><div class="modal">
- <h2>Настройки панелей кнопок</h2>
- <div class="md-field"><label>Панель</label><select id="barTarget" onchange="fillBarModal()"><option value="floor">Этажи</option><option value="layer">Слои</option></select></div>
+<div class="modal-overlay" id="settingsModal"><div class="modal">
+ <h2>Настройки</h2>
+ <div class="md-section"><div class="md-section-title">План</div>
+  <div class="settings-grid"><div class="md-field"><label>Фон плана</label><input type="color" id="planBg"></div></div></div>
+ <div class="md-field"><label>Панель</label><select id="barTarget" onchange="fillBarFields()"><option value="floor">Кнопки этажей</option><option value="layer">Кнопки слоёв</option></select></div>
  <div class="settings-grid">
   <div class="md-field"><label>Высота кнопки</label><input type="number" id="bar-height"></div>
   <div class="md-field"><label>Длина кнопки</label><input type="number" id="bar-width"></div>
@@ -157,24 +159,18 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
   <div class="md-field"><label>Радиус угла</label><input type="number" id="bar-radius"></div>
   <div class="md-field"><label>Ориентация</label><select id="bar-orient"><option value="h">Горизонтально</option><option value="v">Вертикально</option></select></div>
   <div class="md-field"><label>Расположение</label><select id="bar-position"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option></select></div>
-  <div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">По центру</option><option value="edge">К краю</option></select></div></div>
+  <div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">По центру</option><option value="left">По левому краю</option><option value="right">По правому краю</option></select></div></div>
  <div class="md-section"><div class="md-section-title">Активная кнопка</div>
   <div class="settings-grid">
-   <div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div>
-   <div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div>
-   <div class="md-field"><label>Шрифт</label><input type="text" id="bar-a-ff"></div>
-   <div class="md-field"><label>Начертание</label><select id="bar-a-fw"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
-   <div class="md-field"><label>Размер</label><input type="text" id="bar-a-fs"></div>
-   <div class="md-field"><label>Цвет текста</label><input type="color" id="bar-a-fc"></div></div></div>
+   <div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div>
+   <div class="md-field"><label>Шрифт</label><input type="text" id="bar-a-ff"></div><div class="md-field"><label>Начертание</label><select id="bar-a-fw"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
+   <div class="md-field"><label>Размер</label><input type="text" id="bar-a-fs"></div><div class="md-field"><label>Цвет текста</label><input type="color" id="bar-a-fc"></div></div></div>
  <div class="md-section"><div class="md-section-title">Неактивная кнопка</div>
   <div class="settings-grid">
-   <div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div>
-   <div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div>
-   <div class="md-field"><label>Шрифт</label><input type="text" id="bar-i-ff"></div>
-   <div class="md-field"><label>Начертание</label><select id="bar-i-fw"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
-   <div class="md-field"><label>Размер</label><input type="text" id="bar-i-fs"></div>
-   <div class="md-field"><label>Цвет текста</label><input type="color" id="bar-i-fc"></div></div></div>
- <div class="md-actions"><span class="spacer"></span><button class="md-btn text" onclick="closeBarModal()">Закрыть</button><button class="md-btn filled" onclick="saveBarModal()">Сохранить</button></div>
+   <div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div>
+   <div class="md-field"><label>Шрифт</label><input type="text" id="bar-i-ff"></div><div class="md-field"><label>Начертание</label><select id="bar-i-fw"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
+   <div class="md-field"><label>Размер</label><input type="text" id="bar-i-fs"></div><div class="md-field"><label>Цвет текста</label><input type="color" id="bar-i-fc"></div></div></div>
+ <div class="md-actions"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div>
 </div></div>
 
 <div class="modal-overlay" id="treeModal"><div class="modal modal-large"><h2>Выбор объекта ioBroker</h2>
@@ -194,23 +190,22 @@ var config=null,currentFloorId=null,currentLayerId=null,liveStates={};
 var allIoBrokerObjects=null,ioBrokerTree=null,expandedPaths=new Set(),objectTreeContext=null;
 var allMfdIcons=null,mfdBaseUrl='/icons-mfd-png/';
 var editingDevice=null,editingLayerRef=null,editingIsNew=false,slotTarget=null,liveTimer=null;
-var CACHE_BUSTER='?v='+Date.now();
+var CACHE_BUSTER='?v='+Date.now();var PRES_PORT=8084;
 var DEF_VF={family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
 var DEF_NF={family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
-var emojiGroups={'Освещение':['💡','🔆','💫','🕯️','✨'],'Розетки':['🔌','','🔋'],'Климат':['️','❄️'],'Безопасность':['🔒','📹'],'Мультимедиа':['🔊']};
-var PRES_PORT=8084;
-
+var emojiGroups={'Освещение':['💡','🔆','💫','🕯️','✨'],'Розетки':['🔌','','🔋'],'Климат':['️','❄️'],'Безопасность':['🔒',''],'Мультимедиа':['🔊']};
 function showDebug(m){var b=document.getElementById('debugBanner');if(b){b.style.display='block';b.textContent=m;}}
 window.addEventListener('error',function(e){showDebug('JS: '+e.message+' ('+e.lineno+')');});
 function esc(s){return(s==null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function splitKeep(v){v=String(v==null?'':v);if(v==='')return[];return v.split(',');}
 function gv(id){return document.getElementById(id).value;}
 function sv(id,v){document.getElementById(id).value=v;}
-function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.floors))config.floors=[];}
-function isValue(t){return t==='value_read'||t==='value_write';}
+function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.floors))config.floors=[];if(!Array.isArray(config.templates))config.templates=[];}
+function normalizeType(t){if(t==='value_read'||t==='value_write'||t==='value')return'value';if(t==='list')return'switch';return t||'switch';}
+function isValue(t){return t==='value';}
 function iconStates(){return isValue(gv('deviceObjType'))?[{k:'min',l:'Тревога мин'},{k:'norm',l:'Норма'},{k:'max',l:'Тревога макс'}]:[{k:'on',l:'Вкл'},{k:'off',l:'Выкл'}];}
 function defColor(k){return{on:'#0cbaba',off:'#7f8c8d',min:'#e74c3c',norm:'#2ecc71',max:'#e74c3c'}[k]||'#000';}
-function getStateKey(dev,v){var t=dev.objType||'switch';if(isValue(t)){var n=parseFloat(v);if(!isNaN(n)){if(dev.warnBelow!==''&&dev.warnBelow!=null&&n<+dev.warnBelow)return'min';if(dev.warnAbove!==''&&dev.warnAbove!=null&&n>+dev.warnAbove)return'max';}return'norm';}return v?'on':'off';}
+function getStateKey(dev,v){if(isValue(dev.objType)){var n=parseFloat(v);if(!isNaN(n)){if(dev.warnBelow!==''&&dev.warnBelow!=null&&n<+dev.warnBelow)return'min';if(dev.warnAbove!==''&&dev.warnAbove!=null&&n>+dev.warnAbove)return'max';}return'norm';}return v?'on':'off';}
 function defaultSlots(t){return isValue(t)?{min:{kind:'emoji',value:'⚠️'},norm:{kind:'emoji',value:'🟢'},max:{kind:'emoji',value:'🔺'}}:{on:{kind:'emoji',value:'💡'},off:{kind:'emoji',value:'🌑'}};}
 function defaultIcon(t){var keys=isValue(t)?['min','norm','max']:['on','off'];var bg={},co={},bd={};keys.forEach(k=>{bg[k]='#fff';co[k]=defColor(k);bd[k]=defColor(k);});return{size:48,opacity:1,bg:bg,color:co,border:bd,slots:defaultSlots(t)};}
 function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weight;el.style.fontSize=f.size;el.style.color=f.color;if(f.bgColor&&f.bgColor!=='transparent')el.style.backgroundColor=f.bgColor;}
@@ -218,8 +213,7 @@ function barDefaults(){return{height:40,width:120,gap:8,radius:100,orient:'h',po
 document.addEventListener('DOMContentLoaded',loadConfig);
 function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{config=d;ensureConfig();if(!currentFloorId&&config.floors[0])currentFloorId=config.floors[0].id;renderFloorWorkspace();}).catch(e=>{ensureConfig();renderFloorWorkspace();showDebug('Ошибка: '+e.message);});}
 function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).then(()=>{if(cb)cb();}).catch(()=>showDebug('Ошибка сохранения'));}
-
-// ===== ЭТАЖИ/СЛОИ: порядок, просмотр =====
+// этажи/слои
 function moveFloor(i,dir){var a=config.floors;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function moveLayer(fIdx,i,dir){var a=config.floors[fIdx].layers;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function openPreview(fId){window.open('http://'+location.hostname+':'+PRES_PORT+'/?floor='+fId,'_blank');}
@@ -229,42 +223,39 @@ function addFloor(){ensureConfig();var id='floor_'+Date.now();config.floors.push
 function removeFloor(i,e){if(e)e.stopPropagation();if(!confirm('Удалить этаж?'))return;var rid=config.floors[i].id;config.floors.splice(i,1);if(currentFloorId===rid)currentFloorId=config.floors[0]?config.floors[0].id:null;saveConfig(renderFloorWorkspace);}
 function selectFloor(id){currentFloorId=id;currentLayerId=null;renderFloorWorkspace();}
 function getCurrentFloor(){for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return{floor:config.floors[i],idx:i};return null;}
-function renderFloorWorkspace(){renderFloorTabs();var w=document.getElementById('floorWorkspace');var cur=getCurrentFloor();if(!cur){w.innerHTML='<div class="plan-empty">🏠 Добавьте этаж</div>';stopLive();return;}
+function planBg(){return (config&&config.planBg)||'#2a2f36';}
+function renderFloorWorkspace(){renderFloorTabs();var w=document.getElementById('floorWorkspace');var cur=getCurrentFloor();if(!cur){w.innerHTML='<div class="plan-empty" style="background:'+planBg()+'">🏠 Добавьте этаж</div>';stopLive();return;}
  var floor=cur.floor,fIdx=cur.idx;
  if(!currentLayerId||!floor.layers.some(l=>l.id===currentLayerId))currentLayerId=floor.layers[0]?floor.layers[0].id:null;
  var chips='';floor.layers.forEach((l,i)=>{chips+='<div class="layer-chip'+(l.id===currentLayerId?' active':'')+'" onclick="selectLayer(\''+l.id+'\')"><span>'+esc(l.name)+'</span><button onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',-1)">↑</button><button onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',1)">↓</button><button onclick="event.stopPropagation();removeLayer('+fIdx+',\''+l.id+'\',event)">×</button></div>';});
  var h='<div class="floor-toolbar"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️ План</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
  h+='<div class="floor-toolbar"><strong>Слои:</strong><div class="layer-selector">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Добавить объект</button></div>';
- if(floor.image)h+='<div class="plan-editor-area" id="planEditorArea"><img src="'+floor.image+CACHE_BUSTER+'" id="planEditorImage"></div>';
- else h+='<div class="plan-editor-area"><div class="plan-empty">🖼️ Загрузите план</div></div>';
+ if(floor.image)h+='<div class="plan-editor-area" id="planEditorArea" style="background:'+planBg()+'"><img src="'+floor.image+CACHE_BUSTER+'" id="planEditorImage"></div>';
+ else h+='<div class="plan-editor-area" style="background:'+planBg()+'"><div class="plan-empty">🖼️ Загрузите план</div></div>';
  w.innerHTML=h;if(floor.image){renderPlanMarkers(floor,fIdx);startLive();}else stopLive();}
 function selectLayer(id){currentLayerId=id;renderFloorWorkspace();}
 function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
 function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой?'))return;var f=config.floors[fIdx];var i=f.layers.findIndex(l=>l.id===lId);if(i>=0)f.layers.splice(i,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
 function saveFloorName(fIdx){config.floors[fIdx].name=gv('floorNameInput')||'Без названия';saveConfig(renderFloorTabs);}
 function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'floor_'+fIdx+'_'+Date.now()+'.png',base64Data:e.target.result})}).then(x=>x.json()).then(d=>{if(d.success){config.floors[fIdx].image=d.url;saveConfig(renderFloorWorkspace);}});};r.readAsDataURL(f);}
-
-// ===== ПАНЕЛИ (настройки) =====
-function openBarModal(){fillBarModal();document.getElementById('barModal').classList.add('active');}
-function closeBarModal(){document.getElementById('barModal').classList.remove('active');}
+// настройки
+function openSettingsModal(){sv('planBg',config.planBg||'#2a2f36');fillBarFields();document.getElementById('settingsModal').classList.add('active');}
+function closeSettingsModal(){document.getElementById('settingsModal').classList.remove('active');}
 function getBar(t){return (t==='floor'?config.floorBar:config.layerBar)||barDefaults();}
-function fillBarModal(){var t=gv('barTarget');var s=getBar(t);
- sv('bar-height',s.height);sv('bar-width',s.width);sv('bar-gap',s.gap);sv('bar-radius',s.radius);sv('bar-orient',s.orient);sv('bar-position',s.position);sv('bar-align',s.align);
+function fillBarFields(){var s=getBar(gv('barTarget'));sv('bar-height',s.height);sv('bar-width',s.width);sv('bar-gap',s.gap);sv('bar-radius',s.radius);sv('bar-orient',s.orient);sv('bar-position',s.position);sv('bar-align',s.align);
  sv('bar-a-bg',s.active.bg);sv('bar-a-bd',s.active.border);sv('bar-a-ff',s.active.font.family);sv('bar-a-fw',s.active.font.weight);sv('bar-a-fs',s.active.font.size);sv('bar-a-fc',s.active.font.color);
  sv('bar-i-bg',s.inactive.bg);sv('bar-i-bd',s.inactive.border);sv('bar-i-ff',s.inactive.font.family);sv('bar-i-fw',s.inactive.font.weight);sv('bar-i-fs',s.inactive.font.size);sv('bar-i-fc',s.inactive.font.color);}
-function saveBarModal(){var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),
+function saveSettingsModal(){config.planBg=gv('planBg');var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),
  active:{bg:gv('bar-a-bg'),border:gv('bar-a-bd'),font:{family:gv('bar-a-ff'),weight:gv('bar-a-fw'),size:gv('bar-a-fs'),color:gv('bar-a-fc')}},
  inactive:{bg:gv('bar-i-bg'),border:gv('bar-i-bd'),font:{family:gv('bar-i-ff'),weight:gv('bar-i-fw'),size:gv('bar-i-fs'),color:gv('bar-i-fc')}}};
- if(t==='floor')config.floorBar=s;else config.layerBar=s;closeBarModal();saveConfig();}
-
-// ===== ЖИВЫЕ ДАННЫЕ =====
+ if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();saveConfig(renderFloorWorkspace);}
+// живые данные
 function collectStates(){var ids=[];var cur=getCurrentFloor();if(!cur)return ids;(cur.floor.layers||[]).forEach(l=>{(l.devices||[]).forEach(d=>{(d.stateIds||[]).forEach(s=>{if(s&&ids.indexOf(s)<0)ids.push(s);});});});return ids;}
 function startLive(){stopLive();pollLive();liveTimer=setInterval(pollLive,2000);}
 function stopLive(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
 function pollLive(){collectStates().forEach(sid=>{fetch('/api/state/'+sid).then(r=>r.json()).then(d=>{if(d&&liveStates[sid]!==d.val){liveStates[sid]=d.val;refreshMarkers();}}).catch(()=>{});});}
 function refreshMarkers(){var cur=getCurrentFloor();if(cur&&cur.floor.image)renderPlanMarkers(cur.floor,cur.idx);}
-
-// ===== МАРКЕР (идентично презентации) =====
+// маркер
 function slotHtml(slot,color){if(!slot)return'<span class="marker-icon">•</span>';if(slot.kind==='emoji')return'<span class="marker-icon">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBaseUrl+slot.value+'.png'):slot.value;return'<span class="icon-mask" style="background-color:'+color+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function buildMarker(dev,stateVal){var ic=dev.icon||defaultIcon(dev.objType);var key=getStateKey(dev,stateVal);
  var m=document.createElement('div');m.className='marker';m.style.left=(dev.x||50)+'%';m.style.top=(dev.y||50)+'%';m.style.width=(ic.size||48)+'px';m.style.height=(ic.size||48)+'px';m.style.opacity=ic.opacity!=null?ic.opacity:1;
@@ -287,15 +278,24 @@ function renderPlanMarkers(floor,fIdx){var area=document.getElementById('planEdi
 function copyDevice(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var s=l.devices.find(d=>d.id===id);if(!s)return;var c=JSON.parse(JSON.stringify(s));c.id='dev_'+Date.now();c.x=Math.min(100,(s.x||50)+4);c.y=Math.min(100,(s.y||50)+4);l.devices.push(c);saveConfig(renderFloorWorkspace);}
 function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(d=>d.id!==id);saveConfig(renderFloorWorkspace);}
 function attachDrag(m,dev){m.addEventListener('mousedown',function(e){if(e.button!==0)return;e.preventDefault();var st=false;var img=document.getElementById('planEditorImage');if(!img)return;function mv(ev){var r=img.getBoundingClientRect();dev.x=Math.max(0,Math.min(100,((ev.clientX-r.left)/r.width)*100));dev.y=Math.max(0,Math.min(100,((ev.clientY-r.top)/r.height)*100));m.style.left=dev.x+'%';m.style.top=dev.y+'%';st=true;}function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);if(st)saveConfig();}document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});}
-
-// ===== МОДАЛ ОБЪЕКТА =====
+// шаблоны
+function fillTemplateSelect(){var s=document.getElementById('templateSelect');var cur=s.value||'';s.innerHTML='<option value="">— не применять —</option>';(config.templates||[]).forEach(t=>{var o=document.createElement('option');o.value=t.name;o.textContent=t.name;s.appendChild(o);});s.value=cur;}
+function saveTemplate(){readDeviceFields();var name=prompt('Имя шаблона:');if(!name)return;var d=JSON.parse(JSON.stringify(editingDevice));delete d.id;delete d.name;delete d.x;delete d.y;delete d.stateIds;
+ config.templates=config.templates||[];var ex=config.templates.find(t=>t.name===name);if(ex)ex.data=d;else config.templates.push({name:name,data:d});
+ saveConfig(function(){fillTemplateSelect();alert('Шаблон сохранён: '+name);});}
+function applyTemplate(name){if(!name)return;var t=(config.templates||[]).find(x=>x.name===name);if(!t)return;
+ var keep={id:editingDevice.id,name:editingDevice.name,x:editingDevice.x,y:editingDevice.y,stateIds:editingDevice.stateIds};
+ editingDevice=Object.assign({},JSON.parse(JSON.stringify(t.data)),keep);
+ fillDeviceModal();}
+// модал объекта
 function openAddDeviceModal(fIdx){var f=config.floors[fIdx];if(!f.layers||!f.layers.length){alert('Добавьте слой');return;}var lIdx=f.layers.findIndex(l=>l.id===currentLayerId);if(lIdx<0)lIdx=0;
- editingDevice={id:'dev_'+Date.now(),name:'',stateIds:[],objType:'switch',listValues:[],prefixes:[],postfixes:[],x:50,y:50,showValue:true,showName:true};editingDevice.icon=defaultIcon('switch');
+ editingDevice={id:'dev_'+Date.now(),name:'',stateIds:[],objType:'switch',prefixes:[],postfixes:[],x:50,y:50,showValue:true,showName:true};editingDevice.icon=defaultIcon('switch');
  editingLayerRef={fIdx:fIdx,lIdx:lIdx};editingIsNew=true;sv('deviceModalTitle','Новый объект');fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
-function openEditDeviceModal(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var d=l.devices.find(x=>x.id===id);if(!d)return;editingDevice=JSON.parse(JSON.stringify(d));editingLayerRef={fIdx:fIdx,lIdx:lIdx};editingIsNew=false;sv('deviceModalTitle','Объект: '+(d.name||''));fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
+function openEditDeviceModal(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var d=l.devices.find(x=>x.id===id);if(!d)return;editingDevice=JSON.parse(JSON.stringify(d));editingDevice.objType=normalizeType(d.objType);editingLayerRef={fIdx:fIdx,lIdx:lIdx};editingIsNew=false;sv('deviceModalTitle','Объект: '+(d.name||''));fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
 function fillDeviceModal(){var d=editingDevice,f=config.floors[editingLayerRef.fIdx];
- sv('deviceName',d.name||'');sv('deviceObjType',d.objType||'switch');sv('deviceId',(d.stateIds&&d.stateIds[0])||'');sv('deviceListValues',(d.listValues||[]).join(','));sv('warnBelow',d.warnBelow!=null?d.warnBelow:'');sv('warnAbove',d.warnAbove!=null?d.warnAbove:'');
+ sv('deviceName',d.name||'');sv('deviceObjType',normalizeType(d.objType));sv('deviceId',(d.stateIds&&d.stateIds[0])||'');sv('warnBelow',d.warnBelow!=null?d.warnBelow:'');sv('warnAbove',d.warnAbove!=null?d.warnAbove:'');
  var ls=document.getElementById('deviceLayer');ls.innerHTML='';f.layers.forEach((l,i)=>{var o=document.createElement('option');o.value=l.id;o.textContent=l.name;if(i===editingLayerRef.lIdx)o.selected=true;ls.appendChild(o);});
+ fillTemplateSelect();
  document.getElementById('extraIdsContainer').innerHTML='';if(d.stateIds)for(var j=1;j<d.stateIds.length;j++)addExtraIdRow(d.stateIds[j]);
  if(!d.icon)d.icon=defaultIcon(d.objType);if(!d.icon.slots)d.icon.slots=defaultSlots(d.objType);
  sv('iconSize',d.icon.size||48);sv('iconOpacity',d.icon.opacity!=null?d.icon.opacity:1);
@@ -307,17 +307,17 @@ function buildIconUI(){var ic=editingDevice.icon,states=iconStates();var sh='';s
  sh+='<div class="slot-row"><div class="slot-label">'+st.l+'</div><div class="slot-preview">'+prev+'</div><button class="md-btn tonal small" onclick="openEmojiForSlot(\''+st.k+'\')">Emoji</button><button class="md-btn tonal small" onclick="openMfdForSlot(\''+st.k+'\')">MFD</button><button class="md-btn tonal small" onclick="openDiskForSlot(\''+st.k+'\')">📁 С диска</button></div>';});
  document.getElementById('iconSlots').innerHTML=sh;
  ['colBg','colIc','colBd'].forEach(function(cid,idx){var prop=['bg','color','border'][idx];var el=document.getElementById(cid);el.style.gridTemplateColumns='repeat('+states.length+',1fr)';var h='';states.forEach(st=>{var v=(ic[prop]&&ic[prop][st.k])||(prop==='bg'?'#ffffff':defColor(st.k));h+='<div class="color-item"><input type="color" data-prop="'+prop+'" data-key="'+st.k+'" value="'+v+'"><span>'+st.l+'</span></div>';});el.innerHTML=h;});}
-function onObjTypeChange(){var t=gv('deviceObjType');var val=isValue(t);document.getElementById('listValuesField').style.display=(t==='list')?'block':'none';document.getElementById('thresholdFields').style.display=val?'block':'none';
+function onObjTypeChange(){var t=gv('deviceObjType');var val=isValue(t);document.getElementById('thresholdFields').style.display=val?'block':'none';
  var d=editingDevice;if(!d.icon)d.icon=defaultIcon(t);var keys=val?['min','norm','max']:['on','off'];if(!d.icon.slots)d.icon.slots={};keys.forEach(k=>{if(!d.icon.slots[k])d.icon.slots[k]=defaultSlots(t)[k];});['bg','color','border'].forEach(p=>{if(!d.icon[p])d.icon[p]={};keys.forEach(k=>{if(!d.icon[p][k])d.icon[p][k]=(p==='bg'?'#ffffff':defColor(k));});});buildIconUI();}
-function readIcon(){var ic=editingDevice.icon;ic.size=+gv('iconSize');ic.opacity=+gv('iconOpacity');document.querySelectorAll('#colBg input,#colIc input,#colBd input').forEach(inp=>{var p=inp.dataset.prop,k=inp.dataset.key;if(!ic[p])ic[p]={};ic[p][k]=inp.value;});}
-function saveDevice(){readIcon();var d=editingDevice;d.name=gv('deviceName');d.objType=gv('deviceObjType');
+function readDeviceFields(){var d=editingDevice;d.name=gv('deviceName');d.objType=gv('deviceObjType');
  var main=gv('deviceId').trim();var ids=[];if(main)ids.push(main);document.querySelectorAll('.extra-id-input').forEach(i=>{var v=i.value;if(v!=='')ids.push(v);});d.stateIds=ids;
- d.listValues=splitKeep(gv('deviceListValues'));d.warnBelow=gv('warnBelow');d.warnAbove=gv('warnAbove');
+ d.warnBelow=gv('warnBelow');d.warnAbove=gv('warnAbove');
  d.showValue=document.getElementById('vf-show').checked;d.showName=document.getElementById('nf-show').checked;
  d.valueFont={family:gv('vf-family'),weight:gv('vf-weight'),size:gv('vf-size'),color:gv('vf-color'),bgColor:document.getElementById('vf-nobg').checked?'transparent':gv('vf-bg'),position:gv('vf-position')};
  d.nameFont={family:gv('nf-family'),weight:gv('nf-weight'),size:gv('nf-size'),color:gv('nf-color'),bgColor:document.getElementById('nf-nobg').checked?'transparent':gv('nf-bg'),position:gv('nf-position')};
- d.prefixes=splitKeep(gv('devicePrefixes'));d.postfixes=splitKeep(gv('devicePostfixes'));
- if(!d.name){alert('Введите название');return;}
+ d.prefixes=splitKeep(gv('devicePrefixes'));d.postfixes=splitKeep(gv('devicePostfixes'));}
+function readIcon(){var ic=editingDevice.icon;ic.size=+gv('iconSize');ic.opacity=+gv('iconOpacity');document.querySelectorAll('#colBg input,#colIc input,#colBd input').forEach(inp=>{var p=inp.dataset.prop,k=inp.dataset.key;if(!ic[p])ic[p]={};ic[p][k]=inp.value;});}
+function saveDevice(){readDeviceFields();readIcon();var d=editingDevice;if(!d.name){alert('Введите название');return;}
  var f=config.floors[editingLayerRef.fIdx];var toIdx=f.layers.findIndex(l=>l.id===gv('deviceLayer'));if(toIdx<0)toIdx=editingLayerRef.lIdx;
  if(editingIsNew)f.layers[toIdx].devices.push(d);else{var from=f.layers[editingLayerRef.lIdx];var i=from.devices.findIndex(x=>x.id===d.id);if(i>=0)from.devices.splice(i,1);f.layers[toIdx].devices.push(d);}
  closeDeviceModal();saveConfig(function(){currentLayerId=f.layers[toIdx].id;renderFloorWorkspace();});}
@@ -360,10 +360,10 @@ function closeTreeModal(){document.getElementById('treeModal').classList.remove(
 function loadIoBrokerObjects(){fetch('/api/iobroker/objects').then(r=>r.json()).then(d=>{allIoBrokerObjects=d||[];ioBrokerTree=buildIoBrokerTree(allIoBrokerObjects);renderObjectTree();}).catch(()=>{});}
 function filterTree(){renderObjectTree();}
 function selectObject(id){if(!objectTreeContext)return;if(objectTreeContext.target==='main')sv('deviceId',id);else setExtraIdValue(objectTreeContext.extraIndex,id);closeTreeModal();}
-
 window.addFloor=addFloor;window.removeFloor=removeFloor;window.selectFloor=selectFloor;window.selectLayer=selectLayer;window.addLayer=addLayer;window.removeLayer=removeLayer;window.saveFloorName=saveFloorName;window.handleImageUpload=handleImageUpload;window.moveFloor=moveFloor;window.moveLayer=moveLayer;window.openPreview=openPreview;
-window.openBarModal=openBarModal;window.closeBarModal=closeBarModal;window.fillBarModal=fillBarModal;window.saveBarModal=saveBarModal;
+window.openSettingsModal=openSettingsModal;window.closeSettingsModal=closeSettingsModal;window.fillBarFields=fillBarFields;window.saveSettingsModal=saveSettingsModal;
 window.openAddDeviceModal=openAddDeviceModal;window.openEditDeviceModal=openEditDeviceModal;window.saveDevice=saveDevice;window.cancelDevice=cancelDevice;window.deleteDevice=deleteDevice;window.onObjTypeChange=onObjTypeChange;window.addExtraIdRow=addExtraIdRow;window.openObjectTreeForExtra=openObjectTreeForExtra;
+window.saveTemplate=saveTemplate;window.applyTemplate=applyTemplate;
 window.openObjectTree=openObjectTree;window.closeTreeModal=closeTreeModal;window.selectObject=selectObject;window.filterTree=filterTree;window.expandAllBranches=expandAllBranches;window.collapseAllBranches=collapseAllBranches;
 window.openEmojiForSlot=openEmojiForSlot;window.selectEmoji=selectEmoji;window.closeEmojiModal=closeEmojiModal;window.openMfdForSlot=openMfdForSlot;window.selectMfd=selectMfd;window.closeMfdModal=closeMfdModal;window.filterMfdPalette=filterMfdPalette;window.openDiskForSlot=openDiskForSlot;
 </script>
