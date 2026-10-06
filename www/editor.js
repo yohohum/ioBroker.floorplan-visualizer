@@ -42,7 +42,7 @@ if(selectedDevices.size===0)return;
 if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key)===-1)return;
 if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].indexOf(document.activeElement.tagName)!==-1)return;
 e.preventDefault();
-var step=e.shiftKey?5:1;
+var step=e.shiftKey?1:0.2;
 var dx=0,dy=0;
 if(e.key==='ArrowLeft')dx=-step;
 if(e.key==='ArrowRight')dx=step;
@@ -60,27 +60,21 @@ d.y=Math.max(0,Math.min(100,d.y+dy));
 saveConfig(renderFloorWorkspace);
 });
 // === НАПРАВЛЯЮЩИЕ ===
-function createGuide(type,position){
-var g={id:'guide_'+Date.now(),type:type,position:position};
-config.guides.push(g);
-saveConfig(renderFloorWorkspace);
-return g;
-}
-function deleteGuide(id){
-config.guides=config.guides.filter(function(g){return g.id!==id;});
-saveConfig(renderFloorWorkspace);
-}
 function renderGuides(){
 var area=$('pea');if(!area)return;
 area.querySelectorAll('.guide').forEach(function(g){g.remove();});
-if(!config.guides)return;
+if(!config.guides||config.guides.length===0)return;
 config.guides.forEach(function(g){
 var el=document.createElement('div');
 el.className='guide '+(g.type==='h'?'horizontal':'vertical');
 if(g.type==='h')el.style.top=g.position+'%';
 else el.style.left=g.position+'%';
 el.dataset.guideId=g.id;
-el.addEventListener('dblclick',function(e){e.stopPropagation();deleteGuide(g.id);});
+var label=document.createElement('div');
+label.className='guide-label';
+label.textContent=g.position.toFixed(1)+'%';
+el.appendChild(label);
+el.addEventListener('dblclick',function(e){e.stopPropagation();if(confirm('Удалить направляющую?')){config.guides=config.guides.filter(function(x){return x.id!==g.id;});saveConfig(renderFloorWorkspace);}});
 el.addEventListener('mousedown',function(e){
 if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
@@ -89,9 +83,11 @@ function mv(ev){
 var r=img.getBoundingClientRect();
 var pos=g.type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
 pos=Math.max(0,Math.min(100,pos));
+pos=Math.round(pos*10)/10;
 g.position=pos;
 if(g.type==='h')el.style.top=pos+'%';
 else el.style.left=pos+'%';
+label.textContent=pos.toFixed(1)+'%';
 }
 function up(){
 document.removeEventListener('mousemove',mv);
@@ -104,9 +100,55 @@ document.addEventListener('mouseup',up);
 area.appendChild(el);
 });
 }
+function attachGuideZones(){
+var area=$('pea');if(!area)return;
+area.querySelectorAll('.guide-zone').forEach(function(z){z.remove();});
+['top','bottom','left','right'].forEach(function(side){
+var zone=document.createElement('div');
+zone.className='guide-zone '+side;
+zone.addEventListener('mousedown',function(e){
+if(e.button!==0)return;
+e.preventDefault();e.stopPropagation();
+var img=$('peaImg');if(!img)return;
+var r=img.getBoundingClientRect();
+var type=(side==='top'||side==='bottom')?'h':'v';
+var pos=type==='h'?50:50;
+var guide={id:'guide_'+Date.now(),type:type,position:pos};
+config.guides.push(guide);
+var el=document.createElement('div');
+el.className='guide '+(type==='h'?'horizontal':'vertical');
+if(type==='h')el.style.top=pos+'%';
+else el.style.left=pos+'%';
+el.dataset.guideId=guide.id;
+var label=document.createElement('div');
+label.className='guide-label';
+label.textContent=pos.toFixed(1)+'%';
+el.appendChild(label);
+area.appendChild(el);
+function mv(ev){
+var r=img.getBoundingClientRect();
+var p=type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
+p=Math.max(0,Math.min(100,p));
+p=Math.round(p*10)/10;
+guide.position=p;
+if(type==='h')el.style.top=p+'%';
+else el.style.left=p+'%';
+label.textContent=p.toFixed(1)+'%';
+}
+function up(){
+document.removeEventListener('mousemove',mv);
+document.removeEventListener('mouseup',up);
+saveConfig();
+}
+document.addEventListener('mousemove',mv);
+document.addEventListener('mouseup',up);
+});
+area.appendChild(zone);
+});
+}
 function snapToGuides(dev,size){
 if(!config.guides||config.guides.length===0)return{x:dev.x,y:dev.y};
-var threshold=2;
+var threshold=1.5;
 var sizePct=size;
 var newX=dev.x,newY=dev.y;
 var snappedX=false,snappedY=false;
@@ -131,43 +173,7 @@ break;
 }
 }
 });
-return{x:newX,y:newY};
-}
-function attachGuideZones(){
-var area=$('pea');if(!area)return;
-area.querySelectorAll('.guide-zone').forEach(function(z){z.remove();});
-['top','bottom','left','right'].forEach(function(side){
-var zone=document.createElement('div');
-zone.className='guide-zone '+side;
-zone.addEventListener('mousedown',function(e){
-if(e.button!==0)return;
-e.preventDefault();
-var img=$('peaImg');if(!img)return;
-var type=(side==='top'||side==='bottom')?'h':'v';
-var guide=createGuide(type,50);
-var el=document.createElement('div');
-el.className='guide '+(type==='h'?'horizontal':'vertical');
-if(type==='h')el.style.top='50%';
-else el.style.left='50%';
-area.appendChild(el);
-function mv(ev){
-var r=img.getBoundingClientRect();
-var pos=type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
-pos=Math.max(0,Math.min(100,pos));
-guide.position=pos;
-if(type==='h')el.style.top=pos+'%';
-else el.style.left=pos+'%';
-}
-function up(){
-document.removeEventListener('mousemove',mv);
-document.removeEventListener('mouseup',up);
-saveConfig(renderFloorWorkspace);
-}
-document.addEventListener('mousemove',mv);
-document.addEventListener('mouseup',up);
-});
-area.appendChild(zone);
-});
+return{x:Math.round(newX*10)/10,y:Math.round(newY*10)/10};
 }
 // === ВЫДЕЛЕНИЕ И ВЫРАВНИВАНИЕ ===
 function handleMarkerClick(dev,e){
@@ -291,6 +297,8 @@ var x=((ev.clientX-r.left)/r.width)*100;
 var y=((ev.clientY-r.top)/r.height)*100;
 x=Math.max(0,Math.min(100,x));
 y=Math.max(0,Math.min(100,y));
+x=Math.round(x*10)/10;
+y=Math.round(y*10)/10;
 var snapped=snapToGuides({x:x,y:y},sizePct);
 dev.x=snapped.x;
 dev.y=snapped.y;

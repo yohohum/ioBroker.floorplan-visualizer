@@ -60,18 +60,21 @@
 .align-btn:hover{background:var(--pc);border-color:var(--p)}
 .align-btn:active{transform:scale(.95)}
 .align-divider{height:1px;background:var(--ov);margin:4px 0}
-/* Направляющие */
-.guide-zone{position:absolute;z-index:999;background:transparent}
-.guide-zone.top{top:0;left:0;right:0;height:10px;cursor:ns-resize}
-.guide-zone.bottom{bottom:0;left:0;right:0;height:10px;cursor:ns-resize}
-.guide-zone.left{top:0;bottom:0;left:0;width:10px;cursor:ew-resize}
-.guide-zone.right{top:0;bottom:0;right:0;width:10px;cursor:ew-resize}
-.guide-zone:hover{background:rgba(0,97,164,.1)}
+.guide-zone{position:absolute;z-index:999;background:rgba(0,97,164,.05);transition:background .2s}
+.guide-zone:hover{background:rgba(0,97,164,.15)}
+.guide-zone.top{top:0;left:0;right:0;height:15px;cursor:ns-resize}
+.guide-zone.bottom{bottom:0;left:0;right:0;height:15px;cursor:ns-resize}
+.guide-zone.left{top:0;bottom:0;left:0;width:15px;cursor:ew-resize}
+.guide-zone.right{top:0;bottom:0;right:0;width:15px;cursor:ew-resize}
 .guide{position:absolute;z-index:50;pointer-events:auto}
 .guide.horizontal{left:0;right:0;height:2px;background:#e74c3c;cursor:ns-resize}
 .guide.vertical{top:0;bottom:0;width:2px;background:#e74c3c;cursor:ew-resize}
-.guide:hover{background:#c0392b;height:4px;width:4px}
-.guide.snap{background:#27ae60;box-shadow:0 0 8px rgba(39,174,96,.5)}
+.guide:hover{background:#c0392b}
+.guide.horizontal:hover{height:4px}
+.guide.vertical:hover{width:4px}
+.guide-label{position:absolute;background:#e74c3c;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;pointer-events:none;white-space:nowrap}
+.guide.horizontal .guide-label{top:-20px;left:10px}
+.guide.vertical .guide-label{left:10px;top:-20px}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
 <div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
