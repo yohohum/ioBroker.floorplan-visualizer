@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Редактор плана этажа v6.0</title>
+<title>Редактор плана этажа v7.0</title>
 <style>
 :root{
-  --md-primary:#0061a4; --md-on-primary:#fff; --md-primary-container:#d1e4ff; --md-on-primary-container:#001d36;
-  --md-secondary-container:#d8e2ec; --md-on-secondary-container:#101c26;
-  --md-surface:#f7f9fc; --md-surface-c1:#eef1f6; --md-surface-c2:#e8ebf1; --md-surface-c3:#e2e6ec;
-  --md-on-surface:#1a1c20; --md-on-variant:#43484e; --md-outline:#73777f; --md-outline-v:#c3c7cf;
-  --md-error:#ba1a1a; --md-error-c:#f9dedc; --md-success:#146c2e; --md-success-c:#c4eed0;
-  --md-r-xl:28px; --md-r-l:16px; --md-r-m:12px; --md-r-s:8px;
+  --md-primary:#0061a4;--md-on-primary:#fff;--md-primary-container:#d1e4ff;--md-on-primary-container:#001d36;
+  --md-secondary-container:#d8e2ec;--md-on-secondary-container:#101c26;
+  --md-surface:#f7f9fc;--md-surface-c1:#eef1f6;--md-surface-c2:#e8ebf1;--md-surface-c3:#e2e6ec;
+  --md-on-surface:#1a1c20;--md-on-variant:#43484e;--md-outline:#73777f;--md-outline-v:#c3c7cf;
+  --md-error:#ba1a1a;--md-error-c:#f9dedc;--md-success:#146c2e;--md-success-c:#c4eed0;
+  --md-r-xl:28px;--md-r-l:16px;--md-r-m:12px;--md-r-s:8px;
   --md-e1:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
   --md-e2:0 2px 6px rgba(0,0,0,.14),0 1px 2px rgba(0,0,0,.10);
   --md-e3:0 6px 18px rgba(0,0,0,.16),0 2px 6px rgba(0,0,0,.10);
@@ -20,30 +20,22 @@
 body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-surface);color:var(--md-on-surface);padding:20px}
 .container{max-width:1600px;margin:0 auto}
 .header{background:var(--md-primary-container);color:var(--md-on-primary-container);padding:22px 28px;border-radius:var(--md-r-xl);margin-bottom:20px;box-shadow:var(--md-e1)}
-.header h1{font-size:24px;font-weight:500}
-.header p{opacity:.8;font-size:14px;margin-top:4px}
+.header h1{font-size:24px;font-weight:500}.header p{opacity:.8;font-size:14px;margin-top:4px}
 #debugBanner{display:none;background:var(--md-error-c);color:var(--md-error);padding:12px 20px;border-radius:var(--md-r-m);margin-bottom:15px;font-weight:500}
-.tabs{display:flex;gap:8px;margin-bottom:20px;background:var(--md-surface-c1);padding:8px;border-radius:100px;box-shadow:var(--md-e1)}
-.tab{padding:10px 24px;background:transparent;border:none;border-radius:100px;color:var(--md-on-variant);font-weight:500;cursor:pointer;transition:.2s}
-.tab:hover{background:var(--md-surface-c3)}
-.tab.active{background:var(--md-secondary-container);color:var(--md-on-secondary-container)}
 .content{background:var(--md-surface-c1);border-radius:var(--md-r-xl);padding:28px;box-shadow:var(--md-e1)}
-.section h2{color:var(--md-on-surface);font-weight:500;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--md-outline-v)}
-/* MD fields */
+.section h2{font-weight:500;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--md-outline-v)}
 .md-field{margin-bottom:14px}
 .md-field label{display:block;margin-bottom:6px;font-weight:500;color:var(--md-on-variant);font-size:13px}
 .md-field input,.md-field select{width:100%;padding:12px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);font-size:14px;background:var(--md-surface);color:var(--md-on-surface);font-family:inherit}
 .md-field input:focus,.md-field select:focus{outline:2px solid var(--md-primary);border-color:var(--md-primary)}
-/* MD sections (блоки с отбивкой) */
 .md-section{background:var(--md-surface-c2);border-radius:var(--md-r-l);padding:16px;margin-bottom:16px}
 .md-section-title{font-size:14px;font-weight:500;color:var(--md-primary);margin-bottom:12px}
-.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px}
 .color-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
 .color-item{display:flex;flex-direction:column;align-items:center;gap:5px}
 .color-item input[type=color]{width:100%;height:40px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);cursor:pointer;padding:2px;background:var(--md-surface)}
 .color-item span{font-size:12px;color:var(--md-on-variant)}
 .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--md-on-variant);margin-top:6px}
-/* MD buttons */
 .md-btn{border:none;border-radius:100px;padding:10px 24px;font-weight:500;font-size:14px;cursor:pointer;transition:.2s;font-family:inherit}
 .md-btn.filled{background:var(--md-primary);color:var(--md-on-primary)}
 .md-btn.tonal{background:var(--md-secondary-container);color:var(--md-on-secondary-container)}
@@ -51,14 +43,14 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .md-btn.danger{background:var(--md-error-c);color:var(--md-error)}
 .md-btn:hover{filter:brightness(.96);box-shadow:var(--md-e1)}
 .md-btn.small{padding:6px 16px;font-size:13px}
-/* floors */
+.spacer{flex:1}
 .floor-tabs-container{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid var(--md-outline-v)}
 .floor-tab-editor{padding:8px 16px;background:var(--md-surface-c2);border-radius:100px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
 .floor-tab-editor.active{background:var(--md-primary);color:var(--md-on-primary)}
 .floor-tab-editor .close-tab{background:rgba(0,0,0,.15);border:none;color:inherit;border-radius:50%;width:18px;height:18px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .floor-workspace{display:flex;flex-direction:column;gap:15px}
 .floor-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px;background:var(--md-surface-c2);border-radius:var(--md-r-l)}
-.floor-toolbar input[type=text]{flex:1;min-width:200px;padding:10px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);background:var(--md-surface)}
+.floor-toolbar input[type=text]{flex:1;min-width:160px;padding:10px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);background:var(--md-surface)}
 .layer-selector{display:flex;gap:6px;flex-wrap:wrap}
 .layer-chip{padding:6px 14px;background:var(--md-surface);border:1px solid var(--md-outline-v);border-radius:100px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px}
 .layer-chip.active{background:var(--md-primary);color:var(--md-on-primary);border-color:var(--md-primary)}
@@ -71,20 +63,17 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .plan-marker.dragging{opacity:.7;cursor:grabbing;z-index:100}
 .plan-marker .marker-icon{pointer-events:none;line-height:1}
 .icon-mask{display:inline-block;width:100%;height:100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
-/* подписи на плане */
 .lbl{position:absolute;pointer-events:none;white-space:nowrap;padding:2px 8px;border-radius:6px;z-index:21}
 .lbl-pos-bottom{top:100%;left:50%;transform:translate(-50%,4px)}
 .lbl-pos-top{bottom:100%;left:50%;transform:translate(-50%,-4px)}
 .lbl-pos-right{left:100%;top:50%;transform:translate(4px,-50%)}
 .lbl-pos-left{right:100%;top:50%;transform:translate(-4px,-50%)}
 .lbl-pos-overlay{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;white-space:normal;width:max-content;max-width:150%}
-/* MD dialog */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
-.modal{background:var(--md-surface-c2);border-radius:var(--md-r-xl);padding:24px;max-width:760px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:var(--md-e3)}
-.modal h2{margin-bottom:18px;color:var(--md-on-surface);font-weight:500}
+.modal{background:var(--md-surface-c2);border-radius:var(--md-r-xl);padding:24px;max-width:780px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:var(--md-e3)}
+.modal h2{margin-bottom:18px;font-weight:500}
 .md-actions{display:flex;gap:8px;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--md-outline-v)}
-.md-actions .spacer{flex:1}
 .modal-large{max-width:900px}
 .object-tree-search{margin-bottom:10px;display:flex;gap:6px}
 .object-tree-search input{flex:1;padding:10px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);background:var(--md-surface)}
@@ -92,8 +81,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .tree-branch-header{padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--md-surface-c2);display:flex;align-items:center;gap:8px;user-select:none}
 .tree-branch-header:hover{background:var(--md-primary-container)}
 .branch-toggle{display:inline-block;width:14px;color:var(--md-primary);font-size:10px}
-.branch-name{font-weight:500}
-.branch-count{color:var(--md-on-variant);font-size:11px}
+.branch-name{font-weight:500}.branch-count{color:var(--md-on-variant);font-size:11px}
 .tree-node{padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--md-surface-c2);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .tree-node:hover{background:var(--md-primary-container)}
 .tree-node.selected{background:var(--md-primary);color:var(--md-on-primary)}
@@ -108,8 +96,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .icon-option.selected *{color:var(--md-on-primary)}
 .icon-option .icon-preview{line-height:1;display:flex;align-items:center;justify-content:center;width:32px;height:32px}
 .icon-option .icon-name{font-size:9px;text-align:center;color:var(--md-on-variant);word-break:break-all;max-height:22px;overflow:hidden}
-.id-input-wrapper{display:flex;gap:6px}
-.id-input-wrapper input{flex:1}
+.id-input-wrapper{display:flex;gap:6px}.id-input-wrapper input{flex:1}
 .current-icon-preview{display:inline-flex;align-items:center;gap:10px;padding:8px;background:var(--md-surface);border-radius:var(--md-r-m);margin-top:6px}
 .current-icon-preview .preview-box{width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:var(--md-surface-c2);border:1px solid var(--md-outline-v);border-radius:50%;font-size:24px}
 .extra-id-row{display:flex;gap:6px;margin-bottom:8px;align-items:center}
@@ -118,23 +105,21 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .extra-ids-label{font-size:12px;color:var(--md-on-variant);margin:10px 0 6px}
 .mfd-diagnostics{background:#fff8e1;border:1px solid #ffc107;border-radius:var(--md-r-m);padding:10px;margin-bottom:10px;font-size:12px}
 .mfd-diagnostics strong{display:block;margin-bottom:5px}
-.mfd-diagnostics ul{margin-left:20px}
-.type-card{background:var(--md-surface-c2);border-radius:var(--md-r-l);padding:20px;margin-bottom:20px}
-.type-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-.type-header input{flex:1;margin-right:10px;font-size:16px;font-weight:500;padding:10px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);background:var(--md-surface)}
+/* контекстное меню */
+.ctx-menu{position:fixed;z-index:3000;background:var(--md-surface-c2);border-radius:var(--md-r-m);box-shadow:var(--md-e3);min-width:170px;padding:6px;display:none}
+.ctx-menu.active{display:block}
+.ctx-item{padding:10px 16px;border-radius:var(--md-r-s);cursor:pointer;font-size:14px}
+.ctx-item:hover{background:var(--md-primary-container)}
+.ctx-item.danger{color:var(--md-error)}
+.ctx-item.danger:hover{background:var(--md-error-c)}
 </style>
 </head>
 <body>
 <div class="container">
   <div id="debugBanner"></div>
   <div class="header"><h1>Редактор плана этажа</h1><p>Интерактивное размещение объектов умного дома</p></div>
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('types',this)">Типы элементов</button>
-    <button class="tab" onclick="showTab('floors',this)">Этажи</button>
-  </div>
   <div class="content">
-    <div id="tab-types" class="tab-content"><div class="section"><h2>Типы элементов</h2><div id="types-container"></div><button class="md-btn filled" onclick="addElementType()">+ Добавить тип</button></div></div>
-    <div id="tab-floors" class="tab-content" style="display:none"><div class="section"><h2>Этажи</h2><div class="floor-tabs-container" id="floorTabsEditor"></div><div class="floor-workspace" id="floorWorkspace"></div></div></div>
+    <div class="section"><h2>Этажи</h2><div class="floor-tabs-container" id="floorTabsEditor"></div><div class="floor-workspace" id="floorWorkspace"></div></div>
   </div>
 </div>
 
@@ -143,19 +128,20 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
   <div class="modal">
     <h2 id="deviceModalTitle">Объект</h2>
     <div class="md-field"><label>Название объекта</label><input type="text" id="deviceName" placeholder="Например: Люстра в гостиной"></div>
-    <div class="md-field"><label>Тип объекта</label>
-      <select id="deviceObjType" onchange="onObjTypeChange()">
-        <option value="switch">Переключатель</option>
-        <option value="value_write">Значение (ввод)</option>
-        <option value="list">Список</option>
-        <option value="indicator">Индикатор</option>
-        <option value="value_read">Значение (чтение)</option>
-      </select>
+    <div class="settings-grid">
+      <div class="md-field"><label>Тип объекта</label>
+        <select id="deviceObjType" onchange="onObjTypeChange()">
+          <option value="switch">Переключатель</option><option value="value_write">Значение (ввод)</option>
+          <option value="list">Список</option><option value="indicator">Индикатор</option><option value="value_read">Значение (чтение)</option>
+        </select></div>
+      <div class="md-field"><label>Слой отображения</label><select id="deviceLayer"></select></div>
     </div>
     <div class="md-field"><label>Состояние ioBroker</label>
-      <div class="id-input-wrapper"><input type="text" id="deviceId" placeholder="hue.0.lights.1.state"><button class="md-btn tonal small" onclick="openObjectTree('main',-1)">🔍 Обзор</button></div>
-    </div>
+      <div class="id-input-wrapper"><input type="text" id="deviceId" placeholder="hue.0.lights.1.state"><button class="md-btn tonal small" onclick="openObjectTree('main',-1)">🔍 Обзор</button></div></div>
     <div class="md-field" id="listValuesField" style="display:none"><label>Значения списка (через запятую)</label><input type="text" id="deviceListValues" placeholder="auto,eco,comfort"></div>
+    <div class="md-field val-only" id="thresholdFields" style="display:none"><div class="settings-grid">
+      <div class="md-field"><label>Тревога если ниже</label><input type="number" id="warnBelow" placeholder="пусто = не проверять"></div>
+      <div class="md-field"><label>Тревога если выше</label><input type="number" id="warnAbove" placeholder="пусто = не проверять"></div></div></div>
     <div class="md-field"><div class="extra-ids-label">Дополнительные состояния:</div><div id="extraIdsContainer"></div><button class="md-btn tonal small" onclick="addExtraIdRow()">+ Добавить состояние</button></div>
 
     <div class="md-section"><div class="md-section-title">Иконка</div>
@@ -167,30 +153,33 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
       <div class="md-field" id="emojiControls"><label>Emoji ВКЛ / ВЫКЛ</label>
         <button class="md-btn tonal small" onclick="openEmojiPalette()">Выбрать emoji</button>
         <div class="current-icon-preview"><div class="preview-box" id="emojiOnPreview">💡</div><span>ВКЛ</span><div class="preview-box" id="emojiOffPreview">🌑</div><span>ВЫКЛ</span></div>
-        <input type="hidden" id="deviceIconOn"><input type="hidden" id="deviceIconOff">
-      </div>
+        <input type="hidden" id="deviceIconOn"><input type="hidden" id="deviceIconOff"></div>
       <div class="md-field" id="mfdControls" style="display:none"><label>MFD-иконка</label>
         <button class="md-btn tonal small" onclick="openMfdPalette()">Выбрать MFD</button>
         <div class="current-icon-preview"><div class="preview-box" id="mfdPreview"></div><span id="mfdPreviewName">не выбрано</span></div>
-        <input type="hidden" id="deviceIconName">
-      </div>
-      <div class="md-field"><label>Цвет фона (по состояниям)</label><div class="color-grid">
+        <input type="hidden" id="deviceIconName"></div>
+      <div class="md-field"><label>Цвет фона</label><div class="color-grid">
         <div class="color-item"><input type="color" id="dev-bg-act"><span>Вкл</span></div>
         <div class="color-item"><input type="color" id="dev-bg-in"><span>Выкл</span></div>
-        <div class="color-item"><input type="color" id="dev-bg-w"><span>Тревога</span></div>
-        <div class="color-item"><input type="color" id="dev-bg-s"><span>Норма</span></div></div></div>
-      <div class="md-field"><label>Цвет иконки (по состояниям)</label><div class="color-grid">
+        <div class="color-item val-only"><input type="color" id="dev-bg-w"><span>Тревога</span></div>
+        <div class="color-item val-only"><input type="color" id="dev-bg-s"><span>Норма</span></div></div></div>
+      <div class="md-field"><label>Цвет иконки</label><div class="color-grid">
         <div class="color-item"><input type="color" id="dev-ic-act"><span>Вкл</span></div>
         <div class="color-item"><input type="color" id="dev-ic-in"><span>Выкл</span></div>
-        <div class="color-item"><input type="color" id="dev-ic-w"><span>Тревога</span></div>
-        <div class="color-item"><input type="color" id="dev-ic-s"><span>Норма</span></div></div></div>
+        <div class="color-item val-only"><input type="color" id="dev-ic-w"><span>Тревога</span></div>
+        <div class="color-item val-only"><input type="color" id="dev-ic-s"><span>Норма</span></div></div></div>
+      <div class="md-field"><label>Цвет рамки</label><div class="color-grid">
+        <div class="color-item"><input type="color" id="dev-bd-act"><span>Вкл</span></div>
+        <div class="color-item"><input type="color" id="dev-bd-in"><span>Выкл</span></div>
+        <div class="color-item val-only"><input type="color" id="dev-bd-w"><span>Тревога</span></div>
+        <div class="color-item val-only"><input type="color" id="dev-bd-s"><span>Норма</span></div></div></div>
     </div>
 
     <div class="md-section"><div class="md-section-title">Шрифт значения</div>
       <div class="settings-grid">
-        <div class="md-field"><label>Шрифт</label><input type="text" id="vf-family" placeholder="Arial"></div>
+        <div class="md-field"><label>Шрифт</label><input type="text" id="vf-family"></div>
         <div class="md-field"><label>Начертание</label><select id="vf-weight"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
-        <div class="md-field"><label>Размер</label><input type="text" id="vf-size" placeholder="12px"></div>
+        <div class="md-field"><label>Размер</label><input type="text" id="vf-size"></div>
         <div class="md-field"><label>Цвет шрифта</label><input type="color" id="vf-color"></div>
         <div class="md-field"><label>Цвет фона</label><input type="color" id="vf-bg"></div>
         <div class="md-field"><label>Расположение</label><select id="vf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div>
@@ -198,15 +187,14 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
       <label class="chk"><input type="checkbox" id="vf-nobg"> Фон значения прозрачный</label>
       <div class="settings-grid" style="margin-top:10px">
         <div class="md-field"><label>Префиксы (через запятую)</label><input type="text" id="devicePrefixes"></div>
-        <div class="md-field"><label>Постфиксы (через запятую)</label><input type="text" id="devicePostfixes"></div>
-      </div>
+        <div class="md-field"><label>Постфиксы (через запятую)</label><input type="text" id="devicePostfixes"></div></div>
     </div>
 
     <div class="md-section"><div class="md-section-title">Шрифт названия</div>
       <div class="settings-grid">
-        <div class="md-field"><label>Шрифт</label><input type="text" id="nf-family" placeholder="Arial"></div>
+        <div class="md-field"><label>Шрифт</label><input type="text" id="nf-family"></div>
         <div class="md-field"><label>Начертание</label><select id="nf-weight"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
-        <div class="md-field"><label>Размер</label><input type="text" id="nf-size" placeholder="12px"></div>
+        <div class="md-field"><label>Размер</label><input type="text" id="nf-size"></div>
         <div class="md-field"><label>Цвет шрифта</label><input type="color" id="nf-color"></div>
         <div class="md-field"><label>Цвет фона</label><input type="color" id="nf-bg"></div>
         <div class="md-field"><label>Расположение</label><select id="nf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div>
@@ -223,17 +211,15 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
   </div>
 </div>
 
-<!-- ДЕРЕВО / EMOJI / MFD модалы -->
+<!-- ДЕРЕВО / EMOJI / MFD -->
 <div class="modal-overlay" id="treeModal"><div class="modal modal-large"><h2>Выбор объекта ioBroker</h2>
   <div class="object-tree-search"><input type="text" id="treeSearch" placeholder="🔍 Поиск" oninput="filterTree()"><button class="md-btn tonal small" onclick="expandAllBranches()">Развернуть</button><button class="md-btn tonal small" onclick="collapseAllBranches()">Свернуть</button></div>
   <div class="object-tree" id="objectTree"><div class="tree-loading">Загрузка...</div></div>
   <div class="md-actions"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div></div></div>
-
 <div class="modal-overlay" id="emojiModal"><div class="modal"><h2>Выбор Emoji</h2>
   <div class="md-field"><label>Режим</label><select id="emojiMode"><option value="on">Для ВКЛ</option><option value="off">Для ВЫКЛ</option></select></div>
   <div class="icon-palette" id="emojiPalette"></div>
   <div class="md-actions"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div></div></div>
-
 <div class="modal-overlay" id="mfdModal"><div class="modal modal-large"><h2>Выбор MFD-иконки</h2>
   <div id="mfdDiagnostics"></div>
   <div class="object-tree-search"><input type="text" id="mfdSearch" placeholder="🔍 Поиск иконки" oninput="filterMfdPalette()"></div>
@@ -243,37 +229,46 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 <script>
 'use strict';
 var config=null,currentFloorId=null,currentLayerId=null;
-var allIoBrokerObjects=null,ioBrokerTree=null,expandedPaths=new Set();
+var allIoBrokerObjects=null,ioBrokerTree=null,expandedPaths=new Set(),objectTreeContext=null;
 var allMfdIcons=null,mfdBaseUrl='/icons-mfd-png/';
 var editingDevice=null,editingLayerRef=null,editingIsNew=false;
 var CACHE_BUSTER='?v='+Date.now();
-var emojiGroups={'Освещение':['💡','🔆','💫','🕯️','','✨'],'Розетки':['🔌','⚡','','📱','💻'],'Климат':['🌡️','','❄️','🔥','️'],'Безопасность':['🔒','','📹','','⚠️'],'Мультимедиа':['🔊','','📻','']};
+var emojiGroups={'Освещение':['💡','🔆','💫','🕯️','✨'],'Розетки':['🔌','','🔋',''],'Климат':['️','','❄️',''],'Безопасность':['🔒','📹','️'],'Мультимедиа':['🔊','']};
 
 function showDebug(m){var b=document.getElementById('debugBanner');if(b){b.style.display='block';b.textContent=m;}}
 window.addEventListener('error',function(e){showDebug('JS: '+e.message+' ('+e.lineno+')');});
 function esc(s){return(s===undefined||s===null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function splitList(v){return String(v||'').split(',').map(function(s){return s.trim();}).filter(Boolean);}
+function splitList(v){return String(v||'').split(',').map(s=>s.trim()).filter(Boolean);}
 function gv(id){return document.getElementById(id).value;}
 function sv(id,v){document.getElementById(id).value=v;}
-function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.elementTypes))config.elementTypes=[];if(!Array.isArray(config.floors))config.floors=[];}
-function getStateKey(t,v){if(t==='security')return v?'warning':'safe';if(t==='sensor'){if(typeof v==='boolean')return v?'active':'inactive';return'safe';}return v?'active':'inactive';}
+function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.floors))config.floors=[];}
 document.addEventListener('DOMContentLoaded',loadConfig);
-function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{config=d;ensureConfig();renderAll();}).catch(e=>{ensureConfig();renderAll();showDebug('Ошибка: '+e.message);});}
+function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{config=d;ensureConfig();renderFloorWorkspace();}).catch(e=>{ensureConfig();renderFloorWorkspace();showDebug('Ошибка: '+e.message);});}
 function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).then(()=>{if(cb)cb();}).catch(e=>showDebug('Ошибка сохранения: '+e.message));}
-function renderAll(){renderElementTypes();renderFloorWorkspace();}
-function showTab(t,el){document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+t).style.display='block';if(el)el.classList.add('active');}
-function planImageError(){showDebug('Файл плана не найден. Загрузите план заново.');}
 
-// ===== ТИПЫ =====
-function buildTypeHtml(t,i){var c=t.colors||{},f=t.font||{},bg=t.bg||{},ic=t.iconColor||{};
-return '<div class="type-card"><div class="type-header"><input type="text" value="'+esc(t.name)+'" id="type-name-'+i+'"><button class="md-btn danger small" onclick="removeType('+i+')">Удалить</button></div>'+
-'<div class="settings-grid"><div class="md-field"><label>Размер</label><input type="number" id="type-size-'+i+'" value="'+(t.iconSize||48)+'"></div><div class="md-field"><label>Прозрачность</label><input type="number" step="0.1" id="type-opacity-'+i+'" value="'+(t.iconOpacity!=null?t.iconOpacity:1)+'"></div><div class="md-field"><label>Текст</label><select id="type-pos-'+i+'"><option value="bottom"'+(t.textPosition==='bottom'?' selected':'')+'>Снизу</option><option value="top"'+(t.textPosition==='top'?' selected':'')+'>Сверху</option><option value="overlay"'+(t.textPosition==='overlay'?' selected':'')+'>Поверх</option></select></div></div>'+
-'<div class="md-field"><label>Цвет рамки</label><div class="color-grid"><div class="color-item"><input type="color" id="type-c-act-'+i+'" value="'+esc(c.active||'#0cbaba')+'"><span>Вкл</span></div><div class="color-item"><input type="color" id="type-c-in-'+i+'" value="'+esc(c.inactive||'#7f8c8d')+'"><span>Выкл</span></div><div class="color-item"><input type="color" id="type-c-w-'+i+'" value="'+esc(c.warning||'#e74c3c')+'"><span>Тревога</span></div><div class="color-item"><input type="color" id="type-c-s-'+i+'" value="'+esc(c.safe||'#2ecc71')+'"><span>Норма</span></div></div></div>'+
-'<button class="md-btn filled" onclick="saveType('+i+')">💾 Сохранить тип</button></div>';}
-function renderElementTypes(){var c=document.getElementById('types-container');if(!c)return;var h='';for(var i=0;i<config.elementTypes.length;i++)h+=buildTypeHtml(config.elementTypes[i],i);c.innerHTML=h||'<p>Нет типов.</p>';}
-function addElementType(){ensureConfig();config.elementTypes.push({id:'type_'+Date.now(),name:'Новый тип',iconSize:48,iconOpacity:1,textPosition:'bottom',colors:{active:'#0cbaba',inactive:'#7f8c8d',warning:'#e74c3c',safe:'#2ecc71'},bg:{active:'#fff',inactive:'#fff',warning:'#fff',safe:'#fff'},iconColor:{active:'#0cbaba',inactive:'#7f8c8d',warning:'#e74c3c',safe:'#2ecc71'},font:{family:'Arial',weight:'bold',size:'12px',color:'#fff'}});renderElementTypes();}
-function removeType(i){if(confirm('Удалить тип?')){config.elementTypes.splice(i,1);saveConfig(renderElementTypes);}}
-function saveType(i){var t=config.elementTypes[i];t.name=gv('type-name-'+i)||'Без названия';t.iconSize=+gv('type-size-'+i)||48;t.iconOpacity=+gv('type-opacity-'+i);t.textPosition=gv('type-pos-'+i);if(!t.colors)t.colors={};t.colors.active=gv('type-c-act-'+i);t.colors.inactive=gv('type-c-in-'+i);t.colors.warning=gv('type-c-w-'+i);t.colors.safe=gv('type-c-s-'+i);saveConfig(function(){alert('Тип сохранён');});}
+// ===== ДЕФОЛТЫ ЭКЗЕМПЛЯРА =====
+function defaultSettings(){return{
+ icon:{size:48,opacity:1,
+  bg:{active:'#ffffff',inactive:'#ffffff',warning:'#ffffff',safe:'#ffffff'},
+  color:{active:'#0cbaba',inactive:'#7f8c8d',warning:'#e74c3c',safe:'#2ecc71'},
+  border:{active:'#0cbaba',inactive:'#7f8c8d',warning:'#e74c3c',safe:'#2ecc71'}},
+ valueFont:{family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'},
+ nameFont:{family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'}};}
+function effSettings(dev){var d=defaultSettings();var ic=dev.icon||{};
+ return{size:ic.size||d.icon.size,opacity:ic.opacity!=null?ic.opacity:d.icon.opacity,
+  bg:Object.assign({},d.icon.bg,ic.bg),color:Object.assign({},d.icon.color,ic.color),border:Object.assign({},d.icon.border,ic.border),
+  valueFont:Object.assign({},d.valueFont,dev.valueFont),nameFont:Object.assign({},d.nameFont,dev.nameFont)};}
+function getStateKey(dev,v){var t=dev.objType||'switch';
+ if(t==='value_read'||t==='value_write'){
+   if(typeof v==='boolean')return v?'active':'inactive';
+   var n=parseFloat(v);
+   if(!isNaN(n)){
+     if(dev.warnAbove!==''&&dev.warnAbove!=null&&n>+dev.warnAbove)return'warning';
+     if(dev.warnBelow!==''&&dev.warnBelow!=null&&n<+dev.warnBelow)return'warning';}
+   return'safe';}
+ if(t==='list')return'active';
+ return v?'active':'inactive';}
+function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weight;el.style.fontSize=f.size;el.style.color=f.color;if(f.bgColor&&f.bgColor!=='transparent')el.style.backgroundColor=f.bgColor;}
 
 // ===== ЭТАЖИ =====
 function renderFloorTabs(){var c=document.getElementById('floorTabsEditor');if(!c)return;var h='';for(var i=0;i<config.floors.length;i++){var f=config.floors[i];h+='<div class="floor-tab-editor'+(f.id===currentFloorId?' active':'')+'" onclick="selectFloor(\''+f.id+'\')"><span>'+esc(f.name)+'</span><button class="close-tab" onclick="removeFloor('+i+',event)">×</button></div>';}h+='<button class="md-btn filled small" onclick="addFloor()">+ Этаж</button>';c.innerHTML=h;}
@@ -286,69 +281,97 @@ var floor=cur.floor,fIdx=cur.idx;
 if(!currentLayerId||!floor.layers.some(l=>l.id===currentLayerId))currentLayerId=floor.layers[0]?floor.layers[0].id:null;
 var chips='';floor.layers.forEach(l=>{chips+='<div class="layer-chip'+(l.id===currentLayerId?' active':'')+'" onclick="selectLayer(\''+l.id+'\')"><span>'+esc(l.name)+'</span><button class="remove-layer" onclick="removeLayer('+fIdx+',\''+l.id+'\',event)">×</button></div>';});
 var h='<div class="floor-toolbar"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️ План</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
-h+='<div class="floor-toolbar"><strong>Слои:</strong><div class="layer-selector">'+chips+'<button class="md-btn filled small" onclick="addLayer('+fIdx+')">+ Слой</button></div></div>';
-if(floor.image){h+='<div class="plan-editor-area" id="planEditorArea"><img src="'+floor.image+CACHE_BUSTER+'" id="planEditorImage" onerror="planImageError()"></div><div style="margin-top:10px"><button class="md-btn filled" onclick="openAddDeviceModal('+fIdx+')">+ Добавить объект</button></div>';}
+h+='<div class="floor-toolbar"><strong>Слои:</strong><div class="layer-selector">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Добавить объект</button></div>';
+if(floor.image){h+='<div class="plan-editor-area" id="planEditorArea"><img src="'+floor.image+CACHE_BUSTER+'" id="planEditorImage" onerror="planImageError()"></div>';}
 else{h+='<div class="plan-editor-area"><div class="plan-empty">🖼️ Загрузите план этажа</div></div>';}
 w.innerHTML=h;if(floor.image)renderPlanMarkers(floor,fIdx);}
 function selectLayer(id){currentLayerId=id;renderFloorWorkspace();}
-function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,type:config.elementTypes[0]?config.elementTypes[0].id:'lighting',devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
-function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой?'))return;var f=config.floors[fIdx];var idx=f.layers.findIndex(l=>l.id===lId);if(idx>=0)f.layers.splice(idx,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
+function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
+function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой со всеми объектами?'))return;var f=config.floors[fIdx];var i=f.layers.findIndex(l=>l.id===lId);if(i>=0)f.layers.splice(i,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
 function saveFloorName(fIdx){config.floors[fIdx].name=gv('floorNameInput')||'Без названия';saveConfig(renderFloorTabs);}
 function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'floor_'+fIdx+'_'+Date.now()+'.png',base64Data:e.target.result})}).then(x=>x.json()).then(d=>{if(d.success){config.floors[fIdx].image=d.url;saveConfig(renderFloorWorkspace);}}).catch(err=>showDebug('Ошибка: '+err.message));};r.readAsDataURL(f);}
+function planImageError(){showDebug('Файл плана не найден. Загрузите план заново.');}
 
-// ===== ЭФФЕКТИВНЫЕ НАСТРОЙКИ =====
-function getTypeSettings(t){if(!config||!config.elementTypes)return null;for(var i=0;i<config.elementTypes.length;i++)if(config.elementTypes[i].id===t)return config.elementTypes[i];return config.elementTypes[0];}
-function effSettings(dev,ts){ts=ts||{};var ic=dev.icon||{};
-return{size:ic.size||ts.iconSize||48,opacity:ic.opacity!=null?ic.opacity:(ts.iconOpacity!=null?ts.iconOpacity:1),
-bg:Object.assign({},ts.bg,ic.bg),color:Object.assign({},ts.iconColor||ts.colors,ic.color),
-valueFont:Object.assign({family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'},dev.valueFont),
-nameFont:Object.assign({family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'},dev.nameFont)};}
-function defaultsFromType(ts){ts=ts||{};return{
-icon:{size:ts.iconSize||48,opacity:ts.iconOpacity!=null?ts.iconOpacity:1,bg:Object.assign({active:'#fff',inactive:'#fff',warning:'#fff',safe:'#fff'},ts.bg),color:Object.assign({active:'#000',inactive:'#000',warning:'#000',safe:'#000'},ts.iconColor||ts.colors)},
-valueFont:{family:(ts.font&&ts.font.family)||'Arial',weight:(ts.font&&ts.font.weight)||'bold',size:(ts.font&&ts.font.size)||'12px',color:(ts.font&&ts.font.color)||'#fff',bgColor:'transparent',position:ts.textPosition||'overlay'},
-nameFont:{family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'}};}
+// ===== МАРКЕРЫ + КОНТЕКСТНОЕ МЕНЮ =====
+var ctxMenuEl=null;
+function ensureCtxMenu(){if(ctxMenuEl)return ctxMenuEl;ctxMenuEl=document.createElement('div');ctxMenuEl.className='ctx-menu';document.body.appendChild(ctxMenuEl);
+ document.addEventListener('click',hideCtxMenu);document.addEventListener('scroll',hideCtxMenu,true);return ctxMenuEl;}
+function hideCtxMenu(){if(ctxMenuEl)ctxMenuEl.classList.remove('active');}
+function showCtxMenu(x,y,items){var m=ensureCtxMenu();m.innerHTML='';items.forEach(it=>{var d=document.createElement('div');d.className='ctx-item'+(it.danger?' danger':'');d.textContent=it.label;d.onclick=function(e){e.stopPropagation();hideCtxMenu();it.action();};m.appendChild(d);});
+ m.style.left=Math.min(x,window.innerWidth-190)+'px';m.style.top=Math.min(y,window.innerHeight-140)+'px';m.classList.add('active');}
 
-// ===== МАРКЕРЫ (редактор) =====
 function renderPlanMarkers(floor,fIdx){var area=document.getElementById('planEditorArea');var img=document.getElementById('planEditorImage');if(!area||!img)return;area.querySelectorAll('.plan-marker').forEach(m=>m.remove());if(!currentLayerId)return;
 var layer=null,lIdx=-1;for(var i=0;i<floor.layers.length;i++)if(floor.layers[i].id===currentLayerId){layer=floor.layers[i];lIdx=i;break;}if(!layer)return;
-var ts=getTypeSettings(layer.type);
-(layer.devices||[]).forEach(dev=>{var s=effSettings(dev,ts);
-var m=document.createElement('div');m.className='plan-marker';m.style.left=(dev.x||50)+'%';m.style.top=(dev.y||50)+'%';m.style.width=s.size+'px';m.style.height=s.size+'px';m.style.opacity=s.opacity;m.style.backgroundColor=s.bg.inactive||'#fff';m.style.borderColor=s.color.inactive||'#0061a4';
-if(dev.iconType==='mfd'&&dev.iconName){var url=(dev.iconBaseUrl||'/icons-mfd-png/')+esc(dev.iconName)+'.png'+CACHE_BUSTER;m.innerHTML='<span class="icon-mask" style="background-color:'+(s.color.inactive||'#000')+';-webkit-mask-image:url('+url+');mask-image:url('+url+');"></span>';}
-else m.innerHTML='<span class="marker-icon">'+esc(dev.iconOn||'💡')+'</span>';
-var nm=document.createElement('span');nm.className='lbl lbl-pos-'+(s.nameFont.position||'bottom');nm.textContent=dev.name||'';applyFont(nm,s.nameFont);m.appendChild(nm);
-attachDrag(m,dev);m.addEventListener('dblclick',function(e){e.preventDefault();e.stopPropagation();openEditDeviceModal(fIdx,lIdx,dev.id);});area.appendChild(m);});}
-function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weight;el.style.fontSize=f.size;el.style.color=f.color;if(f.bgColor&&f.bgColor!=='transparent')el.style.backgroundColor=f.bgColor;}
+(layer.devices||[]).forEach(dev=>{var s=effSettings(dev);
+ var m=document.createElement('div');m.className='plan-marker';m.style.left=(dev.x||50)+'%';m.style.top=(dev.y||50)+'%';m.style.width=s.size+'px';m.style.height=s.size+'px';m.style.opacity=s.opacity;
+ m.style.backgroundColor=s.bg.inactive||'#fff';m.style.borderColor=s.border.inactive||'#0061a4';
+ if(dev.iconType==='mfd'&&dev.iconName){var u=(dev.iconBaseUrl||'/icons-mfd-png/')+esc(dev.iconName)+'.png'+CACHE_BUSTER;m.innerHTML='<span class="icon-mask" style="background-color:'+(s.color.inactive||'#000')+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
+ else m.innerHTML='<span class="marker-icon">'+esc(dev.iconOn||'💡')+'</span>';
+ var nm=document.createElement('span');nm.className='lbl lbl-pos-'+(s.nameFont.position||'bottom');nm.textContent=dev.name||'';applyFont(nm,s.nameFont);m.appendChild(nm);
+ attachDrag(m,dev);
+ m.addEventListener('dblclick',function(e){e.preventDefault();openEditDeviceModal(fIdx,lIdx,dev.id);});
+ m.addEventListener('contextmenu',function(e){e.preventDefault();e.stopPropagation();
+   showCtxMenu(e.clientX,e.clientY,[
+     {label:'✏️ Редактировать',action:function(){openEditDeviceModal(fIdx,lIdx,dev.id);}},
+     {label:'⧉ Копировать',action:function(){copyDevice(fIdx,lIdx,dev.id);}},
+     {label:'🗑 Удалить',danger:true,action:function(){deleteDeviceById(fIdx,lIdx,dev.id);}}]);});
+ area.appendChild(m);});}
+function copyDevice(fIdx,lIdx,devId){var layer=config.floors[fIdx].layers[lIdx];var src=layer.devices.find(d=>d.id===devId);if(!src)return;
+ var clone=JSON.parse(JSON.stringify(src));clone.id='dev_'+Date.now();clone.x=Math.min(100,(src.x||50)+4);clone.y=Math.min(100,(src.y||50)+4);
+ layer.devices.push(clone);saveConfig(renderFloorWorkspace);}
+function deleteDeviceById(fIdx,lIdx,devId){if(!confirm('Удалить объект?'))return;var layer=config.floors[fIdx].layers[lIdx];layer.devices=layer.devices.filter(d=>d.id!==devId);saveConfig(renderFloorWorkspace);}
 function attachDrag(m,dev){m.addEventListener('mousedown',function(e){if(e.button!==0)return;e.preventDefault();var st=false;m.classList.add('dragging');var img=document.getElementById('planEditorImage');if(!img)return;function mv(ev){var r=img.getBoundingClientRect();var x=((ev.clientX-r.left)/r.width)*100,y=((ev.clientY-r.top)/r.height)*100;x=Math.max(0,Math.min(100,x));y=Math.max(0,Math.min(100,y));dev.x=x;dev.y=y;m.style.left=x+'%';m.style.top=y+'%';st=true;}function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);m.classList.remove('dragging');if(st)saveConfig();}document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});}
 
 // ===== МОДАЛ ОБЪЕКТА =====
-function openAddDeviceModal(fIdx){if(!currentLayerId){alert('Выберите слой');return;}var ts=getTypeSettings(currentLayerIdOf(fIdx));editingDevice={id:'dev_'+Date.now(),name:'',stateIds:[],objType:'switch',iconType:'emoji',iconOn:'💡',iconOff:'🌑',iconName:'',listValues:[],prefixes:[],postfixes:[],x:50,y:50};Object.assign(editingDevice,defaultsFromType(ts));editingLayerRef={fIdx:fIdx,lIdx:getLayerIndex(fIdx,currentLayerId)};editingIsNew=true;sv('deviceModalTitle','Новый объект');fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
-function currentLayerIdOf(fIdx){return currentLayerId;}
-function openEditDeviceModal(fIdx,lIdx,devId){var layer=config.floors[fIdx].layers[lIdx];var dev=layer.devices.find(d=>d.id===devId);if(!dev)return;editingDevice=JSON.parse(JSON.stringify(dev));editingLayerRef={fIdx:fIdx,lIdx:lIdx};editingIsNew=false;sv('deviceModalTitle','Объект: '+(dev.name||''));fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
-function getLayerIndex(fIdx,lId){for(var i=0;i<config.floors[fIdx].layers.length;i++)if(config.floors[fIdx].layers[i].id===lId)return i;return -1;}
-function fillDeviceModal(){var d=editingDevice;sv('deviceName',d.name||'');sv('deviceObjType',d.objType||'switch');sv('deviceId',(d.stateIds&&d.stateIds[0])||'');sv('deviceListValues',(d.listValues||[]).join(', '));
-clearExtraIdRows();if(d.stateIds)for(var j=1;j<d.stateIds.length;j++)addExtraIdRow(d.stateIds[j]);
-sv('deviceIconType',d.iconType||'emoji');sv('deviceIconOn',d.iconOn||'💡');sv('deviceIconOff',d.iconOff||'🌑');sv('deviceIconName',d.iconName||'');
-var ic=d.icon||{};sv('iconSize',ic.size||48);sv('iconOpacity',ic.opacity!=null?ic.opacity:1);
-var bg=ic.bg||{},col=ic.color||{};sv('dev-bg-act',bg.active||'#ffffff');sv('dev-bg-in',bg.inactive||'#ffffff');sv('dev-bg-w',bg.warning||'#ffffff');sv('dev-bg-s',bg.safe||'#ffffff');sv('dev-ic-act',col.active||'#000000');sv('dev-ic-in',col.inactive||'#000000');sv('dev-ic-w',col.warning||'#000000');sv('dev-ic-s',col.safe||'#000000');
-var vf=d.valueFont||{};sv('vf-family',vf.family||'Arial');sv('vf-weight',vf.weight||'bold');sv('vf-size',vf.size||'12px');sv('vf-color',vf.color||'#ffffff');sv('vf-bg',vf.bgColor&&vf.bgColor!=='transparent'?vf.bgColor:'#000000');document.getElementById('vf-nobg').checked=(vf.bgColor==='transparent'||!vf.bgColor);sv('vf-position',vf.position||'overlay');
-var nf=d.nameFont||{};sv('nf-family',nf.family||'Arial');sv('nf-weight',nf.weight||'normal');sv('nf-size',nf.size||'12px');sv('nf-color',nf.color||'#ffffff');sv('nf-bg',nf.bgColor&&nf.bgColor!=='transparent'?nf.bgColor:'#000000');document.getElementById('nf-nobg').checked=(nf.bgColor==='transparent'||!nf.bgColor);sv('nf-position',nf.position||'bottom');
-sv('devicePrefixes',(d.prefixes||[]).join(', '));sv('devicePostfixes',(d.postfixes||[]).join(', '));
-document.getElementById('btnDeleteDevice').style.display=editingIsNew?'none':'inline-block';
-onObjTypeChange();onIconTypeChange();updateIconPreviews();}
-function readDeviceModal(){var d=editingDevice;d.name=gv('deviceName');d.objType=gv('deviceObjType');var main=gv('deviceId').trim();var ids=[];if(main)ids.push(main);document.querySelectorAll('.extra-id-input').forEach(i=>{var v=i.value.trim();if(v)ids.push(v);});d.stateIds=ids;d.listValues=splitList(gv('deviceListValues'));
-d.iconType=gv('deviceIconType');d.iconOn=gv('deviceIconOn');d.iconOff=gv('deviceIconOff');d.iconName=gv('deviceIconName');d.iconBaseUrl=mfdBaseUrl;
-d.icon={size:+gv('iconSize'),opacity:+gv('iconOpacity'),bg:{active:gv('dev-bg-act'),inactive:gv('dev-bg-in'),warning:gv('dev-bg-w'),safe:gv('dev-bg-s')},color:{active:gv('dev-ic-act'),inactive:gv('dev-ic-in'),warning:gv('dev-ic-w'),safe:gv('dev-ic-s')}};
-d.valueFont={family:gv('vf-family'),weight:gv('vf-weight'),size:gv('vf-size'),color:gv('vf-color'),bgColor:document.getElementById('vf-nobg').checked?'transparent':gv('vf-bg'),position:gv('vf-position')};
-d.nameFont={family:gv('nf-family'),weight:gv('nf-weight'),size:gv('nf-size'),color:gv('nf-color'),bgColor:document.getElementById('nf-nobg').checked?'transparent':gv('nf-bg'),position:gv('nf-position')};
-d.prefixes=splitList(gv('devicePrefixes'));d.postfixes=splitList(gv('devicePostfixes'));}
-function saveDevice(){readDeviceModal();if(!editingDevice.name){alert('Введите название');return;}var layer=config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx];if(!layer.devices)layer.devices=[];
-if(editingIsNew)layer.devices.push(editingDevice);else{var i=layer.devices.findIndex(d=>d.id===editingDevice.id);if(i>=0)layer.devices[i]=editingDevice;}
-closeDeviceModal();saveConfig(renderFloorWorkspace);}
+function openAddDeviceModal(fIdx){var f=config.floors[fIdx];if(!f.layers||!f.layers.length){alert('Сначала добавьте слой');return;}
+ var lIdx=f.layers.findIndex(l=>l.id===currentLayerId);if(lIdx<0)lIdx=0;
+ editingDevice={id:'dev_'+Date.now(),name:'',stateIds:[],objType:'switch',iconType:'emoji',iconOn:'💡',iconOff:'🌑',iconName:'',listValues:[],prefixes:[],postfixes:[],x:50,y:50};
+ Object.assign(editingDevice,defaultSettings());
+ editingLayerRef={fIdx:fIdx,lIdx:lIdx};editingIsNew=true;sv('deviceModalTitle','Новый объект');
+ fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
+function openEditDeviceModal(fIdx,lIdx,devId){var layer=config.floors[fIdx].layers[lIdx];var dev=layer.devices.find(d=>d.id===devId);if(!dev)return;
+ editingDevice=JSON.parse(JSON.stringify(dev));editingLayerRef={fIdx:fIdx,lIdx:lIdx};editingIsNew=false;sv('deviceModalTitle','Объект: '+(dev.name||''));
+ fillDeviceModal();document.getElementById('deviceModal').classList.add('active');}
+function fillDeviceModal(){var d=editingDevice;var f=config.floors[editingLayerRef.fIdx];
+ sv('deviceName',d.name||'');sv('deviceObjType',d.objType||'switch');sv('deviceId',(d.stateIds&&d.stateIds[0])||'');sv('deviceListValues',(d.listValues||[]).join(', '));
+ sv('warnBelow',d.warnBelow!=null?d.warnBelow:'');sv('warnAbove',d.warnAbove!=null?d.warnAbove:'');
+ var ls=document.getElementById('deviceLayer');ls.innerHTML='';f.layers.forEach((l,i)=>{var o=document.createElement('option');o.value=l.id;o.textContent=l.name;if(i===editingLayerRef.lIdx)o.selected=true;ls.appendChild(o);});
+ clearExtraIdRows();if(d.stateIds)for(var j=1;j<d.stateIds.length;j++)addExtraIdRow(d.stateIds[j]);
+ sv('deviceIconType',d.iconType||'emoji');sv('deviceIconOn',d.iconOn||'💡');sv('deviceIconOff',d.iconOff||'🌑');sv('deviceIconName',d.iconName||'');
+ var s=effSettings(d);
+ sv('iconSize',s.size);sv('iconOpacity',s.opacity);
+ sv('dev-bg-act',s.bg.active);sv('dev-bg-in',s.bg.inactive);sv('dev-bg-w',s.bg.warning);sv('dev-bg-s',s.bg.safe);
+ sv('dev-ic-act',s.color.active);sv('dev-ic-in',s.color.inactive);sv('dev-ic-w',s.color.warning);sv('dev-ic-s',s.color.safe);
+ sv('dev-bd-act',s.border.active);sv('dev-bd-in',s.border.inactive);sv('dev-bd-w',s.border.warning);sv('dev-bd-s',s.border.safe);
+ var vf=s.valueFont;sv('vf-family',vf.family);sv('vf-weight',vf.weight);sv('vf-size',vf.size);sv('vf-color',vf.color);sv('vf-bg',vf.bgColor&&vf.bgColor!=='transparent'?vf.bgColor:'#000000');document.getElementById('vf-nobg').checked=(vf.bgColor==='transparent'||!vf.bgColor);sv('vf-position',vf.position);
+ var nf=s.nameFont;sv('nf-family',nf.family);sv('nf-weight',nf.weight);sv('nf-size',nf.size);sv('nf-color',nf.color);sv('nf-bg',nf.bgColor&&nf.bgColor!=='transparent'?nf.bgColor:'#000000');document.getElementById('nf-nobg').checked=(nf.bgColor==='transparent'||!nf.bgColor);sv('nf-position',nf.position);
+ sv('devicePrefixes',(d.prefixes||[]).join(', '));sv('devicePostfixes',(d.postfixes||[]).join(', '));
+ document.getElementById('btnDeleteDevice').style.display=editingIsNew?'none':'inline-block';
+ onObjTypeChange();onIconTypeChange();updateIconPreviews();}
+function readDeviceModal(){var d=editingDevice;d.name=gv('deviceName');d.objType=gv('deviceObjType');
+ var main=gv('deviceId').trim();var ids=[];if(main)ids.push(main);document.querySelectorAll('.extra-id-input').forEach(i=>{var v=i.value.trim();if(v)ids.push(v);});d.stateIds=ids;
+ d.listValues=splitList(gv('deviceListValues'));
+ d.warnBelow=gv('warnBelow');d.warnAbove=gv('warnAbove');
+ d.iconType=gv('deviceIconType');d.iconOn=gv('deviceIconOn');d.iconOff=gv('deviceIconOff');d.iconName=gv('deviceIconName');d.iconBaseUrl=mfdBaseUrl;
+ d.icon={size:+gv('iconSize'),opacity:+gv('iconOpacity'),
+  bg:{active:gv('dev-bg-act'),inactive:gv('dev-bg-in'),warning:gv('dev-bg-w'),safe:gv('dev-bg-s')},
+  color:{active:gv('dev-ic-act'),inactive:gv('dev-ic-in'),warning:gv('dev-ic-w'),safe:gv('dev-ic-s')},
+  border:{active:gv('dev-bd-act'),inactive:gv('dev-bd-in'),warning:gv('dev-bd-w'),safe:gv('dev-bd-s')}};
+ d.valueFont={family:gv('vf-family'),weight:gv('vf-weight'),size:gv('vf-size'),color:gv('vf-color'),bgColor:document.getElementById('vf-nobg').checked?'transparent':gv('vf-bg'),position:gv('vf-position')};
+ d.nameFont={family:gv('nf-family'),weight:gv('nf-weight'),size:gv('nf-size'),color:gv('nf-color'),bgColor:document.getElementById('nf-nobg').checked?'transparent':gv('nf-bg'),position:gv('nf-position')};
+ d.prefixes=splitList(gv('devicePrefixes'));d.postfixes=splitList(gv('devicePostfixes'));}
+function saveDevice(){readDeviceModal();if(!editingDevice.name){alert('Введите название');return;}
+ var f=config.floors[editingLayerRef.fIdx];var targetLayerId=gv('deviceLayer');var toIdx=f.layers.findIndex(l=>l.id===targetLayerId);if(toIdx<0)toIdx=editingLayerRef.lIdx;
+ if(editingIsNew){f.layers[toIdx].devices.push(editingDevice);}
+ else{var from=f.layers[editingLayerRef.lIdx];var i=from.devices.findIndex(d=>d.id===editingDevice.id);if(i>=0)from.devices.splice(i,1);f.layers[toIdx].devices.push(editingDevice);}
+ closeDeviceModal();saveConfig(function(){currentLayerId=targetLayerId;renderFloorWorkspace();});}
 function cancelDevice(){closeDeviceModal();}
-function deleteDevice(){if(editingIsNew)return;if(!confirm('Удалить объект?'))return;var layer=config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx];layer.devices=layer.devices.filter(d=>d.id!==editingDevice.id);closeDeviceModal();saveConfig(renderFloorWorkspace);}
+function deleteDevice(){if(editingIsNew)return;if(!confirm('Удалить объект?'))return;var f=config.floors[editingLayerRef.fIdx];var layer=f.layers[editingLayerRef.lIdx];layer.devices=layer.devices.filter(d=>d.id!==editingDevice.id);closeDeviceModal();saveConfig(renderFloorWorkspace);}
 function closeDeviceModal(){document.getElementById('deviceModal').classList.remove('active');editingDevice=null;}
-function onObjTypeChange(){var t=gv('deviceObjType');document.getElementById('listValuesField').style.display=(t==='list')?'block':'none';}
+function onObjTypeChange(){var t=gv('deviceObjType');var isVal=(t==='value_read'||t==='value_write');
+ document.getElementById('listValuesField').style.display=(t==='list')?'block':'none';
+ document.getElementById('thresholdFields').style.display=isVal?'block':'none';
+ document.querySelectorAll('.val-only').forEach(el=>{el.style.display=isVal?'':'none';});}
 function onIconTypeChange(){var t=gv('deviceIconType');document.getElementById('emojiControls').style.display=t==='emoji'?'block':'none';document.getElementById('mfdControls').style.display=t==='mfd'?'block':'none';}
 function updateIconPreviews(){document.getElementById('emojiOnPreview').textContent=gv('deviceIconOn')||'💡';document.getElementById('emojiOffPreview').textContent=gv('deviceIconOff')||'🌑';var n=gv('deviceIconName');var b=document.getElementById('mfdPreview');var l=document.getElementById('mfdPreviewName');if(n){var u=mfdBaseUrl+esc(n)+'.png'+CACHE_BUSTER;b.innerHTML='<span class="icon-mask" style="width:32px;height:32px;background-color:#000;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';l.textContent=n;}else{b.innerHTML='';l.textContent='не выбрано';}}
 function addExtraIdRow(v){var c=document.getElementById('extraIdsContainer');var r=document.createElement('div');r.className='extra-id-row';r.innerHTML='<input type="text" class="extra-id-input" value="'+esc(v||'')+'"><button class="md-btn tonal small" onclick="openObjectTreeForExtra(this)">🔍</button><button class="md-btn danger small" onclick="this.parentNode.remove()">×</button>';c.appendChild(r);}
@@ -363,7 +386,6 @@ function matchesLeaf(o,f){if(!f)return true;var fl=f.toLowerCase();return o.id.t
 function computeAutoExpand(n,p,f,set){var any=false;for(var k in n.children){var c=n.children[k];var cp=p?p+'.'+k:k;var self=c.leaf&&matchesLeaf(c.leaf,f);var d=computeAutoExpand(c,cp,f,set);if(self||d){set.add(p);any=true;}}return any;}
 function buildTreeHtml(n,p,depth,set,cur){var h='';var ks=Object.keys(n.children).sort();for(var i=0;i<ks.length;i++){var k=ks[i];var c=n.children[k];var cp=p?p+'.'+k:k;var br=Object.keys(c.children).length>0;if(c.leaf){var sel=cur&&c.leaf.id===cur;h+='<div class="tree-node'+(sel?' selected current':'')+'" style="padding-left:'+(depth*16+10)+'px" onclick="selectObject(\''+esc(c.leaf.id).replace(/'/g,"\\'")+'\')"><span>• '+esc(c.leaf.name||k)+'</span><span class="tree-id">'+esc(c.leaf.id)+'</span></div>';}if(br){var ex=set.has(cp);h+='<div class="tree-branch"><div class="tree-branch-header" style="padding-left:'+(depth*16+10)+'px" onclick="toggleBranchPath(\''+esc(cp).replace(/'/g,"\\'")+'\')"><span class="branch-toggle">'+(ex?'▼':'▶')+'</span><span class="branch-name">📁 '+esc(k)+'</span><span class="branch-count">('+countLeaves(c)+')</span></div>'+(ex?'<div class="tree-children">'+buildTreeHtml(c,cp,depth+1,set,cur)+'</div>':'')+'</div>';}}return h;}
 function getTreeCurrentId(){if(!objectTreeContext)return null;if(objectTreeContext.target==='main')return gv('deviceId').trim();var r=document.querySelectorAll('.extra-id-input');if(r[objectTreeContext.extraIndex])return r[objectTreeContext.extraIndex].value.trim();return null;}
-var objectTreeContext=null;
 function renderObjectTree(){if(!ioBrokerTree)return;var f=gv('treeSearch');var cur=getTreeCurrentId();var set;if(f&&f.trim()){set=new Set();computeAutoExpand(ioBrokerTree,'',f,set);}else set=expandedPaths;var c=document.getElementById('objectTree');c.innerHTML=buildTreeHtml(ioBrokerTree,'',0,set,cur)||'<div class="tree-empty">Ничего не найдено</div>';if(cur){var el=c.querySelector('.tree-node.current');if(el)setTimeout(()=>el.scrollIntoView({block:'center'}),50);}}
 function toggleBranchPath(p){if(expandedPaths.has(p))expandedPaths.delete(p);else expandedPaths.add(p);renderObjectTree();}
 function collectAllPaths(n,p,set){for(var k in n.children){var c=n.children[k];var cp=p?p+'.'+k:k;if(Object.keys(c.children).length>0){set.add(cp);collectAllPaths(c,cp,set);}}}
@@ -383,19 +405,17 @@ function selectEmoji(e){var m=gv('emojiMode');if(m==='on')sv('deviceIconOn',e);e
 function openMfdPalette(){CACHE_BUSTER='?v='+Date.now();document.getElementById('mfdModal').classList.add('active');sv('mfdSearch','');if(!allMfdIcons)loadMfdIcons();else renderMfdPalette(allMfdIcons);}
 function closeMfdModal(){document.getElementById('mfdModal').classList.remove('active');}
 function loadMfdIcons(){document.getElementById('mfdPalette').innerHTML='<div class="tree-loading">Загрузка...</div>';fetch('/api/iobroker/icons').then(r=>r.json()).then(d=>{allMfdIcons=d.icons||[];mfdBaseUrl=d.baseUrl||'/icons-mfd-png/';renderMfdPalette(allMfdIcons);showMfdDiagnostics(d);}).catch(e=>{document.getElementById('mfdPalette').innerHTML='<div class="tree-loading">Ошибка: '+e.message+'</div>';});}
-function showMfdDiagnostics(d){var b=document.getElementById('mfdDiagnostics');if(d.count===0){var h='<div class="mfd-diagnostics"><strong>⚠️ Иконки не найдены</strong><ul>';(d.diagnostics||[]).forEach(x=>{h+='<li>'+esc(x)+'</li>';});h+='</ul></div>';b.innerHTML=h;}else b.innerHTML='<div class="mfd-diagnostics" style="background:var(--md-success-c)"><strong>✅ Найдено '+d.count+'</strong></div>';}
+function showMfdDiagnostics(d){var b=document.getElementById('mfdDiagnostics');if(d.count===0){var h='<div class="mfd-diagnostics"><strong>⚠️ Иконки не найдены</strong></div>';b.innerHTML=h;}else b.innerHTML='<div class="mfd-diagnostics" style="background:var(--md-success-c)"><strong>✅ Найдено '+d.count+'</strong></div>';}
 function renderMfdPalette(icons){var s=gv('mfdSearch').toLowerCase().trim();var f=icons.filter(n=>!s||n.toLowerCase().indexOf(s)!==-1);var p=document.getElementById('mfdPalette');if(!f.length){p.innerHTML='<div class="tree-empty">Не найдено</div>';return;}var h='';var cur=gv('deviceIconName');f.slice(0,500).forEach(n=>{var sel=n===cur?' selected':'';var u=mfdBaseUrl+esc(n)+'.png'+CACHE_BUSTER;h+='<div class="icon-option'+sel+'" onclick="selectMfdIcon(\''+esc(n).replace(/'/g,"\\'")+'\')"><div class="icon-preview"><span class="icon-mask" style="width:32px;height:32px;background-color:#000;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span></div><div class="icon-name">'+esc(n)+'</div></div>';});p.innerHTML=h;}
 function filterMfdPalette(){if(allMfdIcons)renderMfdPalette(allMfdIcons);}
 function selectMfdIcon(n){sv('deviceIconName',n);updateIconPreviews();closeMfdModal();}
 
 // ===== GLOBALS =====
-window.showTab=showTab;window.addElementType=addElementType;window.removeType=removeType;window.saveType=saveType;
 window.addFloor=addFloor;window.removeFloor=removeFloor;window.selectFloor=selectFloor;window.selectLayer=selectLayer;
-window.addLayer=addLayer;window.removeLayer=removeLayer;window.saveFloorName=saveFloorName;window.handleImageUpload=handleImageUpload;
-window.planImageError=planImageError;window.openAddDeviceModal=openAddDeviceModal;window.openEditDeviceModal=openEditDeviceModal;
-window.saveDevice=saveDevice;window.cancelDevice=cancelDevice;window.deleteDevice=deleteDevice;window.onObjTypeChange=onObjTypeChange;window.onIconTypeChange=onIconTypeChange;
-window.addExtraIdRow=addExtraIdRow;window.openObjectTreeForExtra=openObjectTreeForExtra;window.openObjectTree=openObjectTree;window.closeTreeModal=closeTreeModal;
-window.selectObject=selectObject;window.filterTree=filterTree;window.expandAllBranches=expandAllBranches;window.collapseAllBranches=collapseAllBranches;
+window.addLayer=addLayer;window.removeLayer=removeLayer;window.saveFloorName=saveFloorName;window.handleImageUpload=handleImageUpload;window.planImageError=planImageError;
+window.openAddDeviceModal=openAddDeviceModal;window.openEditDeviceModal=openEditDeviceModal;window.saveDevice=saveDevice;window.cancelDevice=cancelDevice;window.deleteDevice=deleteDevice;
+window.onObjTypeChange=onObjTypeChange;window.onIconTypeChange=onIconTypeChange;window.addExtraIdRow=addExtraIdRow;window.openObjectTreeForExtra=openObjectTreeForExtra;
+window.openObjectTree=openObjectTree;window.closeTreeModal=closeTreeModal;window.selectObject=selectObject;window.filterTree=filterTree;window.expandAllBranches=expandAllBranches;window.collapseAllBranches=collapseAllBranches;
 window.openEmojiPalette=openEmojiPalette;window.closeEmojiModal=closeEmojiModal;window.selectEmoji=selectEmoji;
 window.openMfdPalette=openMfdPalette;window.closeMfdModal=closeMfdModal;window.selectMfdIcon=selectMfdIcon;window.filterMfdPalette=filterMfdPalette;
 </script>
