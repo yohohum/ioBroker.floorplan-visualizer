@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Редактор плана этажа v10</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
+<title>Редактор плана этажа v11</title>
 <style>
 :root{--md-primary:#0061a4;--md-on-primary:#fff;--md-primary-container:#d1e4ff;--md-on-primary-container:#001d36;--md-secondary-container:#d8e2ec;--md-on-secondary-container:#101c26;--md-surface:#f7f9fc;--md-surface-c1:#eef1f6;--md-surface-c2:#e8ebf1;--md-surface-c3:#e2e6ec;--md-on-surface:#1a1c20;--md-on-variant:#43484e;--md-outline:#73777f;--md-outline-v:#c3c7cf;--md-error:#ba1a1a;--md-error-c:#f9dedc;--md-r-xl:28px;--md-r-l:16px;--md-r-m:12px;--md-r-s:8px;--md-e3:0 6px 18px rgba(0,0,0,.16)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -47,7 +48,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .plan-empty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--md-on-variant);flex-direction:column;gap:10px}
 .marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;z-index:10;transform:translate(-50%,-50%)}
 .marker .marker-icon{line-height:1;pointer-events:none}
-.icon-mask{display:inline-block;width:100%;height:100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
+.icon-mask{display:inline-block;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
 .lbl{position:absolute;pointer-events:none;white-space:nowrap;padding:2px 8px;border-radius:6px;z-index:21}
 .lbl-pos-bottom{top:100%;left:50%;transform:translate(-50%,4px)}
 .lbl-pos-top{bottom:100%;left:50%;transform:translate(-50%,-4px)}
@@ -62,7 +63,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 .modal-large{max-width:900px}
 .slot-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;background:var(--md-surface);border:1px solid var(--md-outline-v);border-radius:var(--md-r-m);padding:8px}
 .slot-row .slot-label{width:110px;font-size:13px;font-weight:500;color:var(--md-on-variant)}
-.slot-row .slot-preview{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--md-surface-c2);border-radius:50%;font-size:22px;flex:0 0 44px}
+.slot-row .slot-preview{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--md-surface-c3);border-radius:50%;flex:0 0 44px;overflow:hidden}
 .object-tree-search{margin-bottom:10px;display:flex;gap:6px}
 .object-tree-search input{flex:1;padding:10px;border:1px solid var(--md-outline);border-radius:var(--md-r-s);background:var(--md-surface)}
 .object-tree{border:1px solid var(--md-outline-v);border-radius:var(--md-r-m);max-height:450px;overflow-y:auto;background:var(--md-surface);font-size:13px}
@@ -97,6 +98,7 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
  <div class="content"><div class="floor-tabs-container" id="floorTabsEditor"></div><div class="floor-workspace" id="floorWorkspace"></div></div>
 </div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none">
+<input type="file" id="barIconInput" accept="image/*" style="display:none">
 
 <div class="modal-overlay" id="deviceModal"><div class="modal">
  <h2 id="deviceModalTitle">Объект</h2>
@@ -124,8 +126,8 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
  <div class="md-section"><div class="md-section-title">Шрифт значения</div>
   <label class="chk"><input type="checkbox" id="vf-show" checked> Выводить значение</label>
   <div class="settings-grid">
-   <div class="md-field"><label>Шрифт</label><input type="text" id="vf-family"></div>
-   <div class="md-field"><label>Начертание</label><select id="vf-weight"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
+   <div class="md-field"><label>Шрифт</label><select id="vf-family"></select></div>
+   <div class="md-field"><label>Начертание</label><select id="vf-weight"></select></div>
    <div class="md-field"><label>Размер</label><input type="text" id="vf-size"></div>
    <div class="md-field"><label>Цвет шрифта</label><input type="color" id="vf-color"></div>
    <div class="md-field"><label>Цвет фона</label><input type="color" id="vf-bg"></div>
@@ -137,8 +139,8 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
  <div class="md-section"><div class="md-section-title">Шрифт названия</div>
   <label class="chk"><input type="checkbox" id="nf-show" checked> Выводить название</label>
   <div class="settings-grid">
-   <div class="md-field"><label>Шрифт</label><input type="text" id="nf-family"></div>
-   <div class="md-field"><label>Начертание</label><select id="nf-weight"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
+   <div class="md-field"><label>Шрифт</label><select id="nf-family"></select></div>
+   <div class="md-field"><label>Начертание</label><select id="nf-weight"></select></div>
    <div class="md-field"><label>Размер</label><input type="text" id="nf-size"></div>
    <div class="md-field"><label>Цвет шрифта</label><input type="color" id="nf-color"></div>
    <div class="md-field"><label>Цвет фона</label><input type="color" id="nf-bg"></div>
@@ -160,15 +162,23 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
   <div class="md-field"><label>Ориентация</label><select id="bar-orient"><option value="h">Горизонтально</option><option value="v">Вертикально</option></select></div>
   <div class="md-field"><label>Расположение</label><select id="bar-position"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option></select></div>
   <div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">По центру</option><option value="left">По левому краю</option><option value="right">По правому краю</option></select></div></div>
+ <div class="md-section"><div class="md-section-title">Иконка кнопки</div>
+  <div class="settings-grid">
+   <div class="md-field"><label>Иконка</label><div style="display:flex;gap:6px;align-items:center">
+     <button class="md-btn tonal small" onclick="openBarDisk()">📁 С диска</button>
+     <button class="md-btn tonal small" onclick="openBarMfd()">MFD</button>
+     <button class="md-btn danger small" onclick="clearBarIcon()">✕</button>
+     <span id="barIconPreview" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center"></span></div></div>
+   <div class="md-field"><label>Место иконки</label><select id="bar-iconpos"><option value="left">Слева</option><option value="right">Справа</option></select></div></div></div>
  <div class="md-section"><div class="md-section-title">Активная кнопка</div>
   <div class="settings-grid">
    <div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div>
-   <div class="md-field"><label>Шрифт</label><input type="text" id="bar-a-ff"></div><div class="md-field"><label>Начертание</label><select id="bar-a-fw"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
+   <div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div><div class="md-field"><label>Начертание</label><select id="bar-a-fw"></select></div>
    <div class="md-field"><label>Размер</label><input type="text" id="bar-a-fs"></div><div class="md-field"><label>Цвет текста</label><input type="color" id="bar-a-fc"></div></div></div>
  <div class="md-section"><div class="md-section-title">Неактивная кнопка</div>
   <div class="settings-grid">
    <div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div>
-   <div class="md-field"><label>Шрифт</label><input type="text" id="bar-i-ff"></div><div class="md-field"><label>Начертание</label><select id="bar-i-fw"><option>normal</option><option>bold</option><option>300</option><option>500</option></select></div>
+   <div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div><div class="md-field"><label>Начертание</label><select id="bar-i-fw"></select></div>
    <div class="md-field"><label>Размер</label><input type="text" id="bar-i-fs"></div><div class="md-field"><label>Цвет текста</label><input type="color" id="bar-i-fc"></div></div></div>
  <div class="md-actions"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div>
 </div></div>
@@ -189,11 +199,13 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:var(--md-su
 var config=null,currentFloorId=null,currentLayerId=null,liveStates={};
 var allIoBrokerObjects=null,ioBrokerTree=null,expandedPaths=new Set(),objectTreeContext=null;
 var allMfdIcons=null,mfdBaseUrl='/icons-mfd-png/';
-var editingDevice=null,editingLayerRef=null,editingIsNew=false,slotTarget=null,liveTimer=null;
+var editingDevice=null,editingLayerRef=null,editingIsNew=false,slotTarget=null,liveTimer=null,barIcon=null;
 var CACHE_BUSTER='?v='+Date.now();var PRES_PORT=8084;
-var DEF_VF={family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
-var DEF_NF={family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
-var emojiGroups={'Освещение':['💡','🔆','💫','🕯️','✨'],'Розетки':['🔌','','🔋'],'Климат':['️','❄️'],'Безопасность':['🔒',''],'Мультимедиа':['🔊']};
+var DEF_VF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
+var DEF_NF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
+var FONTS=['Arial','Arial Black','Verdana','Tahoma','Trebuchet MS','Segoe UI','Roboto','Open Sans','Lato','Montserrat','Times New Roman','Georgia','Garamond','Courier New','Lucida Console','Impact','Comic Sans MS'];
+var WEIGHTS=[['300','Light (300)'],['400','Regular (400)'],['500','Medium (500)'],['600','SemiBold (600)'],['700','Bold (700)']];
+var emojiGroups={'Освещение':['💡','🔆','💫','🕯️','✨'],'Розетки':['🔌','',''],'Климат':['️','❄️'],'Безопасность':['🔒',''],'Мультимедиа':['🔊']};
 function showDebug(m){var b=document.getElementById('debugBanner');if(b){b.style.display='block';b.textContent=m;}}
 window.addEventListener('error',function(e){showDebug('JS: '+e.message+' ('+e.lineno+')');});
 function esc(s){return(s==null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -209,11 +221,12 @@ function getStateKey(dev,v){if(isValue(dev.objType)){var n=parseFloat(v);if(!isN
 function defaultSlots(t){return isValue(t)?{min:{kind:'emoji',value:'⚠️'},norm:{kind:'emoji',value:'🟢'},max:{kind:'emoji',value:'🔺'}}:{on:{kind:'emoji',value:'💡'},off:{kind:'emoji',value:'🌑'}};}
 function defaultIcon(t){var keys=isValue(t)?['min','norm','max']:['on','off'];var bg={},co={},bd={};keys.forEach(k=>{bg[k]='#fff';co[k]=defColor(k);bd[k]=defColor(k);});return{size:48,opacity:1,bg:bg,color:co,border:bd,slots:defaultSlots(t)};}
 function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weight;el.style.fontSize=f.size;el.style.color=f.color;if(f.bgColor&&f.bgColor!=='transparent')el.style.backgroundColor=f.bgColor;}
-function barDefaults(){return{height:40,width:120,gap:8,radius:100,orient:'h',position:'top',align:'center',active:{bg:'#0cbaba',border:'#0cbaba',font:{family:'Roboto',weight:'500',size:'14px',color:'#ffffff'}},inactive:{bg:'#2a2f36',border:'#3a4048',font:{family:'Roboto',weight:'500',size:'14px',color:'#e8eaed'}}};}
+function fillFont(el,cur){cur=cur||'Arial';el.innerHTML='';var found=false;FONTS.forEach(f=>{var o=document.createElement('option');o.value=f;o.textContent=f;if(f===cur){o.selected=true;found=true;}el.appendChild(o);});if(!found){var o=document.createElement('option');o.value=cur;o.textContent=cur;o.selected=true;el.appendChild(o);}}
+function fillWeight(el,cur){cur=String(cur||'400');if(cur==='normal')cur='400';if(cur==='bold')cur='700';el.innerHTML='';WEIGHTS.forEach(w=>{var o=document.createElement('option');o.value=w[0];o.textContent=w[1];if(w[0]===cur)o.selected=true;el.appendChild(o);});}
+function barDefaults(){return{height:40,width:120,gap:8,radius:100,orient:'h',position:'top',align:'center',icon:null,iconPos:'left',active:{bg:'#0cbaba',border:'#0cbaba',font:{family:'Roboto',weight:'500',size:'14px',color:'#ffffff'}},inactive:{bg:'#2a2f36',border:'#3a4048',font:{family:'Roboto',weight:'500',size:'14px',color:'#e8eaed'}}};}
 document.addEventListener('DOMContentLoaded',loadConfig);
 function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{config=d;ensureConfig();if(!currentFloorId&&config.floors[0])currentFloorId=config.floors[0].id;renderFloorWorkspace();}).catch(e=>{ensureConfig();renderFloorWorkspace();showDebug('Ошибка: '+e.message);});}
 function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).then(()=>{if(cb)cb();}).catch(()=>showDebug('Ошибка сохранения'));}
-// этажи/слои
 function moveFloor(i,dir){var a=config.floors;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function moveLayer(fIdx,i,dir){var a=config.floors[fIdx].layers;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function openPreview(fId){window.open('http://'+location.hostname+':'+PRES_PORT+'/?floor='+fId,'_blank');}
@@ -242,10 +255,18 @@ function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new F
 function openSettingsModal(){sv('planBg',config.planBg||'#2a2f36');fillBarFields();document.getElementById('settingsModal').classList.add('active');}
 function closeSettingsModal(){document.getElementById('settingsModal').classList.remove('active');}
 function getBar(t){return (t==='floor'?config.floorBar:config.layerBar)||barDefaults();}
-function fillBarFields(){var s=getBar(gv('barTarget'));sv('bar-height',s.height);sv('bar-width',s.width);sv('bar-gap',s.gap);sv('bar-radius',s.radius);sv('bar-orient',s.orient);sv('bar-position',s.position);sv('bar-align',s.align);
- sv('bar-a-bg',s.active.bg);sv('bar-a-bd',s.active.border);sv('bar-a-ff',s.active.font.family);sv('bar-a-fw',s.active.font.weight);sv('bar-a-fs',s.active.font.size);sv('bar-a-fc',s.active.font.color);
- sv('bar-i-bg',s.inactive.bg);sv('bar-i-bd',s.inactive.border);sv('bar-i-ff',s.inactive.font.family);sv('bar-i-fw',s.inactive.font.weight);sv('bar-i-fs',s.inactive.font.size);sv('bar-i-fc',s.inactive.font.color);}
-function saveSettingsModal(){config.planBg=gv('planBg');var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),
+function barIconHtml(icon,h){if(!icon)return'';if(icon.kind==='emoji')return'<span style="font-size:'+h+';line-height:1">'+esc(icon.value)+'</span>';var u=icon.kind==='mfd'?(mfdBaseUrl+icon.value+'.png'):icon.value;return'<span class="icon-mask" style="width:'+h+';height:'+h+';background-color:currentColor;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
+function updateBarIconPreview(){var p=document.getElementById('barIconPreview');p.innerHTML=barIcon?barIconHtml(barIcon,'28px'):'';}
+function openBarDisk(){slotTarget='__bar';document.getElementById('barIconInput').click();}
+function openBarMfd(){slotTarget='__bar';openMfdPalette();}
+function clearBarIcon(){barIcon=null;updateBarIconPreview();}
+function fillBarFields(){var s=getBar(gv('barTarget'));sv('bar-height',s.height);sv('bar-width',s.width);sv('bar-gap',s.gap);sv('bar-radius',s.radius);sv('bar-orient',s.orient);sv('bar-position',s.position);sv('bar-align',s.align);sv('bar-iconpos',s.iconPos||'left');
+ barIcon=s.icon||null;updateBarIconPreview();
+ fillFont(document.getElementById('bar-a-ff'),s.active.font.family);fillWeight(document.getElementById('bar-a-fw'),s.active.font.weight);
+ fillFont(document.getElementById('bar-i-ff'),s.inactive.font.family);fillWeight(document.getElementById('bar-i-fw'),s.inactive.font.weight);
+ sv('bar-a-bg',s.active.bg);sv('bar-a-bd',s.active.border);sv('bar-a-fs',s.active.font.size);sv('bar-a-fc',s.active.font.color);
+ sv('bar-i-bg',s.inactive.bg);sv('bar-i-bd',s.inactive.border);sv('bar-i-fs',s.inactive.font.size);sv('bar-i-fc',s.inactive.font.color);}
+function saveSettingsModal(){config.planBg=gv('planBg');var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),icon:barIcon,iconPos:gv('bar-iconpos'),
  active:{bg:gv('bar-a-bg'),border:gv('bar-a-bd'),font:{family:gv('bar-a-ff'),weight:gv('bar-a-fw'),size:gv('bar-a-fs'),color:gv('bar-a-fc')}},
  inactive:{bg:gv('bar-i-bg'),border:gv('bar-i-bd'),font:{family:gv('bar-i-ff'),weight:gv('bar-i-fw'),size:gv('bar-i-fs'),color:gv('bar-i-fc')}}};
  if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();saveConfig(renderFloorWorkspace);}
@@ -256,7 +277,8 @@ function stopLive(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
 function pollLive(){collectStates().forEach(sid=>{fetch('/api/state/'+sid).then(r=>r.json()).then(d=>{if(d&&liveStates[sid]!==d.val){liveStates[sid]=d.val;refreshMarkers();}}).catch(()=>{});});}
 function refreshMarkers(){var cur=getCurrentFloor();if(cur&&cur.floor.image)renderPlanMarkers(cur.floor,cur.idx);}
 // маркер
-function slotHtml(slot,color){if(!slot)return'<span class="marker-icon">•</span>';if(slot.kind==='emoji')return'<span class="marker-icon">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBaseUrl+slot.value+'.png'):slot.value;return'<span class="icon-mask" style="background-color:'+color+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
+function slotHtml(slot,color,size){if(!slot)return'<span class="marker-icon">•</span>';if(slot.kind==='emoji')return'<span class="marker-icon">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBaseUrl+slot.value+'.png'):slot.value;return'<span class="icon-mask" style="width:100%;height:100%;background-color:'+color+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
+function previewSlot(slot){if(!slot)return'•';if(slot.kind==='emoji')return'<span style="font-size:22px">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBaseUrl+slot.value+'.png'):slot.value;return'<span class="icon-mask" style="width:28px;height:28px;background-color:#000;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function buildMarker(dev,stateVal){var ic=dev.icon||defaultIcon(dev.objType);var key=getStateKey(dev,stateVal);
  var m=document.createElement('div');m.className='marker';m.style.left=(dev.x||50)+'%';m.style.top=(dev.y||50)+'%';m.style.width=(ic.size||48)+'px';m.style.height=(ic.size||48)+'px';m.style.opacity=ic.opacity!=null?ic.opacity:1;
  m.style.backgroundColor=(ic.bg&&ic.bg[key])||'#fff';m.style.borderColor=(ic.border&&ic.border[key])||defColor(key);
@@ -285,8 +307,7 @@ function saveTemplate(){readDeviceFields();var name=prompt('Имя шаблон�
  saveConfig(function(){fillTemplateSelect();alert('Шаблон сохранён: '+name);});}
 function applyTemplate(name){if(!name)return;var t=(config.templates||[]).find(x=>x.name===name);if(!t)return;
  var keep={id:editingDevice.id,name:editingDevice.name,x:editingDevice.x,y:editingDevice.y,stateIds:editingDevice.stateIds};
- editingDevice=Object.assign({},JSON.parse(JSON.stringify(t.data)),keep);
- fillDeviceModal();}
+ editingDevice=Object.assign({},JSON.parse(JSON.stringify(t.data)),keep);fillDeviceModal();}
 // модал объекта
 function openAddDeviceModal(fIdx){var f=config.floors[fIdx];if(!f.layers||!f.layers.length){alert('Добавьте слой');return;}var lIdx=f.layers.findIndex(l=>l.id===currentLayerId);if(lIdx<0)lIdx=0;
  editingDevice={id:'dev_'+Date.now(),name:'',stateIds:[],objType:'switch',prefixes:[],postfixes:[],x:50,y:50,showValue:true,showName:true};editingDevice.icon=defaultIcon('switch');
@@ -299,12 +320,12 @@ function fillDeviceModal(){var d=editingDevice,f=config.floors[editingLayerRef.f
  document.getElementById('extraIdsContainer').innerHTML='';if(d.stateIds)for(var j=1;j<d.stateIds.length;j++)addExtraIdRow(d.stateIds[j]);
  if(!d.icon)d.icon=defaultIcon(d.objType);if(!d.icon.slots)d.icon.slots=defaultSlots(d.objType);
  sv('iconSize',d.icon.size||48);sv('iconOpacity',d.icon.opacity!=null?d.icon.opacity:1);
- var vf=d.valueFont||{};document.getElementById('vf-show').checked=d.showValue!==false;sv('vf-family',vf.family||'Arial');sv('vf-weight',vf.weight||'bold');sv('vf-size',vf.size||'12px');sv('vf-color',vf.color||'#ffffff');sv('vf-bg',vf.bgColor&&vf.bgColor!=='transparent'?vf.bgColor:'#000000');document.getElementById('vf-nobg').checked=(vf.bgColor==='transparent'||!vf.bgColor);sv('vf-position',vf.position||'overlay');
- var nf=d.nameFont||{};document.getElementById('nf-show').checked=d.showName!==false;sv('nf-family',nf.family||'Arial');sv('nf-weight',nf.weight||'normal');sv('nf-size',nf.size||'12px');sv('nf-color',nf.color||'#ffffff');sv('nf-bg',nf.bgColor&&nf.bgColor!=='transparent'?nf.bgColor:'#000000');document.getElementById('nf-nobg').checked=(nf.bgColor==='transparent'||!nf.bgColor);sv('nf-position',nf.position||'bottom');
+ var vf=d.valueFont||{};document.getElementById('vf-show').checked=d.showValue!==false;fillFont(document.getElementById('vf-family'),vf.family);fillWeight(document.getElementById('vf-weight'),vf.weight);sv('vf-size',vf.size||'12px');sv('vf-color',vf.color||'#ffffff');sv('vf-bg',vf.bgColor&&vf.bgColor!=='transparent'?vf.bgColor:'#000000');document.getElementById('vf-nobg').checked=(vf.bgColor==='transparent'||!vf.bgColor);sv('vf-position',vf.position||'overlay');
+ var nf=d.nameFont||{};document.getElementById('nf-show').checked=d.showName!==false;fillFont(document.getElementById('nf-family'),nf.family);fillWeight(document.getElementById('nf-weight'),nf.weight);sv('nf-size',nf.size||'12px');sv('nf-color',nf.color||'#ffffff');sv('nf-bg',nf.bgColor&&nf.bgColor!=='transparent'?nf.bgColor:'#000000');document.getElementById('nf-nobg').checked=(nf.bgColor==='transparent'||!nf.bgColor);sv('nf-position',nf.position||'bottom');
  sv('devicePrefixes',(d.prefixes||[]).join(','));sv('devicePostfixes',(d.postfixes||[]).join(','));
  document.getElementById('btnDeleteDevice').style.display=editingIsNew?'none':'inline-block';onObjTypeChange();}
-function buildIconUI(){var ic=editingDevice.icon,states=iconStates();var sh='';states.forEach(st=>{var slot=(ic.slots||{})[st.k];var prev=slot?(slot.kind==='emoji'?slot.value:'🖼'):'•';
- sh+='<div class="slot-row"><div class="slot-label">'+st.l+'</div><div class="slot-preview">'+prev+'</div><button class="md-btn tonal small" onclick="openEmojiForSlot(\''+st.k+'\')">Emoji</button><button class="md-btn tonal small" onclick="openMfdForSlot(\''+st.k+'\')">MFD</button><button class="md-btn tonal small" onclick="openDiskForSlot(\''+st.k+'\')">📁 С диска</button></div>';});
+function buildIconUI(){var ic=editingDevice.icon,states=iconStates();var sh='';states.forEach(st=>{var slot=(ic.slots||{})[st.k];
+ sh+='<div class="slot-row"><div class="slot-label">'+st.l+'</div><div class="slot-preview">'+previewSlot(slot)+'</div><button class="md-btn tonal small" onclick="openEmojiForSlot(\''+st.k+'\')">Emoji</button><button class="md-btn tonal small" onclick="openMfdForSlot(\''+st.k+'\')">MFD</button><button class="md-btn tonal small" onclick="openDiskForSlot(\''+st.k+'\')">📁 С диска</button></div>';});
  document.getElementById('iconSlots').innerHTML=sh;
  ['colBg','colIc','colBd'].forEach(function(cid,idx){var prop=['bg','color','border'][idx];var el=document.getElementById(cid);el.style.gridTemplateColumns='repeat('+states.length+',1fr)';var h='';states.forEach(st=>{var v=(ic[prop]&&ic[prop][st.k])||(prop==='bg'?'#ffffff':defColor(st.k));h+='<div class="color-item"><input type="color" data-prop="'+prop+'" data-key="'+st.k+'" value="'+v+'"><span>'+st.l+'</span></div>';});el.innerHTML=h;});}
 function onObjTypeChange(){var t=gv('deviceObjType');var val=isValue(t);document.getElementById('thresholdFields').style.display=val?'block':'none';
@@ -329,17 +350,18 @@ function setExtraIdValue(i,v){var r=document.querySelectorAll('.extra-id-input')
 function openObjectTreeForExtra(btn){var c=document.getElementById('extraIdsContainer');openObjectTree('extra',Array.prototype.indexOf.call(c.children,btn.parentNode));}
 // слоты
 function openEmojiForSlot(k){slotTarget=k;var p=document.getElementById('emojiPalette');var h='';for(var g in emojiGroups){h+='<div style="grid-column:1/-1;font-weight:500;color:var(--md-primary)">'+g+'</div>';emojiGroups[g].forEach(e=>{h+='<div class="icon-option" onclick="selectEmoji(\''+e+'\')"><div class="icon-preview">'+e+'</div></div>';});}p.innerHTML=h;document.getElementById('emojiModal').classList.add('active');}
-function selectEmoji(e){if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'emoji',value:e};buildIconUI();}closeEmojiModal();}
+function selectEmoji(e){if(slotTarget==='__bar'){barIcon={kind:'emoji',value:e};updateBarIconPreview();}else if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'emoji',value:e};buildIconUI();}closeEmojiModal();}
 function closeEmojiModal(){document.getElementById('emojiModal').classList.remove('active');}
-function openMfdForSlot(k){slotTarget=k;CACHE_BUSTER='?v='+Date.now();document.getElementById('mfdModal').classList.add('active');sv('mfdSearch','');if(!allMfdIcons)loadMfdIcons();else renderMfdPalette(allMfdIcons);}
+function openMfdPalette(){CACHE_BUSTER='?v='+Date.now();document.getElementById('mfdModal').classList.add('active');sv('mfdSearch','');if(!allMfdIcons)loadMfdIcons();else renderMfdPalette(allMfdIcons);}
 function closeMfdModal(){document.getElementById('mfdModal').classList.remove('active');}
 function loadMfdIcons(){fetch('/api/iobroker/icons').then(r=>r.json()).then(d=>{allMfdIcons=d.icons||[];mfdBaseUrl=d.baseUrl||'/icons-mfd-png/';renderMfdPalette(allMfdIcons);}).catch(()=>{});}
 function renderMfdPalette(icons){var s=gv('mfdSearch').toLowerCase().trim();var f=icons.filter(n=>!s||n.indexOf(s)!==-1);var p=document.getElementById('mfdPalette');if(!f.length){p.innerHTML='<div class="tree-empty">Нет</div>';return;}var h='';f.slice(0,500).forEach(n=>{var u=mfdBaseUrl+esc(n)+'.png'+CACHE_BUSTER;h+='<div class="icon-option" onclick="selectMfd(\''+esc(n).replace(/'/g,"\\'")+'\')"><div class="icon-preview"><span class="icon-mask" style="width:32px;height:32px;background-color:#000;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span></div><div class="icon-name">'+esc(n)+'</div></div>';});p.innerHTML=h;}
 function filterMfdPalette(){if(allMfdIcons)renderMfdPalette(allMfdIcons);}
-function selectMfd(n){if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'mfd',value:n};buildIconUI();}closeMfdModal();}
+function selectMfd(n){if(slotTarget==='__bar'){barIcon={kind:'mfd',value:n};updateBarIconPreview();}else if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'mfd',value:n};buildIconUI();}closeMfdModal();}
 function openDiskForSlot(k){slotTarget=k;document.getElementById('diskIconInput').click();}
-document.getElementById('diskIconInput').addEventListener('change',function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'icon_'+Date.now()+'.png',base64Data:e.target.result})}).then(x=>x.json()).then(d=>{if(d.success&&slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'url',value:d.url};buildIconUI();}});};r.readAsDataURL(f);this.value='';});
-// дерево
+document.getElementById('diskIconInput').addEventListener('change',function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'icon_'+Date.now()+'.png',base64Data:e.target.result})}).then(x=>x.json()).then(d=>{if(d.success){if(slotTarget==='__bar'){barIcon={kind:'url',value:d.url};updateBarIconPreview();}else if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'url',value:d.url};buildIconUI();}}});};r.readAsDataURL(f);this.value='';});
+document.getElementById('barIconInput').addEventListener('change',function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'baricon_'+Date.now()+'.png',base64Data:e.target.result})}).then(x=>x.json()).then(d=>{if(d.success){barIcon={kind:'url',value:d.url};updateBarIconPreview();}});};r.readAsDataURL(f);this.value='';});
+// дерево (принудительное обновление)
 function buildIoBrokerTree(o){var r={children:{},leaf:null};o.forEach(obj=>{var p=obj.id.split('.');var n=r;for(var i=0;i<p.length;i++){var k=p[i];if(!n.children[k])n.children[k]={children:{},leaf:null};n=n.children[k];if(i===p.length-1)n.leaf=obj;}});return r;}
 function countLeaves(n){var c=n.leaf?1:0;for(var k in n.children)c+=countLeaves(n.children[k]);return c;}
 function nodeMeta(o){if(!o)return'';var a=[o.room,o.func].filter(Boolean);return a.length?(', '+a.join(', ')):'';}
@@ -355,13 +377,13 @@ function collectAllPaths(n,p,set){for(var k in n.children){var c=n.children[k];v
 function expandAllBranches(){if(ioBrokerTree){collectAllPaths(ioBrokerTree,'',expandedPaths);renderObjectTree();}}
 function collapseAllBranches(){expandedPaths.clear();renderObjectTree();}
 function expandPathTo(id){var p=id.split('.');var a='';for(var i=0;i<p.length-1;i++){a=a?a+'.'+p[i]:p[i];expandedPaths.add(a);}}
-function openObjectTree(t,i){objectTreeContext={target:t,extraIndex:i};document.getElementById('treeModal').classList.add('active');sv('treeSearch','');var cur=getTreeCurrentId();if(cur)expandPathTo(cur);else expandedPaths.clear();if(!allIoBrokerObjects)loadIoBrokerObjects();else renderObjectTree();}
+function openObjectTree(t,i){objectTreeContext={target:t,extraIndex:i};allIoBrokerObjects=null;ioBrokerTree=null;document.getElementById('treeModal').classList.add('active');sv('treeSearch','');var cur=getTreeCurrentId();if(cur)expandPathTo(cur);else expandedPaths.clear();loadIoBrokerObjects();}
 function closeTreeModal(){document.getElementById('treeModal').classList.remove('active');objectTreeContext=null;}
 function loadIoBrokerObjects(){fetch('/api/iobroker/objects').then(r=>r.json()).then(d=>{allIoBrokerObjects=d||[];ioBrokerTree=buildIoBrokerTree(allIoBrokerObjects);renderObjectTree();}).catch(()=>{});}
 function filterTree(){renderObjectTree();}
 function selectObject(id){if(!objectTreeContext)return;if(objectTreeContext.target==='main')sv('deviceId',id);else setExtraIdValue(objectTreeContext.extraIndex,id);closeTreeModal();}
 window.addFloor=addFloor;window.removeFloor=removeFloor;window.selectFloor=selectFloor;window.selectLayer=selectLayer;window.addLayer=addLayer;window.removeLayer=removeLayer;window.saveFloorName=saveFloorName;window.handleImageUpload=handleImageUpload;window.moveFloor=moveFloor;window.moveLayer=moveLayer;window.openPreview=openPreview;
-window.openSettingsModal=openSettingsModal;window.closeSettingsModal=closeSettingsModal;window.fillBarFields=fillBarFields;window.saveSettingsModal=saveSettingsModal;
+window.openSettingsModal=openSettingsModal;window.closeSettingsModal=closeSettingsModal;window.fillBarFields=fillBarFields;window.saveSettingsModal=saveSettingsModal;window.openBarDisk=openBarDisk;window.openBarMfd=openBarMfd;window.clearBarIcon=clearBarIcon;
 window.openAddDeviceModal=openAddDeviceModal;window.openEditDeviceModal=openEditDeviceModal;window.saveDevice=saveDevice;window.cancelDevice=cancelDevice;window.deleteDevice=deleteDevice;window.onObjTypeChange=onObjTypeChange;window.addExtraIdRow=addExtraIdRow;window.openObjectTreeForExtra=openObjectTreeForExtra;
 window.saveTemplate=saveTemplate;window.applyTemplate=applyTemplate;
 window.openObjectTree=openObjectTree;window.closeTreeModal=closeTreeModal;window.selectObject=selectObject;window.filterTree=filterTree;window.expandAllBranches=expandAllBranches;window.collapseAllBranches=collapseAllBranches;

@@ -1,34 +1,15 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "2.0.0",
+    "version": "11.0.0",
     "news": {
-      "2.0.0": {
-        "en": "Major update: Dynamic floors/layers, image upload, global styles, multi-value sensors, mfd icons support",
-        "de": "Hauptupdate: Dynamische Etagen/Ebenen, Bild-Upload, globale Stile, Multi-Value-Sensoren, mfd-Icons",
-        "ru": "Крупное обновление: Динамические этажи/слои, загрузка изображений, глобальные стили, многозначные датчики, поддержка иконок mfd"
-      }
+      "11.0.0": { "en": "Instance link, admin links, favicon, bar icons, font lists", "ru": "Ссылка на экземпляр, ссылки в настройках, фавикон, иконки кнопок, списки шрифтов" }
     },
     "title": "Floor Plan Visualizer",
-    "titleLang": {
-      "en": "Floor Plan Visualizer",
-      "de": "Grundriss-Visualisierer",
-      "ru": "Визуализатор плана этажа"
-    },
-    "desc": {
-      "en": "Advanced interactive floor plan visualization with dynamic layers, global styling, and device control",
-      "de": "Erweiterte interaktive Grundrissvisualisierung mit dynamischen Ebenen, globalem Styling und Gerätesteuerung",
-      "ru": "Продвинутая интерактивная визуализация плана этажа с динамическими слоями, глобальными стилями и управлением устройствами"
-    },
-    "authors": [
-      "YoHoHum <yohohum@gmail.com>"
-    ],
-    "keywords": [
-      "floorplan",
-      "visualization",
-      "smart home",
-      "dynamic"
-    ],
+    "titleLang": { "en": "Floor Plan Visualizer", "ru": "Визуализатор плана этажа" },
+    "desc": { "en": "Interactive floor plan visualization", "ru": "Интерактивная визуализация плана этажа" },
+    "authors": ["YoHoHum <yohohum@gmail.com>"],
+    "keywords": ["floorplan","visualization","smart home"],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -37,18 +18,14 @@
     "compact": true,
     "connectionType": "local",
     "dataSource": "push",
-    "adminUI": {
-      "config": "html"
-    },
+    "adminUI": { "config": "html" },
+    "localLink": "http://%ip%:8083/",
     "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
     "loglevel": "info",
     "tier": 3,
     "enabled": true
   },
-  "native": {
-    "port": 8083,
-    "bind": "0.0.0.0"
-  },
+  "native": { "adminPort": 8083, "presentationPort": 8084, "bind": "0.0.0.0" },
   "objects": [],
   "states": []
 }

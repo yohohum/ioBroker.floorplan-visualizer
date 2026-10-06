@@ -1,62 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Floor Plan Visualizer Settings</title>
-    <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
-    <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css">
-    <script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
-    <script type="text/javascript" src="../../js/translate.js"></script>
-    <script type="text/javascript" src="../../lib/js/materialize.js"></script>
-    <script type="text/javascript" src="../../js/adapter-settings.js"></script>
+<meta charset="UTF-8">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
+<title>Floor Plan Visualizer</title>
+<style>
+ body{font-family:'Segoe UI',sans-serif;padding:20px}
+ .row{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+ .col{flex:1;min-width:200px}
+ label{display:block;font-size:13px;color:#555;margin-bottom:6px}
+ input{width:100%;padding:10px;border:1px solid #bbb;border-radius:6px;font-size:14px}
+ .links{background:#eef4fb;border:1px solid #cfe0f4;border-radius:10px;padding:16px;margin-top:20px}
+ .links a{display:inline-block;margin:6px 16px 0 0;color:#0061a4;text-decoration:none;font-weight:600}
+ .links a:hover{text-decoration:underline}
+</style>
 </head>
 <body>
-    <div class="m adapter-container">
-        <h4>Настройки портов Floor Plan Visualizer</h4>
-        <div class="row">
-            <div class="col s12 m4">
-                <div class="input-field">
-                    <input class="value" id="adminPort" type="number" min="1024" max="65535"/>
-                    <label for="adminPort">Порт редактора</label>
-                </div>
-            </div>
-            <div class="col s12 m4">
-                <div class="input-field">
-                    <input class="value" id="presentationPort" type="number" min="1024" max="65535"/>
-                    <label for="presentationPort">Порт презентации</label>
-                </div>
-            </div>
-            <div class="col s12 m4">
-                <div class="input-field">
-                    <input class="value" id="bind" type="text"/>
-                    <label for="bind">IP адрес (0.0.0.0 = все)</label>
-                </div>
-            </div>
-        </div>
-        <div style="background:#e3f2fd; padding:15px; border-radius:8px; margin-top:20px;">
-            <strong>Ссылки для использования:</strong><br>
-            Редактор: <code>http://ВАШ_IP:ПОРТ_РЕДАКТОРА/editor.html</code><br>
-            Презентация (все этажи): <code>http://ВАШ_IP:ПОРТ_ПРЕЗЕНТАЦИИ/</code><br>
-            Презентация (конкретный этаж): <code>http://ВАШ_IP:ПОРТ_ПРЕЗЕНТАЦИИ/?floor=floor_1</code>
-        </div>
-    </div>
-    <script>
-        function load(settings, onChange) {
-            if (!settings) return;
-            $('#adminPort').val(settings.adminPort || 8083).on('change', () => onChange()).on('keyup', () => onChange());
-            $('#presentationPort').val(settings.presentationPort || 8084).on('change', () => onChange()).on('keyup', () => onChange());
-            $('#bind').val(settings.bind || '0.0.0.0').on('change', () => onChange()).on('keyup', () => onChange());
-            if (typeof M !== 'undefined') M.updateTextFields();
-            onChange(false);
-        }
-        function save(callback) {
-            callback({
-                adminPort: parseInt($('#adminPort').val(), 10) || 8083,
-                presentationPort: parseInt($('#presentationPort').val(), 10) || 8084,
-                bind: $('#bind').val() || '0.0.0.0'
-            });
-        }
-    </script>
+<h3>Настройки Floor Plan Visualizer</h3>
+<div class="row">
+ <div class="col"><label>Порт редактора</label><input class="value" id="adminPort" type="number"></div>
+ <div class="col"><label>Порт презентации</label><input class="value" id="presentationPort" type="number"></div>
+ <div class="col"><label>IP (0.0.0.0 = все)</label><input class="value" id="bind" type="text"></div>
+</div>
+<div class="links">
+ <strong>Открыть:</strong><br>
+ <a id="linkEditor" target="_blank" rel="noopener">Редактор</a>
+ <a id="linkPres" target="_blank" rel="noopener">Презентация</a>
+</div>
+<script>
+function curIp(){var b=document.getElementById('bind').value;return (b&&b!=='0.0.0.0')?b:location.hostname;}
+function updLinks(){
+ var e='http://'+curIp()+':'+(document.getElementById('adminPort').value||8083)+'/';
+ var p='http://'+curIp()+':'+(document.getElementById('presentationPort').value||8084)+'/';
+ var a=document.getElementById('linkEditor');a.href=e;a.textContent='Редактор — '+e;
+ var c=document.getElementById('linkPres');c.href=p;c.textContent='Презентация — '+p;}
+// стандартный контракт adapter-settings
+function load(settings,onChange){
+ settings=settings||{};
+ document.getElementById('adminPort').value=settings.adminPort||8083;
+ document.getElementById('presentationPort').value=settings.presentationPort||8084;
+ document.getElementById('bind').value=settings.bind||'0.0.0.0';
+ ['adminPort','presentationPort','bind'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',function(){if(onChange)onChange();updLinks();});});
+ updLinks();
+ if(onChange)onChange(false);}
+function save(callback){
+ callback({adminPort:+document.getElementById('adminPort').value||8083,
+  presentationPort:+document.getElementById('presentationPort').value||8084,
+  bind:document.getElementById('bind').value||'0.0.0.0'});}
+</script>
 </body>
 </html>
