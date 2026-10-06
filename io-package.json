@@ -1,11 +1,15 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "12.0.0",
-    "news": { "12.0.0": { "en": "Fix links, rooms/functions, full MFD palette", "ru": "Ссылки, комнаты/функции, полная палитра MFD" } },
+    "version": "13.0.0",
+    "news": {
+      "13.0.0": {
+        "en": "Guides, arrow keys, fix admin buttons",
+        "ru": "Направляющие, стрелки, исправление кнопок"
+      }
+    },
     "title": "Floor Plan Visualizer",
-    "titleLang": { "en": "Floor Plan Visualizer", "ru": "Визуализатор плана этажа" },
-    "desc": { "en": "Interactive floor plan", "ru": "Интерактивный план этажа" },
+    "desc": "Interactive floor plan visualization",
     "authors": ["YoHoHum <yohohum@gmail.com>"],
     "keywords": ["floorplan", "visualization"],
     "license": "MIT",
@@ -18,7 +22,6 @@
     "dataSource": "push",
     "adminUI": { "config": "html" },
     "localLink": "http://%ip%:8083/editor.html",
-    "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
     "loglevel": "info",
     "tier": 3,
     "enabled": true

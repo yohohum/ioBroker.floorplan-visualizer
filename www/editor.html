@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
-<title>Редактор v12</title><style>
+<title>Редактор v13</title><style>
 :root{--p:#0061a4;--pc:#d1e4ff;--s:#e8ebf1;--s2:#eef1f6;--o:#73777f;--ov:#c3c7cf;--v:#43484e;--e:#ba1a1a;--ec:#f9dedc}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;padding:20px}
 .container{max-width:1600px;margin:0 auto}.header{background:var(--pc);padding:20px 26px;border-radius:24px;margin-bottom:16px;display:flex;gap:12px;align-items:center}.header h1{font-size:20px;flex:1}
@@ -52,7 +52,6 @@
 .picker-preview .pv-name{flex:1;font-size:13px;color:var(--v);word-break:break-all}
 .picker-content{min-height:200px}
 .picker-file-area{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px;background:#fff;border:2px dashed var(--ov);border-radius:12px}
-/* Панель выравнивания */
 .align-panel{position:fixed;top:80px;right:20px;background:var(--s);border:1px solid var(--ov);border-radius:16px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:500;display:none;flex-direction:column;gap:8px}
 .align-panel.active{display:flex}
 .align-panel-title{font-size:12px;font-weight:500;color:var(--v);text-align:center;margin-bottom:4px}
@@ -61,12 +60,23 @@
 .align-btn:hover{background:var(--pc);border-color:var(--p)}
 .align-btn:active{transform:scale(.95)}
 .align-divider{height:1px;background:var(--ov);margin:4px 0}
+/* Направляющие */
+.guide-zone{position:absolute;z-index:999;background:transparent}
+.guide-zone.top{top:0;left:0;right:0;height:10px;cursor:ns-resize}
+.guide-zone.bottom{bottom:0;left:0;right:0;height:10px;cursor:ns-resize}
+.guide-zone.left{top:0;bottom:0;left:0;width:10px;cursor:ew-resize}
+.guide-zone.right{top:0;bottom:0;right:0;width:10px;cursor:ew-resize}
+.guide-zone:hover{background:rgba(0,97,164,.1)}
+.guide{position:absolute;z-index:50;pointer-events:auto}
+.guide.horizontal{left:0;right:0;height:2px;background:#e74c3c;cursor:ns-resize}
+.guide.vertical{top:0;bottom:0;width:2px;background:#e74c3c;cursor:ew-resize}
+.guide:hover{background:#c0392b;height:4px;width:4px}
+.guide.snap{background:#27ae60;box-shadow:0 0 8px rgba(39,174,96,.5)}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
 <div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none"><input type="file" id="barIconInput" accept="image/*" style="display:none"><input type="file" id="pickerFileInput" accept="image/*" style="display:none">
-<!-- Панель выравнивания -->
 <div class="align-panel" id="alignPanel">
 <div class="align-panel-title">Выравнивание (<span id="alignCount">0</span>)</div>
 <div class="align-panel-grid">

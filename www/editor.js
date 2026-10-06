@@ -18,7 +18,7 @@ function esc(s){return(s==null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,
 function splitKeep(v){v=String(v==null?'':v);if(v==='')return[];return v.split(',');}
 function gv(id){return $(id).value;}
 function sv(id,v){$(id).value=v;}
-function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.floors))config.floors=[];if(!Array.isArray(config.templates))config.templates=[];}
+function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.floors))config.floors=[];if(!Array.isArray(config.templates))config.templates=[];if(!Array.isArray(config.guides))config.guides=[];}
 function normalizeType(t){if(t==='value_read'||t==='value_write'||t==='value')return'value';if(t==='list')return'switch';return t||'switch';}
 function isValue(t){return t==='value';}
 function iconStates(){return isValue(gv('deviceObjType'))?[{k:'min',l:'Тревога мин'},{k:'norm',l:'Норма'},{k:'max',l:'Тревога макс'}]:[{k:'on',l:'Вкл'},{k:'off',l:'Выкл'}];}
@@ -36,11 +36,145 @@ function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Typ
 function moveFloor(i,dir){var a=config.floors;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function moveLayer(fIdx,i,dir){var a=config.floors[fIdx].layers;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function openPreview(fId){window.open('http://'+location.hostname+':'+PRES_PORT+'/?floor='+fId,'_blank');}
+// === СТРЕЛКИ ===
+document.addEventListener('keydown',function(e){
+if(selectedDevices.size===0)return;
+if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key)===-1)return;
+if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].indexOf(document.activeElement.tagName)!==-1)return;
+e.preventDefault();
+var step=e.shiftKey?5:1;
+var dx=0,dy=0;
+if(e.key==='ArrowLeft')dx=-step;
+if(e.key==='ArrowRight')dx=step;
+if(e.key==='ArrowUp')dy=-step;
+if(e.key==='ArrowDown')dy=step;
+var cur=getCurrentFloor();if(!cur)return;
+var layer=cur.floor.layers.find(function(l){return l.id===currentLayerId;});
+if(!layer)return;
+layer.devices.forEach(function(d){
+if(selectedDevices.has(d.id)){
+d.x=Math.max(0,Math.min(100,d.x+dx));
+d.y=Math.max(0,Math.min(100,d.y+dy));
+}
+});
+saveConfig(renderFloorWorkspace);
+});
+// === НАПРАВЛЯЮЩИЕ ===
+function createGuide(type,position){
+var g={id:'guide_'+Date.now(),type:type,position:position};
+config.guides.push(g);
+saveConfig(renderFloorWorkspace);
+return g;
+}
+function deleteGuide(id){
+config.guides=config.guides.filter(function(g){return g.id!==id;});
+saveConfig(renderFloorWorkspace);
+}
+function renderGuides(){
+var area=$('pea');if(!area)return;
+area.querySelectorAll('.guide').forEach(function(g){g.remove();});
+if(!config.guides)return;
+config.guides.forEach(function(g){
+var el=document.createElement('div');
+el.className='guide '+(g.type==='h'?'horizontal':'vertical');
+if(g.type==='h')el.style.top=g.position+'%';
+else el.style.left=g.position+'%';
+el.dataset.guideId=g.id;
+el.addEventListener('dblclick',function(e){e.stopPropagation();deleteGuide(g.id);});
+el.addEventListener('mousedown',function(e){
+if(e.button!==0)return;
+e.preventDefault();e.stopPropagation();
+var img=$('peaImg');if(!img)return;
+function mv(ev){
+var r=img.getBoundingClientRect();
+var pos=g.type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
+pos=Math.max(0,Math.min(100,pos));
+g.position=pos;
+if(g.type==='h')el.style.top=pos+'%';
+else el.style.left=pos+'%';
+}
+function up(){
+document.removeEventListener('mousemove',mv);
+document.removeEventListener('mouseup',up);
+saveConfig();
+}
+document.addEventListener('mousemove',mv);
+document.addEventListener('mouseup',up);
+});
+area.appendChild(el);
+});
+}
+function snapToGuides(dev,size){
+if(!config.guides||config.guides.length===0)return{x:dev.x,y:dev.y};
+var threshold=2;
+var sizePct=size;
+var newX=dev.x,newY=dev.y;
+var snappedX=false,snappedY=false;
+config.guides.forEach(function(g){
+if(g.type==='v'&&!snappedX){
+var edges=[dev.x,dev.x+sizePct/2,dev.x+sizePct];
+for(var i=0;i<edges.length;i++){
+if(Math.abs(edges[i]-g.position)<threshold){
+newX=g.position-(edges[i]-dev.x);
+snappedX=true;
+break;
+}
+}
+}else if(g.type==='h'&&!snappedY){
+var edges=[dev.y,dev.y+sizePct/2,dev.y+sizePct];
+for(var i=0;i<edges.length;i++){
+if(Math.abs(edges[i]-g.position)<threshold){
+newY=g.position-(edges[i]-dev.y);
+snappedY=true;
+break;
+}
+}
+}
+});
+return{x:newX,y:newY};
+}
+function attachGuideZones(){
+var area=$('pea');if(!area)return;
+area.querySelectorAll('.guide-zone').forEach(function(z){z.remove();});
+['top','bottom','left','right'].forEach(function(side){
+var zone=document.createElement('div');
+zone.className='guide-zone '+side;
+zone.addEventListener('mousedown',function(e){
+if(e.button!==0)return;
+e.preventDefault();
+var img=$('peaImg');if(!img)return;
+var type=(side==='top'||side==='bottom')?'h':'v';
+var guide=createGuide(type,50);
+var el=document.createElement('div');
+el.className='guide '+(type==='h'?'horizontal':'vertical');
+if(type==='h')el.style.top='50%';
+else el.style.left='50%';
+area.appendChild(el);
+function mv(ev){
+var r=img.getBoundingClientRect();
+var pos=type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
+pos=Math.max(0,Math.min(100,pos));
+guide.position=pos;
+if(type==='h')el.style.top=pos+'%';
+else el.style.left=pos+'%';
+}
+function up(){
+document.removeEventListener('mousemove',mv);
+document.removeEventListener('mouseup',up);
+saveConfig(renderFloorWorkspace);
+}
+document.addEventListener('mousemove',mv);
+document.addEventListener('mouseup',up);
+});
+area.appendChild(zone);
+});
+}
 // === ВЫДЕЛЕНИЕ И ВЫРАВНИВАНИЕ ===
 function handleMarkerClick(dev,e){
 if(e.shiftKey){if(selectedDevices.has(dev.id))selectedDevices.delete(dev.id);else selectedDevices.add(dev.id);}
 else{selectedDevices.clear();selectedDevices.add(dev.id);}
-updateSelectionVisuals();updateAlignPanel();}
+updateSelectionVisuals();updateAlignPanel();
+}
 function clearSelection(){selectedDevices.clear();updateSelectionVisuals();updateAlignPanel();}
 function updateSelectionVisuals(){document.querySelectorAll('.marker').forEach(function(m){var id=m.dataset.devId;if(selectedDevices.has(id))m.classList.add('selected');else m.classList.remove('selected');});}
 function updateAlignPanel(){var p=$('alignPanel');if(selectedDevices.size>=2){p.classList.add('active');$('alignCount').textContent=selectedDevices.size;}else{p.classList.remove('active');}}
@@ -89,7 +223,7 @@ var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floor
 h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
 if(floor.image)h+='<div class="pea" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div>';
 else h+='<div class="pea" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
-w.innerHTML=h;if(floor.image){renderPlanMarkers(floor,fIdx);startLive();}else stopLive();updateAlignPanel();}
+w.innerHTML=h;if(floor.image){renderPlanMarkers(floor,fIdx);renderGuides();attachGuideZones();startLive();}else stopLive();updateAlignPanel();}
 function handlePlanClick(e){if(e.target.id==='pea'||e.target.id==='peaImg'){clearSelection();}}
 function selectLayer(id){currentLayerId=id;clearSelection();renderFloorWorkspace();}
 function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
@@ -144,7 +278,34 @@ m.addEventListener('contextmenu',function(e){e.preventDefault();showCtxMenu(e.cl
 area.appendChild(m);});}
 function copyDevice(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var s=l.devices.find(function(d){return d.id===id;});if(!s)return;var c=JSON.parse(JSON.stringify(s));c.id='dev_'+Date.now();c.x=Math.min(100,(s.x||50)+4);c.y=Math.min(100,(s.y||50)+4);l.devices.push(c);saveConfig(renderFloorWorkspace);}
 function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(function(d){return d.id!==id;});selectedDevices.delete(id);saveConfig(renderFloorWorkspace);}
-function attachDrag(m,dev){m.addEventListener('mousedown',function(e){if(e.button!==0)return;e.preventDefault();var st=false;var img=$('peaImg');if(!img)return;function mv(ev){var r=img.getBoundingClientRect();dev.x=Math.max(0,Math.min(100,((ev.clientX-r.left)/r.width)*100));dev.y=Math.max(0,Math.min(100,((ev.clientY-r.top)/r.height)*100));m.style.left=dev.x+'%';m.style.top=dev.y+'%';st=true;}function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);if(st)saveConfig();}document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});}
+function attachDrag(m,dev){m.addEventListener('mousedown',function(e){
+if(e.button!==0||e.shiftKey)return;
+e.preventDefault();
+var st=false;
+var img=$('peaImg');if(!img)return;
+var size=(dev.icon&&dev.icon.size)||48;
+var sizePct=(size/img.clientWidth)*100;
+function mv(ev){
+var r=img.getBoundingClientRect();
+var x=((ev.clientX-r.left)/r.width)*100;
+var y=((ev.clientY-r.top)/r.height)*100;
+x=Math.max(0,Math.min(100,x));
+y=Math.max(0,Math.min(100,y));
+var snapped=snapToGuides({x:x,y:y},sizePct);
+dev.x=snapped.x;
+dev.y=snapped.y;
+m.style.left=dev.x+'%';
+m.style.top=dev.y+'%';
+st=true;
+}
+function up(){
+document.removeEventListener('mousemove',mv);
+document.removeEventListener('mouseup',up);
+if(st)saveConfig();
+}
+document.addEventListener('mousemove',mv);
+document.addEventListener('mouseup',up);
+});}
 function fillTemplateSelect(){var s=$('templateSelect');var cur=s.value||'';s.innerHTML='<option value="">— не применять —</option>';(config.templates||[]).forEach(function(t){var o=document.createElement('option');o.value=t.name;o.textContent=t.name;s.appendChild(o);});s.value=cur;}
 function saveTemplate(){readDeviceFields();readIcon();var name=prompt('Имя шаблона:');if(!name)return;var d=JSON.parse(JSON.stringify(editingDevice));delete d.id;delete d.name;delete d.x;delete d.y;delete d.stateIds;
 config.templates=config.templates||[];var ex=config.templates.find(function(t){return t.name===name;});if(ex)ex.data=d;else config.templates.push({name:name,data:d});
@@ -204,7 +365,6 @@ function filterMfdPalette(){if(allMfdIcons)renderMfdPalette(allMfdIcons);}
 function selectMfd(n){if(slotTarget==='__bar'){barIcon={kind:'mfd',value:n};updateBarIconPreview();closeMfdModal();}else if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'mfd',value:n};buildIconUI();closeMfdModal();}}
 $('diskIconInput').addEventListener('change',function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'icon_'+Date.now()+'.png',base64Data:e.target.result})}).then(function(x){return x.json();}).then(function(d){if(d.success){if(slotTarget==='__bar'){barIcon={kind:'url',value:d.url};updateBarIconPreview();}else if(slotTarget&&editingDevice){if(!editingDevice.icon.slots)editingDevice.icon.slots={};editingDevice.icon.slots[slotTarget]={kind:'url',value:d.url};buildIconUI();}}});};r.readAsDataURL(f);this.value='';});
 $('barIconInput').addEventListener('change',function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'baricon_'+Date.now()+'.png',base64Data:e.target.result})}).then(function(x){return x.json();}).then(function(d){if(d.success){barIcon={kind:'url',value:d.url};updateBarIconPreview();}});};r.readAsDataURL(f);this.value='';});
-// === ДЕРЕВО ===
 function buildIoBrokerTree(o){var r={children:{},leaf:null};o.forEach(function(obj){var p=obj.id.split('.');var n=r;for(var i=0;i<p.length;i++){var k=p[i];if(!n.children[k])n.children[k]={children:{},leaf:null};n=n.children[k];if(i===p.length-1)n.leaf=obj;}});return r;}
 function countLeaves(n){var c=n.leaf?1:0;for(var k in n.children)c+=countLeaves(n.children[k]);return c;}
 function nodeMeta(o){if(!o)return'';var a=[o.room,o.func].filter(Boolean);return a.length?' ('+a.join(', ')+')':'';}
@@ -225,7 +385,6 @@ function closeTreeModal(){$('treeModal').classList.remove('active');objectTreeCo
 function loadIoBrokerObjects(){fetch('/api/iobroker/objects').then(function(r){return r.json();}).then(function(d){allIoBrokerObjects=d||[];ioBrokerTree=buildIoBrokerTree(allIoBrokerObjects);renderObjectTree();}).catch(function(){$('objectTree').innerHTML='<div class="tl">Ошибка</div>';});}
 function filterTree(){renderObjectTree();}
 function selectObject(id){if(!objectTreeContext)return;if(objectTreeContext.target==='main')sv('deviceId',id);else setExtraIdValue(objectTreeContext.extraIndex,id);closeTreeModal();}
-// === ЭКСПОРТ ===
 window.addFloor=addFloor;window.removeFloor=removeFloor;window.selectFloor=selectFloor;window.selectLayer=selectLayer;window.addLayer=addLayer;window.removeLayer=removeLayer;window.renameLayer=renameLayer;window.saveFloorName=saveFloorName;window.handleImageUpload=handleImageUpload;window.moveFloor=moveFloor;window.moveLayer=moveLayer;window.openPreview=openPreview;
 window.openFloorIconModal=openFloorIconModal;window.openLayerIconModal=openLayerIconModal;window.closeIconPicker=closeIconPicker;window.switchPickerTab=switchPickerTab;window.clearPickerIcon=clearPickerIcon;window.pickPickerEmoji=pickPickerEmoji;window.pickPickerMfd=pickPickerMfd;window.filterPickerMfd=filterPickerMfd;
 window.openSettingsModal=openSettingsModal;window.closeSettingsModal=closeSettingsModal;window.fillBarFields=fillBarFields;window.saveSettingsModal=saveSettingsModal;window.openBarDisk=openBarDisk;window.openBarMfd=openBarMfd;window.clearBarIcon=clearBarIcon;
