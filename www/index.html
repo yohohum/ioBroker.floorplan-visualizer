@@ -1,203 +1,92 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>План умного дома</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a1a; color: #ecf0f1; padding: 20px; }
-        .wrapper { max-width: 1400px; margin: 0 auto; background: #2c3e50; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab { padding: 12px 24px; background: #34495e; border: 2px solid transparent; border-radius: 8px; color: #ecf0f1; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .tab:hover { transform: translateY(-2px); }
-        .tab.floor.active { background: #0cbaba; border-color: #0cbaba; }
-        .layer-btn { padding: 10px 20px; border: 2px solid transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.3s; margin-right: 10px; margin-bottom: 10px; }
-        .layer-btn:hover { transform: translateY(-2px); }
-        .layer-btn.active { border-color: currentColor; box-shadow: 0 0 15px currentColor; color: #fff !important; }
-        .plan-container { position: relative; width: 100%; background: #34495e; border-radius: 8px; overflow: hidden; min-height: 500px; }
-        .plan-image { width: 100%; height: auto; display: block; user-select: none; }
-        .marker { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.95); border: 3px solid #2c3e50; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: 0.3s ease; z-index: 10; transform: translate(-50%, -50%); }
-        .marker:hover { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100; }
-        .marker img.mfd-icon { width: 100%; height: 100%; object-fit: contain; }
-        .marker .emoji-icon { font-size: inherit; line-height: 1; }
-        .icon-mask {
-            display: inline-block; width: 100%; height: 100%;
-            -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-            -webkit-mask-position: center; mask-position: center;
-            -webkit-mask-size: contain; mask-size: contain;
-            pointer-events: none;
-        }
-        .marker .label { position: absolute; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; white-space: nowrap; opacity: 0; transition: 0.3s; pointer-events: none; font-weight: 600; z-index: 20; }
-        .marker:hover .label { opacity: 1; }
-        .label.pos-top { top: -35px; }
-        .label.pos-bottom { bottom: -35px; }
-        .sensor-values { position: absolute; text-align: center; pointer-events: none; z-index: 11; width: 100%; }
-        .sensor-values.pos-overlay { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .sensor-values.pos-top { top: -35px; left: 50%; transform: translateX(-50%); }
-        .sensor-values.pos-bottom { bottom: -35px; left: 50%; transform: translateX(-50%); }
-        .sensor-value-line { display: block; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
-        .loading { display: flex; align-items: center; justify-content: center; min-height: 400px; font-size: 18px; color: #95a5a6; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>План умного дома</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:#14161a;color:#e8eaed;padding:20px}
+.wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:12px 24px;background:#2a2f36;border:2px solid transparent;border-radius:100px;color:#e8eaed;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
+.tab:hover{background:#333941}
+.tab.floor.active{background:#0cbaba;border-color:#0cbaba;color:#00201d}
+.layer-btn{padding:10px 20px;border:2px solid transparent;border-radius:100px;cursor:pointer;font-size:13px;font-weight:500;transition:.2s;margin-right:10px;margin-bottom:10px}
+.layer-btn:hover{transform:translateY(-2px)}
+.layer-btn.active{border-color:currentColor;box-shadow:0 0 15px currentColor;color:#fff!important}
+.plan-container{position:relative;width:100%;background:#2a2f36;border-radius:16px;overflow:hidden;min-height:500px}
+.plan-image{width:100%;height:auto;display:block;user-select:none}
+.marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:.2s;z-index:10;transform:translate(-50%,-50%)}
+.marker:hover{transform:translate(-50%,-50%) scale(1.12);box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:100}
+.marker .emoji-icon{font-size:inherit;line-height:1}
+.icon-mask{display:inline-block;width:100%;height:100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
+.lbl{position:absolute;pointer-events:none;white-space:nowrap;padding:2px 8px;border-radius:6px;z-index:21}
+.lbl-pos-bottom{top:100%;left:50%;transform:translate(-50%,4px)}
+.lbl-pos-top{bottom:100%;left:50%;transform:translate(-50%,-4px)}
+.lbl-pos-right{left:100%;top:50%;transform:translate(4px,-50%)}
+.lbl-pos-left{right:100%;top:50%;transform:translate(-4px,-50%)}
+.lbl-pos-overlay{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;white-space:normal;width:max-content;max-width:150%}
+.loading{display:flex;align-items:center;justify-content:center;min-height:400px;font-size:16px;color:#9aa0a6}
+</style>
 </head>
 <body>
-    <div class="wrapper">
-        <div class="tabs" id="floorTabs"></div>
-        <div class="tabs" id="layerTabs"></div>
-        <div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div>
-    </div>
-
-    <script>
-        'use strict';
-        var config = null, currentFloorId = null, currentLayerId = null, deviceStates = {}, lastConfigJson = '';
-        var urlParams = new URLSearchParams(window.location.search);
-        var requestedFloorId = urlParams.get('floor');
-        var CACHE_BUSTER = '?v=' + Date.now();
-
-        function esc(s) { return (s === undefined || s === null) ? '' : String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-        function getStateKey(layerType, stateVal) {
-            if (layerType === 'security') return stateVal ? 'warning' : 'safe';
-            if (layerType === 'sensor') {
-                if (typeof stateVal === 'boolean') return stateVal ? 'active' : 'inactive';
-                return 'safe';
-            }
-            return stateVal ? 'active' : 'inactive';
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            loadConfig();
-            setInterval(pollStates, 2000);
-            setInterval(pollConfig, 5000);
-        });
-
-        function planImageMissing() {
-            document.getElementById('planContainer').innerHTML = '<div class="loading">Изображение плана не найдено на сервере. Откройте редактор и загрузите план заново.</div>';
-        }
-
-        function loadConfig() {
-            fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
-                lastConfigJson = JSON.stringify(data); config = data; renderStructure();
-            }).catch(function () { document.getElementById('planContainer').innerHTML = '<div class="loading">Ошибка загрузки</div>'; });
-        }
-        function pollConfig() {
-            fetch('/api/config').then(function (r) { return r.json(); }).then(function (data) {
-                var s = JSON.stringify(data);
-                if (s !== lastConfigJson) { lastConfigJson = s; config = data; CACHE_BUSTER = '?v=' + Date.now(); renderStructure(); }
-            }).catch(function () { });
-        }
-        function collectAllStateIds() {
-            var ids = [];
-            if (!config || !config.floors) return ids;
-            config.floors.forEach(function (f) { (f.layers || []).forEach(function (l) { (l.devices || []).forEach(function (d) { (d.stateIds || []).forEach(function (sid) { if (sid && ids.indexOf(sid) === -1) ids.push(sid); }); }); }); });
-            return ids;
-        }
-        function pollStates() {
-            if (!config) return;
-            collectAllStateIds().forEach(function (sid) {
-                fetch('/api/state/' + sid).then(function (r) { return r.json(); }).then(function (data) {
-                    if (data && deviceStates[sid] !== data.val) { deviceStates[sid] = data.val; rerenderDevices(); }
-                }).catch(function () { });
-            });
-        }
-        function rerenderDevices() {
-            if (!config || !config.floors) return;
-            var floor = null;
-            for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) { floor = config.floors[i]; break; }
-            if (floor) renderDevices(floor);
-        }
-        function getTypeSettings(typeId) {
-            if (!config || !config.elementTypes) return null;
-            for (var i = 0; i < config.elementTypes.length; i++) if (config.elementTypes[i].id === typeId) return config.elementTypes[i];
-            return config.elementTypes[0];
-        }
-        function renderStructure() {
-            if (!config || !config.floors || config.floors.length === 0) { document.getElementById('planContainer').innerHTML = '<div class="loading">План не настроен.</div>'; return; }
-            var floorTabs = document.getElementById('floorTabs'); floorTabs.innerHTML = '';
-            if (!currentFloorId) currentFloorId = requestedFloorId || config.floors[0].id;
-            config.floors.forEach(function (floor) {
-                var btn = document.createElement('button'); btn.className = 'tab floor' + (floor.id === currentFloorId ? ' active' : ''); btn.textContent = floor.name;
-                btn.onclick = function () { currentFloorId = floor.id; currentLayerId = null; renderStructure(); }; floorTabs.appendChild(btn);
-            });
-            var currentFloor = null;
-            for (var i = 0; i < config.floors.length; i++) if (config.floors[i].id === currentFloorId) { currentFloor = config.floors[i]; break; }
-            var layerTabs = document.getElementById('layerTabs'); layerTabs.innerHTML = '';
-            if (currentFloor && currentFloor.layers && currentFloor.layers.length > 0) {
-                var layerExists = false;
-                for (var l = 0; l < currentFloor.layers.length; l++) if (currentFloor.layers[l].id === currentLayerId) layerExists = true;
-                if (!currentLayerId || !layerExists) currentLayerId = currentFloor.layers[0].id;
-                currentFloor.layers.forEach(function (layer) {
-                    var btn = document.createElement('button'); var isActive = layer.id === currentLayerId; btn.className = 'layer-btn' + (isActive ? ' active' : ''); btn.textContent = layer.name;
-                    var ts = getTypeSettings(layer.type); var colors = (ts && ts.colors) ? ts.colors : {};
-                    var color = isActive ? (colors.active || '#0cbaba') : (colors.inactive || '#34495e');
-                    btn.style.backgroundColor = color; btn.style.borderColor = color;
-                    btn.onclick = function () { currentLayerId = layer.id; renderStructure(); }; layerTabs.appendChild(btn);
-                });
-            }
-            renderPlan(currentFloor);
-        }
-        function renderPlan(floor) {
-            var container = document.getElementById('planContainer');
-            if (!floor || !floor.image) { container.innerHTML = '<div class="loading">Изображение не загружено</div>'; return; }
-            container.innerHTML = '<img src="' + floor.image + CACHE_BUSTER + '" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';
-            renderDevices(floor);
-        }
-        function renderDevices(floor) {
-            var layer = document.getElementById('devicesLayer'); if (!layer) return; layer.innerHTML = '';
-            var currentLayerObj = null;
-            for (var i = 0; i < (floor.layers || []).length; i++) if (floor.layers[i].id === currentLayerId) { currentLayerObj = floor.layers[i]; break; }
-            if (!currentLayerObj) return;
-            var ts = getTypeSettings(currentLayerObj.type); if (!ts) return;
-            var size = ts.iconSize || 48, opacity = (ts.iconOpacity !== undefined) ? ts.iconOpacity : 1.0;
-            var font = ts.font || { family: 'Arial', weight: 'bold', size: '12px', color: '#ffffff' };
-            var pos = ts.textPosition || 'bottom';
-            var colors = ts.colors || {}, bgC = ts.bg || {}, icC = ts.iconColor || {};
-            (currentLayerObj.devices || []).forEach(function (dev) {
-                var stateVal = null;
-                if (dev.stateIds && dev.stateIds.length > 0) stateVal = deviceStates[dev.stateIds[0]];
-                var stateKey = getStateKey(currentLayerObj.type, stateVal);
-                var marker = document.createElement('div'); marker.className = 'marker';
-                marker.style.left = dev.x + '%'; marker.style.top = dev.y + '%';
-                marker.style.width = size + 'px'; marker.style.height = size + 'px';
-                marker.style.fontSize = (size * 0.6) + 'px'; marker.style.opacity = opacity;
-                marker.style.backgroundColor = bgC[stateKey] || '#ffffff';
-                marker.style.borderColor = colors[stateKey] || '#2c3e50';
-                if (stateVal) marker.style.boxShadow = '0 0 15px ' + (colors[stateKey] || '#0cbaba');
-                if (dev.iconType === 'mfd' && dev.iconName) {
-                    var base = dev.iconBaseUrl || '/icons-mfd-png/';
-                    var url = base + esc(dev.iconName) + '.png' + CACHE_BUSTER;
-                    var iconColor = icC[stateKey] || colors[stateKey] || '#000000';
-                    marker.innerHTML = '<span class="icon-mask" style="background-color:' + iconColor + ';-webkit-mask-image:url(' + url + ');mask-image:url(' + url + ');"></span>';
-                } else {
-                    var emoji = stateVal ? (dev.iconOn || '💡') : (dev.iconOff || '🌑');
-                    marker.innerHTML = '<span class="emoji-icon" style="filter:' + (stateVal ? 'none' : 'grayscale(100%) brightness(0.7)') + '">' + emoji + '</span>';
-                }
-                if (dev.stateIds && dev.stateIds.length > 0) {
-                    var valuesDiv = document.createElement('div'); valuesDiv.className = 'sensor-values pos-' + pos;
-                    valuesDiv.style.fontFamily = font.family; valuesDiv.style.fontWeight = font.weight; valuesDiv.style.fontSize = font.size; valuesDiv.style.color = font.color;
-                    dev.stateIds.forEach(function (sid, idx) {
-                        var val = deviceStates[sid]; var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : ''; var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : '';
-                        var line = document.createElement('span'); line.className = 'sensor-value-line'; line.textContent = prefix + ((val !== undefined && val !== null) ? val : 'N/A') + postfix; valuesDiv.appendChild(line);
-                    });
-                    marker.appendChild(valuesDiv);
-                }
-                var label = document.createElement('span'); label.className = 'label pos-' + pos; label.textContent = dev.name || ''; marker.appendChild(label);
-                marker.onclick = function () { toggleDevice(dev, currentLayerObj.type); }; layer.appendChild(marker);
-            });
-        }
-        function toggleDevice(dev, layerType) {
-            if (!dev.stateIds || dev.stateIds.length === 0 || !dev.stateIds[0]) return;
-            if (layerType === 'sensor') {
-                var msg = (dev.name || '') + ':\n';
-                dev.stateIds.forEach(function (sid, idx) { var val = deviceStates[sid]; var prefix = (dev.prefixes && dev.prefixes[idx]) ? dev.prefixes[idx] : ''; var postfix = (dev.postfixes && dev.postfixes[idx]) ? dev.postfixes[idx] : ''; msg += prefix + ((val !== undefined) ? val : 'N/A') + postfix + '\n'; });
-                alert(msg); return;
-            }
-            var currentState = !!deviceStates[dev.stateIds[0]];
-            fetch('/api/state/' + dev.stateIds[0], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ val: !currentState }) })
-            .then(function () { deviceStates[dev.stateIds[0]] = !currentState; rerenderDevices(); })
-            .catch(function () { alert('Ошибка управления'); });
-        }
-
-        window.planImageMissing = planImageMissing;
-    </script>
+<div class="wrapper">
+  <div class="tabs" id="floorTabs"></div>
+  <div class="tabs" id="layerTabs"></div>
+  <div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div>
+</div>
+<script>
+'use strict';
+var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='';
+var urlParams=new URLSearchParams(window.location.search);var requestedFloorId=urlParams.get('floor');
+var CACHE_BUSTER='?v='+Date.now();
+function esc(s){return(s===undefined||s===null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function getStateKey(t,v){if(t==='security')return v?'warning':'safe';if(t==='sensor'){if(typeof v==='boolean')return v?'active':'inactive';return'safe';}return v?'active':'inactive';}
+document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);});
+function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден. Откройте редактор.</div>';}
+function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(()=>{document.getElementById('planContainer').innerHTML='<div class="loading">Ошибка загрузки</div>';});}
+function pollConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{var s=JSON.stringify(d);if(s!==lastConfigJson){lastConfigJson=s;config=d;CACHE_BUSTER='?v='+Date.now();renderStructure();}}).catch(()=>{});}
+function collectAllStateIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(f=>{(f.layers||[]).forEach(l=>{(l.devices||[]).forEach(d=>{(d.stateIds||[]).forEach(sid=>{if(sid&&ids.indexOf(sid)===-1)ids.push(sid);});});});});return ids;}
+function pollStates(){if(!config)return;collectAllStateIds().forEach(sid=>{fetch('/api/state/'+sid).then(r=>r.json()).then(d=>{if(d&&deviceStates[sid]!==d.val){deviceStates[sid]=d.val;rerenderDevices();}}).catch(()=>{});});}
+function rerenderDevices(){if(!config||!config.floors)return;var f=null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId){f=config.floors[i];break;}if(f)renderDevices(f);}
+function getTypeSettings(t){if(!config||!config.elementTypes)return null;for(var i=0;i<config.elementTypes.length;i++)if(config.elementTypes[i].id===t)return config.elementTypes[i];return config.elementTypes[0];}
+function effSettings(dev,ts){ts=ts||{};var ic=dev.icon||{};return{size:ic.size||ts.iconSize||48,opacity:ic.opacity!=null?ic.opacity:(ts.iconOpacity!=null?ts.iconOpacity:1),bg:Object.assign({},ts.bg,ic.bg),color:Object.assign({},ts.iconColor||ts.colors,ic.color),valueFont:Object.assign({family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'},dev.valueFont),nameFont:Object.assign({family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'},dev.nameFont)};}
+function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weight;el.style.fontSize=f.size;el.style.color=f.color;if(f.bgColor&&f.bgColor!=='transparent')el.style.backgroundColor=f.bgColor;}
+function renderStructure(){if(!config||!config.floors||!config.floors.length){document.getElementById('planContainer').innerHTML='<div class="loading">План не настроен.</div>';return;}
+var ft=document.getElementById('floorTabs');ft.innerHTML='';if(!currentFloorId)currentFloorId=requestedFloorId||config.floors[0].id;
+config.floors.forEach(f=>{var b=document.createElement('button');b.className='tab floor'+(f.id===currentFloorId?' active':'');b.textContent=f.name;b.onclick=function(){currentFloorId=f.id;currentLayerId=null;renderStructure();};ft.appendChild(b);});
+var cf=null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId){cf=config.floors[i];break;}
+var lt=document.getElementById('layerTabs');lt.innerHTML='';
+if(cf&&cf.layers&&cf.layers.length){var ex=false;cf.layers.forEach(l=>{if(l.id===currentLayerId)ex=true;});if(!currentLayerId||!ex)currentLayerId=cf.layers[0].id;
+cf.layers.forEach(l=>{var b=document.createElement('button');var act=l.id===currentLayerId;b.className='layer-btn'+(act?' active':'');b.textContent=l.name;var ts=getTypeSettings(l.type);var c=(ts&&ts.colors)||{};var col=act?(c.active||'#0cbaba'):(c.inactive||'#34495e');b.style.backgroundColor=col;b.style.borderColor=col;b.onclick=function(){currentLayerId=l.id;renderStructure();};lt.appendChild(b);});}
+renderPlan(cf);}
+function renderPlan(f){var c=document.getElementById('planContainer');if(!f||!f.image){c.innerHTML='<div class="loading">Изображение не загружено</div>';return;}c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';renderDevices(f);}
+function renderDevices(f){var layer=document.getElementById('devicesLayer');if(!layer)return;layer.innerHTML='';
+var clo=null;for(var i=0;i<(f.layers||[]).length;i++)if(f.layers[i].id===currentLayerId){clo=f.layers[i];break;}if(!clo)return;
+var ts=getTypeSettings(clo.type);
+(clo.devices||[]).forEach(dev=>{var s=effSettings(dev,ts);
+var stateVal=null;if(dev.stateIds&&dev.stateIds.length>0)stateVal=deviceStates[dev.stateIds[0]];
+var sk=getStateKey(clo.type,stateVal);
+var m=document.createElement('div');m.className='marker';m.style.left=dev.x+'%';m.style.top=dev.y+'%';m.style.width=s.size+'px';m.style.height=s.size+'px';m.style.fontSize=(s.size*0.6)+'px';m.style.opacity=s.opacity;
+m.style.backgroundColor=s.bg[sk]||'#fff';m.style.borderColor=s.color[sk]||'#2c3e50';
+if(stateVal)m.style.boxShadow='0 0 15px '+(s.color[sk]||'#0cbaba');
+if(dev.iconType==='mfd'&&dev.iconName){var u=(dev.iconBaseUrl||'/icons-mfd-png/')+esc(dev.iconName)+'.png'+CACHE_BUSTER;m.innerHTML='<span class="icon-mask" style="background-color:'+(s.color[sk]||'#000')+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
+else{var em=stateVal?(dev.iconOn||'💡'):(dev.iconOff||'🌑');m.innerHTML='<span class="emoji-icon" style="filter:'+(stateVal?'none':'grayscale(100%) brightness(0.7)')+'">'+em+'</span>';}
+// значение
+if(dev.stateIds&&dev.stateIds.length>0){var vd=document.createElement('span');vd.className='lbl lbl-pos-'+(s.valueFont.position||'overlay');applyFont(vd,s.valueFont);
+dev.stateIds.forEach((sid,idx)=>{var val=deviceStates[sid];var pr=(dev.prefixes&&dev.prefixes[idx])?dev.prefixes[idx]:'';var po=(dev.postfixes&&dev.postfixes[idx])?dev.postfixes[idx]:'';var line=document.createElement('span');line.style.display='block';line.textContent=pr+((val!==undefined&&val!==null)?val:'N/A')+po;vd.appendChild(line);});
+m.appendChild(vd);}
+// название
+var nm=document.createElement('span');nm.className='lbl lbl-pos-'+(s.nameFont.position||'bottom');nm.textContent=dev.name||'';applyFont(nm,s.nameFont);m.appendChild(nm);
+m.onclick=function(){toggleDevice(dev,clo.type);};layer.appendChild(m);});}
+function toggleDevice(dev,layerType){var t=dev.objType||'switch';var sid=dev.stateIds&&dev.stateIds[0];if(!sid)return;var cur=deviceStates[sid];
+if(t==='switch'){set(sid,!cur);}
+else if(t==='value_write'){var v=prompt('Введите числовое значение:',cur);if(v!==null)set(sid,isNaN(+v)?v:+v);}
+else if(t==='list'){var opts=(dev.listValues||[]);var vv=prompt('Введите одно из: '+opts.join(', '),cur);if(vv!==null)set(sid,vv);}
+else{var msg=(dev.name||'')+': '+((cur!==undefined&&cur!==null)?cur:'N/A');alert(msg);}}
+function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(()=>{deviceStates[sid]=val;rerenderDevices();}).catch(()=>alert('Ошибка управления'));}
+window.planImageMissing=planImageMissing;
+</script>
 </body>
 </html>
