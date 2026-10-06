@@ -1,392 +1,47 @@
 'use strict';
-
-const utils = require('@iobroker/adapter-core');
-const express = require('express');
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
-
-class FloorplanVisualizer extends utils.Adapter {
-    constructor(options = {}) {
-        super({ ...options, name: 'floorplan-visualizer' });
-        this.adminServer = null;
-        this.presentationServer = null;
-        this.iconsDir = null;
-        this.uploadsDir = null;
-        this.ioBrokerWebHost = '127.0.0.1';
-        this.ioBrokerWebPort = 8082;
-        this.on('ready', this.onReady.bind(this));
-        this.on('unload', this.onUnload.bind(this));
-    }
-
-    async onReady() {
-        this.log.info('Starting Floor Plan Visualizer v5.11...');
-        await this.setObjectNotExistsAsync('config', {
-            type: 'state',
-            common: { name: 'Floor Plan Configuration', type: 'json', role: 'config', read: true, write: true },
-            native: {}
-        });
-        const configState = await this.getStateAsync('config');
-        if (!configState || !configState.val) {
-            const defaultConfig = {
-                elementTypes: [
-                    { id: 'lighting', name: 'Освещение', iconSize: 48, iconOpacity: 1.0, textPosition: 'bottom',
-                      colors: { active: '#f39c12', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                      font: { family: 'Arial, sans-serif', weight: 'bold', size: '12px', color: '#ffffff' } },
-                    { id: 'sensor', name: 'Датчики', iconSize: 56, iconOpacity: 0.9, textPosition: 'overlay',
-                      colors: { active: '#3498db', inactive: '#7f8c8d', warning: '#e74c3c', safe: '#2ecc71' },
-                      font: { family: 'Arial, sans-serif', weight: 'bold', size: '14px', color: '#ffffff' } }
-                ],
-                floors: []
-            };
-            await this.setStateAsync('config', { val: JSON.stringify(defaultConfig, null, 2), ack: true });
-        }
-
-        this.uploadsDir = this.getUploadsDir();
-        this.migrateOldUploads();
-        this.iconsDir = this.findIconsDirectory();
-        await this.detectWebPort();
-        this.removeConflictingIconsFolder();
-
-        if (this.iconsDir) {
-            this.log.info('MFD icons found at: ' + this.iconsDir);
-        } else {
-            this.log.info('MFD icons will be proxied from ioBroker web server at ' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort);
-        }
-
-        this.startAdminServer();
-        this.startPresentationServer();
-    }
-
-    removeConflictingIconsFolder() {
-        const wwwIconsDir = path.join(__dirname, 'www', 'icons-mfd-png');
-        try {
-            if (fs.existsSync(wwwIconsDir)) {
-                fs.rmSync(wwwIconsDir, { recursive: true, force: true });
-                this.log.info('Removed conflicting icons folder from www: ' + wwwIconsDir);
-            }
-        } catch (e) {
-            this.log.debug('Cannot remove www icons folder: ' + e.message);
-        }
-    }
-
-    getUploadsDir() {
-        let base;
-        try {
-            base = utils.getAbsoluteDefaultDataDir();
-        } catch (e) {
-            base = '/opt/iobroker/iobroker-data/floorplan-visualizer.0/';
-        }
-        const dir = path.join(base, 'uploads');
-        try {
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            this.log.info('Uploads directory: ' + dir);
-        } catch (e) {
-            this.log.error('Cannot create uploads dir ' + dir + ': ' + e.message);
-        }
-        return dir;
-    }
-
-    migrateOldUploads() {
-        const oldDir = path.join(__dirname, 'www', 'uploads');
-        try {
-            if (fs.existsSync(oldDir)) {
-                const files = fs.readdirSync(oldDir);
-                let moved = 0;
-                for (const f of files) {
-                    const src = path.join(oldDir, f);
-                    const dst = path.join(this.uploadsDir, f);
-                    try {
-                        if (fs.existsSync(src) && !fs.existsSync(dst)) {
-                            fs.copyFileSync(src, dst);
-                            moved++;
-                        }
-                    } catch (e) {}
-                }
-                if (moved > 0) this.log.info('Migrated ' + moved + ' old upload(s) to ' + this.uploadsDir);
-            }
-        } catch (e) {
-            this.log.debug('Migration skipped: ' + e.message);
-        }
-    }
-
-    findIconsDirectory() {
-        const searchPaths = [
-            '/opt/iobroker/iobroker-data/files/icons-mfd-png',
-            '/opt/iobroker/iobroker-data/files/icons-mfd-svg',
-            path.join(process.cwd(), 'iobroker-data', 'files', 'icons-mfd-png'),
-            path.join(process.cwd(), 'iobroker-data', 'files', 'icons-mfd-svg'),
-            path.join(__dirname, '..', '..', 'iobroker-data', 'files', 'icons-mfd-png'),
-            path.join(__dirname, '..', 'iobroker.icons-mfd-png')
-        ];
-        for (const p of searchPaths) {
-            try {
-                if (fs.existsSync(p)) {
-                    const files = fs.readdirSync(p);
-                    const iconFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.svg'));
-                    if (iconFiles.length > 0) return p;
-                }
-            } catch (e) {
-                this.log.debug('Cannot read ' + p + ': ' + e.message);
-            }
-        }
-        return null;
-    }
-
-    async detectWebPort() {
-        try {
-            const webInstance = await this.getObjectAsync('system.adapter.web.0');
-            if (webInstance && webInstance.native && webInstance.native.port) {
-                this.ioBrokerWebPort = webInstance.native.port;
-                this.log.info('Detected ioBroker web adapter port: ' + this.ioBrokerWebPort);
-            }
-        } catch (e) {
-            this.log.debug('Cannot detect web port: ' + e.message);
-        }
-    }
-
-    buildApp() {
-        const app = express();
-        
-        app.use((req, res, next) => {
-            res.header('Access-Control-Allow-Origin', '*');
-            res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type, Accept');
-            if (req.method === 'OPTIONS') {
-                res.sendStatus(200);
-                return;
-            }
-            next();
-        });
-
-        app.get('/api/version', (req, res) => {
-            res.json({ version: '5.11' });
-        });
-
-        // === РАЗДАЧА ИКОНОК MFD С NO-CACHE ===
-        const serveIcon = (req, res) => {
-            let iconName = path.basename(req.params.name);
-            if (!/\.(png|svg)$/i.test(iconName)) iconName += '.png';
-
-            this.log.info('Icon request: ' + iconName + ' from ' + req.ip);
-
-            // NO-CACHE заголовки для обхода кеша
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-
-            if (this.iconsDir) {
-                const filePath = path.join(this.iconsDir, iconName);
-                
-                if (!fs.existsSync(filePath)) {
-                    this.log.error('Icon file NOT FOUND: ' + filePath);
-                    res.status(404).json({ error: 'Icon not found', name: iconName, path: filePath });
-                    return;
-                }
-
-                try {
-                    const stat = fs.statSync(filePath);
-                    const contentType = iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-                    
-                    res.setHeader('Content-Type', contentType);
-                    res.setHeader('Content-Length', stat.size);
-                    
-                    this.log.info('Serving icon: ' + iconName + ' (' + stat.size + ' bytes)');
-                    
-                    const stream = fs.createReadStream(filePath);
-                    stream.pipe(res);
-                    stream.on('error', (err) => {
-                        this.log.error('Stream error for ' + iconName + ': ' + err.message);
-                        if (!res.headersSent) res.status(500).json({ error: 'Stream error', message: err.message });
-                    });
-                } catch (e) {
-                    this.log.error('Error serving icon ' + iconName + ': ' + e.message);
-                    res.status(500).json({ error: 'Server error', message: e.message });
-                }
-            } else {
-                const proxyUrl = 'http://' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort + '/icons-mfd-png/' + iconName;
-                this.log.info('Proxying icon from: ' + proxyUrl);
-                
-                const proxyReq = http.get(proxyUrl, (proxyRes) => {
-                    res.setHeader('Content-Type', proxyRes.headers['content-type'] || (iconName.endsWith('.svg') ? 'image/svg+xml' : 'image/png'));
-                    if (proxyRes.headers['content-length']) {
-                        res.setHeader('Content-Length', proxyRes.headers['content-length']);
-                    }
-                    res.status(proxyRes.statusCode);
-                    proxyRes.pipe(res);
-                });
-                
-                proxyReq.on('error', (err) => {
-                    this.log.error('Proxy error for ' + iconName + ': ' + err.message);
-                    if (!res.headersSent) res.status(500).json({ error: 'Proxy error', message: err.message });
-                });
-                
-                proxyReq.setTimeout(5000, () => {
-                    this.log.error('Proxy timeout for ' + iconName);
-                    proxyReq.destroy();
-                    if (!res.headersSent) res.status(504).json({ error: 'Proxy timeout' });
-                });
-            }
-        };
-        
-        app.get('/icons-mfd-png/:name', serveIcon);
-        app.get('/icons-mfd-svg/:name', serveIcon);
-
-        app.use('/uploads', express.static(this.uploadsDir, { maxAge: 0 }));
-        app.get('/uploads/:name', (req, res) => {
-            const name = path.basename(req.params.name);
-            const filePath = path.join(this.uploadsDir, name);
-            
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-            
-            if (fs.existsSync(filePath)) {
-                res.sendFile(filePath);
-            } else {
-                this.log.warn('Upload not found: ' + filePath);
-                res.status(404).json({ error: 'Upload not found', name: name });
-            }
-        });
-
-        app.use(express.static(path.join(__dirname, 'www'), { maxAge: 0, fallthrough: true }));
-        app.get('/favicon.ico', (req, res) => res.status(204));
-
-        app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
-            try {
-                const { filename, base64Data } = req.body;
-                const safeFilename = String(filename).replace(/[^a-zA-Z0-9._-]/g, '');
-                const filePath = path.join(this.uploadsDir, safeFilename);
-                fs.writeFileSync(filePath, String(base64Data).split(';base64,').pop(), { encoding: 'base64' });
-                this.log.info('Upload saved: ' + filePath);
-                res.json({ success: true, url: '/uploads/' + safeFilename });
-            } catch (error) {
-                this.log.error('Upload error: ' + error);
-                res.status(500).json({ error: 'Upload failed' });
-            }
-        });
-
-        app.get('/api/config', async (req, res) => {
-            try {
-                const state = await this.getStateAsync('config');
-                res.json(state && state.val ? JSON.parse(state.val) : { elementTypes: [], floors: [] });
-            } catch (e) { res.status(500).json({ error: 'Failed' }); }
-        });
-
-        app.post('/api/config', express.json({ limit: '10mb' }), async (req, res) => {
-            try {
-                await this.setStateAsync('config', { val: JSON.stringify(req.body, null, 2), ack: true });
-                res.json({ success: true });
-            } catch (e) { res.status(500).json({ error: 'Failed' }); }
-        });
-
-        app.get('/api/state/:id(*)', async (req, res) => {
-            try {
-                const state = await this.getForeignStateAsync(req.params.id);
-                res.json({ id: req.params.id, val: state ? state.val : null });
-            } catch (e) { res.status(500).json({ error: 'Failed' }); }
-        });
-
-        app.post('/api/state/:id(*)', express.json(), async (req, res) => {
-            try {
-                await this.setForeignStateAsync(req.params.id, req.body.val, false);
-                res.json({ success: true });
-            } catch (e) { res.status(500).json({ error: 'Failed' }); }
-        });
-
-        app.get('/api/iobroker/objects', async (req, res) => {
-            try {
-                const objects = await this.getForeignObjectsAsync('*', 'state');
-                const result = [];
-                for (const id in objects) {
-                    const obj = objects[id];
-                    if (obj && obj.common) {
-                        const name = typeof obj.common.name === 'object'
-                            ? (obj.common.name.ru || obj.common.name.en || obj.common.name.de || id)
-                            : (obj.common.name || id);
-                        result.push({ id, name, type: obj.common.type || 'unknown', role: obj.common.role || '' });
-                    }
-                }
-                result.sort((a, b) => a.id.localeCompare(b.id));
-                res.json(result);
-            } catch (e) {
-                this.log.error('Get objects error: ' + e);
-                res.status(500).json({ error: e.message });
-            }
-        });
-
-        app.get('/api/iobroker/icons', async (req, res) => {
-            try {
-                let icons = [];
-                let source = 'none';
-                const baseUrl = '/icons-mfd-png/';
-
-                if (this.iconsDir) {
-                    const files = fs.readdirSync(this.iconsDir);
-                    icons = files.filter(f => f.endsWith('.png')).map(f => f.replace(/\.png$/, '')).sort();
-                    source = this.iconsDir;
-                } else {
-                    const proxyUrl = 'http://' + this.ioBrokerWebHost + ':' + this.ioBrokerWebPort + '/icons-mfd-png/index.html';
-                    try {
-                        const response = await new Promise((resolve, reject) => {
-                            const r = http.get(proxyUrl, (res2) => {
-                                let data = '';
-                                res2.on('data', chunk => data += chunk);
-                                res2.on('end', () => resolve(data));
-                            });
-                            r.on('error', reject);
-                            r.setTimeout(5000, () => { r.destroy(); reject(new Error('Timeout')); });
-                        });
-                        const matches = response.match(/[a-z0-9_-]+\.png/gi);
-                        if (matches) icons = [...new Set(matches.map(f => f.replace(/\.png$/, '')))].sort();
-                        source = 'proxy:' + proxyUrl;
-                    } catch (e) {
-                        this.log.warn('Cannot fetch icons list from proxy: ' + e.message);
-                        source = 'error:' + e.message;
-                    }
-                }
-
-                this.log.info('MFD icons: ' + icons.length + ' from ' + source);
-                res.json({ icons, count: icons.length, baseUrl, source, diagnostics: [source] });
-            } catch (e) {
-                this.log.error('Get icons error: ' + e);
-                res.status(500).json({ error: e.message });
-            }
-        });
-
-        app.use((req, res) => {
-            res.status(404).json({ error: 'Not found', url: req.url });
-        });
-
-        return app;
-    }
-
-    startAdminServer() {
-        const port = this.config.adminPort || 8083;
-        const bind = this.config.bind || '0.0.0.0';
-        const app = this.buildApp();
-        this.adminServer = http.createServer(app);
-        this.adminServer.listen(port, bind, () => this.log.info('Admin server on http://' + bind + ':' + port));
-        this.adminServer.on('error', (e) => this.log.error('Admin server error: ' + e));
-    }
-
-    startPresentationServer() {
-        const port = this.config.presentationPort || 8084;
-        const bind = this.config.bind || '0.0.0.0';
-        const app = this.buildApp();
-        this.presentationServer = http.createServer(app);
-        this.presentationServer.listen(port, bind, () => this.log.info('Presentation server on http://' + bind + ':' + port));
-        this.presentationServer.on('error', (e) => this.log.error('Presentation server error: ' + e));
-    }
-
-    async onUnload(callback) {
-        try {
-            if (this.adminServer) this.adminServer.close();
-            if (this.presentationServer) this.presentationServer.close();
-            callback();
-        } catch (error) { callback(); }
-    }
+const utils=require('@iobroker/adapter-core');const express=require('express');const http=require('http');const path=require('path');const fs=require('fs');
+class FloorplanVisualizer extends utils.Adapter{
+ constructor(o={}){super({...o,name:'floorplan-visualizer'});this.adminServer=null;this.presentationServer=null;this.iconsDir=null;this.uploadsDir=null;this.ioBrokerWebHost='127.0.0.1';this.ioBrokerWebPort=8082;this.on('ready',this.onReady.bind(this));this.on('unload',this.onUnload.bind(this));}
+ async onReady(){this.log.info('Starting Floor Plan Visualizer v8.0...');
+  await this.setObjectNotExistsAsync('config',{type:'state',common:{name:'Floor Plan Configuration',type:'json',role:'config',read:true,write:true},native:{}});
+  const cs=await this.getStateAsync('config');if(!cs||!cs.val){await this.setStateAsync('config',{val:JSON.stringify({floors:[]},null,2),ack:true});}
+  this.uploadsDir=this.getUploadsDir();this.migrateOldUploads();this.iconsDir=this.findIconsDirectory();await this.detectWebPort();this.removeConflictingIconsFolder();
+  this.startAdminServer();this.startPresentationServer();}
+ removeConflictingIconsFolder(){try{const d=path.join(__dirname,'www','icons-mfd-png');if(fs.existsSync(d))fs.rmSync(d,{recursive:true,force:true});}catch(e){}}
+ getUploadsDir(){let b;try{b=utils.getAbsoluteDefaultDataDir();}catch(e){b='/opt/iobroker/iobroker-data/floorplan-visualizer.0/';}const d=path.join(b,'uploads');try{if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});}catch(e){}return d;}
+ migrateOldUploads(){const o=path.join(__dirname,'www','uploads');try{if(fs.existsSync(o)){fs.readdirSync(o).forEach(f=>{const s=path.join(o,f),d=path.join(this.uploadsDir,f);try{if(fs.existsSync(s)&&!fs.existsSync(d))fs.copyFileSync(s,d);}catch(e){}});}}catch(e){}}
+ findIconsDirectory(){const p=['/opt/iobroker/iobroker-data/files/icons-mfd-png','/opt/iobroker/iobroker-data/files/icons-mfd-svg',path.join(process.cwd(),'iobroker-data','files','icons-mfd-png'),path.join(__dirname,'..','..','iobroker-data','files','icons-mfd-png'),path.join(__dirname,'..','iobroker.icons-mfd-png')];for(const x of p){try{if(fs.existsSync(x)){const f=fs.readdirSync(x);if(f.some(y=>y.endsWith('.png')||y.endsWith('.svg')))return x;}}catch(e){}}return null;}
+ async detectWebPort(){try{const w=await this.getObjectAsync('system.adapter.web.0');if(w&&w.native&&w.native.port)this.ioBrokerWebPort=w.native.port;}catch(e){}}
+ buildApp(){const app=express();
+  app.use((req,res,next)=>{res.header('Access-Control-Allow-Origin','*');res.header('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.header('Access-Control-Allow-Headers','Content-Type,Accept');if(req.method==='OPTIONS')return res.sendStatus(200);next();});
+  app.get('/api/version',(req,res)=>res.json({version:'8.0'}));
+  const serveIcon=(req,res)=>{let n=path.basename(req.params.name);if(!/\.(png|svg)$/i.test(n))n+='.png';res.setHeader('Cache-Control','no-cache');if(this.iconsDir){const f=path.join(this.iconsDir,n);if(fs.existsSync(f)){res.setHeader('Content-Type',n.endsWith('.svg')?'image/svg+xml':'image/png');fs.createReadStream(f).pipe(res);}else res.status(404).json({error:'Icon not found',name:n});}else{const u=`http://${this.ioBrokerWebHost}:${this.ioBrokerWebPort}/icons-mfd-png/${n}`;http.get(u,r=>{res.setHeader('Content-Type',r.headers['content-type']||'image/png');res.status(r.statusCode);r.pipe(res);}).on('error',e=>res.status(500).json({error:'Proxy error'}));}};
+  app.get('/icons-mfd-png/:name',serveIcon);app.get('/icons-mfd-svg/:name',serveIcon);
+  app.use('/uploads',express.static(this.uploadsDir,{maxAge:0}));
+  app.use(express.static(path.join(__dirname,'www'),{maxAge:0,fallthrough:true}));
+  app.get('/favicon.ico',(req,res)=>res.status(204));
+  app.post('/api/upload',express.json({limit:'10mb'}),async(req,res)=>{try{const{filename,base64Data}=req.body;const s=String(filename).replace(/[^a-zA-Z0-9._-]/g,'');const f=path.join(this.uploadsDir,s);fs.writeFileSync(f,String(base64Data).split(';base64,').pop(),{encoding:'base64'});res.json({success:true,url:'/uploads/'+s});}catch(e){res.status(500).json({error:'Upload failed'});}});
+  app.get('/api/config',async(req,res)=>{try{const s=await this.getStateAsync('config');res.json(s&&s.val?JSON.parse(s.val):{floors:[]});}catch(e){res.status(500).json({error:'Failed'});}});
+  app.post('/api/config',express.json({limit:'10mb'}),async(req,res)=>{try{await this.setStateAsync('config',{val:JSON.stringify(req.body,null,2),ack:true});res.json({success:true});}catch(e){res.status(500).json({error:'Failed'});}});
+  app.get('/api/state/:id(*)',async(req,res)=>{try{const s=await this.getForeignStateAsync(req.params.id);res.json({id:req.params.id,val:s?s.val:null});}catch(e){res.status(500).json({error:'Failed'});}});
+  app.post('/api/state/:id(*)',express.json(),async(req,res)=>{try{await this.setForeignStateAsync(req.params.id,req.body.val,false);res.json({success:true});}catch(e){res.status(500).json({error:'Failed'});}});
+  // === ОБЪЕКТЫ + КОМНАТА/ФУНКЦИЯ из enum ===
+  app.get('/api/iobroker/objects',async(req,res)=>{try{
+    const objects=await this.getForeignObjectsAsync('*','state');
+    let enums={};try{enums=await this.getForeignObjectsAsync('enum.*','enum')||{};}catch(e){}
+    const roomMap={},funcMap={};
+    for(const id in enums){const e=enums[id];if(!e||!e.common)continue;const members=e.common.members||[];const nm=typeof e.common.name==='object'?(e.common.name.ru||e.common.name.en||id):(e.common.name||id);
+      if(id.startsWith('enum.rooms.'))members.forEach(m=>{(roomMap[m]=roomMap[m]||[]).push(nm);});
+      else if(id.startsWith('enum.functions.'))members.forEach(m=>{(funcMap[m]=funcMap[m]||[]).push(nm);});}
+    const result=[];for(const id in objects){const o=objects[id];if(o&&o.common){const name=typeof o.common.name==='object'?(o.common.name.ru||o.common.name.en||o.common.name.de||id):(o.common.name||id);
+      result.push({id,name,type:o.common.type||'unknown',role:o.common.role||'',room:(roomMap[id]||[]).join(', '),func:(funcMap[id]||[]).join(', ')});}}
+    result.sort((a,b)=>a.id.localeCompare(b.id));res.json(result);}catch(e){res.status(500).json({error:e.message});}});
+  app.get('/api/iobroker/icons',async(req,res)=>{try{let icons=[];let source='none';if(this.iconsDir){icons=fs.readdirSync(this.iconsDir).filter(f=>f.endsWith('.png')).map(f=>f.replace(/\.png$/,'')).sort();source=this.iconsDir;}res.json({icons,count:icons.length,baseUrl:'/icons-mfd-png/',source,diagnostics:[source]});}catch(e){res.status(500).json({error:e.message});}});
+  app.use((req,res)=>res.status(404).json({error:'Not found',url:req.url}));
+  return app;}
+ startAdminServer(){const p=this.config.adminPort||8083,b=this.config.bind||'0.0.0.0';this.adminServer=http.createServer(this.buildApp());this.adminServer.listen(p,b,()=>this.log.info('Admin on '+b+':'+p));}
+ startPresentationServer(){const p=this.config.presentationPort||8084,b=this.config.bind||'0.0.0.0';this.presentationServer=http.createServer(this.buildApp());this.presentationServer.listen(p,b,()=>this.log.info('Presentation on '+b+':'+p));}
+ async onUnload(cb){try{if(this.adminServer)this.adminServer.close();if(this.presentationServer)this.presentationServer.close();cb();}catch(e){cb();}}
 }
-
-if (module === require.main) { new FloorplanVisualizer(); }
-module.exports = (options) => new FloorplanVisualizer(options);
+if(module===require.main){new FloorplanVisualizer();}
+module.exports=(o)=>new FloorplanVisualizer(o);

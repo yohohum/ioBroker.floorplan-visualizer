@@ -1,25 +1,22 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>План умного дома</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:#14161a;color:#e8eaed;padding:20px}
-.wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px}
 .tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.tab{padding:12px 24px;background:#2a2f36;border:2px solid transparent;border-radius:100px;color:#e8eaed;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
-.tab:hover{background:#333941}
+.tab{padding:12px 24px;background:#2a2f36;border:2px solid transparent;border-radius:100px;color:#e8eaed;font-size:14px;font-weight:500;cursor:pointer}
 .tab.floor.active{background:#0cbaba;border-color:#0cbaba;color:#00201d}
-.layer-btn{padding:10px 20px;border:2px solid transparent;border-radius:100px;cursor:pointer;font-size:13px;font-weight:500;transition:.2s;margin-right:10px;margin-bottom:10px}
-.layer-btn:hover{transform:translateY(-2px)}
+.layer-btn{padding:10px 20px;border:2px solid transparent;border-radius:100px;cursor:pointer;font-size:13px;font-weight:500;margin-right:10px;margin-bottom:10px}
 .layer-btn.active{border-color:currentColor;box-shadow:0 0 15px currentColor;color:#fff!important}
 .plan-container{position:relative;width:100%;background:#2a2f36;border-radius:16px;overflow:hidden;min-height:500px}
 .plan-image{width:100%;height:auto;display:block;user-select:none}
-.marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:.2s;z-index:10;transform:translate(-50%,-50%)}
-.marker:hover{transform:translate(-50%,-50%) scale(1.12);box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:100}
-.marker .emoji-icon{font-size:inherit;line-height:1}
+.marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;z-index:10;transform:translate(-50%,-50%)}
+.marker:hover{transform:translate(-50%,-50%) scale(1.12);z-index:100}
+.marker .marker-icon{line-height:1}
 .icon-mask{display:inline-block;width:100%;height:100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
 .lbl{position:absolute;pointer-events:none;white-space:nowrap;padding:2px 8px;border-radius:6px;z-index:21}
 .lbl-pos-bottom{top:100%;left:50%;transform:translate(-50%,4px)}
@@ -27,64 +24,56 @@ body{font-family:'Roboto','Segoe UI',system-ui,sans-serif;background:#14161a;col
 .lbl-pos-right{left:100%;top:50%;transform:translate(4px,-50%)}
 .lbl-pos-left{right:100%;top:50%;transform:translate(-4px,-50%)}
 .lbl-pos-overlay{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;white-space:normal;width:max-content;max-width:150%}
-.loading{display:flex;align-items:center;justify-content:center;min-height:400px;font-size:16px;color:#9aa0a6}
+.loading{display:flex;align-items:center;justify-content:center;min-height:400px;color:#9aa0a6}
 </style>
 </head>
 <body>
-<div class="wrapper">
-  <div class="tabs" id="floorTabs"></div>
-  <div class="tabs" id="layerTabs"></div>
-  <div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div>
-</div>
+<div class="wrapper"><div class="tabs" id="floorTabs"></div><div class="tabs" id="layerTabs"></div><div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div></div>
 <script>
 'use strict';
-var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='';
-var urlParams=new URLSearchParams(window.location.search);var requestedFloorId=urlParams.get('floor');
-var CACHE_BUSTER='?v='+Date.now();
-function esc(s){return(s===undefined||s===null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function getStateKey(dev,v){var t=dev.objType||'switch';
- if(t==='value_read'||t==='value_write'){if(typeof v==='boolean')return v?'active':'inactive';var n=parseFloat(v);if(!isNaN(n)){if(dev.warnAbove!==''&&dev.warnAbove!=null&&n>+dev.warnAbove)return'warning';if(dev.warnBelow!==''&&dev.warnBelow!=null&&n<+dev.warnBelow)return'warning';}return'safe';}
- if(t==='list')return'active';return v?'active':'inactive';}
-function defaultSettings(){return{icon:{size:48,opacity:1,bg:{active:'#fff',inactive:'#fff',warning:'#fff',safe:'#fff'},color:{active:'#0cbaba',inactive:'#7f8c8d',warning:'#e74c3c',safe:'#2ecc71'},border:{active:'#0cbaba',inactive:'#7f8c8d',warning:'#e74c3c',safe:'#2ecc71'}},valueFont:{family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'},nameFont:{family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'}};}
-function effSettings(dev){var d=defaultSettings();var ic=dev.icon||{};return{size:ic.size||d.icon.size,opacity:ic.opacity!=null?ic.opacity:d.icon.opacity,bg:Object.assign({},d.icon.bg,ic.bg),color:Object.assign({},d.icon.color,ic.color),border:Object.assign({},d.icon.border,ic.border),valueFont:Object.assign({},d.valueFont,dev.valueFont),nameFont:Object.assign({},d.nameFont,dev.nameFont)};}
+var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='',CACHE_BUSTER='?v='+Date.now();
+var urlParams=new URLSearchParams(location.search);var requestedFloorId=urlParams.get('floor');
+function esc(s){return(s==null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function isValue(t){return t==='value_read'||t==='value_write';}
+function defColor(k){return{on:'#0cbaba',off:'#7f8c8d',min:'#e74c3c',norm:'#2ecc71',max:'#e74c3c'}[k]||'#000';}
+function getStateKey(dev,v){var t=dev.objType||'switch';if(isValue(t)){var n=parseFloat(v);if(!isNaN(n)){if(dev.warnBelow!==''&&dev.warnBelow!=null&&n<+dev.warnBelow)return'min';if(dev.warnAbove!==''&&dev.warnAbove!=null&&n>+dev.warnAbove)return'max';}return'norm';}return v?'on':'off';}
+function defaultIcon(t){var keys=isValue(t)?['min','norm','max']:['on','off'];var bg={},co={},bd={};keys.forEach(k=>{bg[k]='#fff';co[k]=defColor(k);bd[k]=defColor(k);});return{size:48,opacity:1,bg:bg,color:co,border:bd,slots:isValue(t)?{min:{kind:'emoji',value:'⚠️'},norm:{kind:'emoji',value:'🟢'},max:{kind:'emoji',value:'🔺'}}:{on:{kind:'emoji',value:'💡'},off:{kind:'emoji',value:'🌑'}}};}
 function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weight;el.style.fontSize=f.size;el.style.color=f.color;if(f.bgColor&&f.bgColor!=='transparent')el.style.backgroundColor=f.bgColor;}
+function slotHtml(slot,color){if(!slot)return'<span class="marker-icon">•</span>';if(slot.kind==='emoji')return'<span class="marker-icon">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?(mfdBase()+slot.value+'.png'):slot.value;return'<span class="icon-mask" style="background-color:'+color+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
+function mfdBase(){return '/icons-mfd-png/';}
 document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);});
-function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден. Откройте редактор.</div>';}
-function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(()=>{document.getElementById('planContainer').innerHTML='<div class="loading">Ошибка загрузки</div>';});}
+function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
+function loadConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(()=>{});}
 function pollConfig(){fetch('/api/config').then(r=>r.json()).then(d=>{var s=JSON.stringify(d);if(s!==lastConfigJson){lastConfigJson=s;config=d;CACHE_BUSTER='?v='+Date.now();renderStructure();}}).catch(()=>{});}
-function collectAllStateIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(f=>{(f.layers||[]).forEach(l=>{(l.devices||[]).forEach(d=>{(d.stateIds||[]).forEach(sid=>{if(sid&&ids.indexOf(sid)===-1)ids.push(sid);});});});});return ids;}
-function pollStates(){if(!config)return;collectAllStateIds().forEach(sid=>{fetch('/api/state/'+sid).then(r=>r.json()).then(d=>{if(d&&deviceStates[sid]!==d.val){deviceStates[sid]=d.val;rerenderDevices();}}).catch(()=>{});});}
-function rerenderDevices(){if(!config||!config.floors)return;var f=null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId){f=config.floors[i];break;}if(f)renderDevices(f);}
+function collectIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(f=>{(f.layers||[]).forEach(l=>{(l.devices||[]).forEach(d=>{(d.stateIds||[]).forEach(s=>{if(s&&ids.indexOf(s)<0)ids.push(s);});});});});return ids;}
+function pollStates(){if(!config)return;collectIds().forEach(sid=>{fetch('/api/state/'+sid).then(r=>r.json()).then(d=>{if(d&&deviceStates[sid]!==d.val){deviceStates[sid]=d.val;rerender();}}).catch(()=>{});});}
+function rerender(){if(!config||!config.floors)return;var f=null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId){f=config.floors[i];break;}if(f)renderDevices(f);}
 function renderStructure(){if(!config||!config.floors||!config.floors.length){document.getElementById('planContainer').innerHTML='<div class="loading">План не настроен.</div>';return;}
 var ft=document.getElementById('floorTabs');ft.innerHTML='';if(!currentFloorId)currentFloorId=requestedFloorId||config.floors[0].id;
 config.floors.forEach(f=>{var b=document.createElement('button');b.className='tab floor'+(f.id===currentFloorId?' active':'');b.textContent=f.name;b.onclick=function(){currentFloorId=f.id;currentLayerId=null;renderStructure();};ft.appendChild(b);});
 var cf=null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId){cf=config.floors[i];break;}
 var lt=document.getElementById('layerTabs');lt.innerHTML='';
 if(cf&&cf.layers&&cf.layers.length){var ex=false;cf.layers.forEach(l=>{if(l.id===currentLayerId)ex=true;});if(!currentLayerId||!ex)currentLayerId=cf.layers[0].id;
-cf.layers.forEach(l=>{var b=document.createElement('button');var act=l.id===currentLayerId;b.className='layer-btn'+(act?' active':'');b.textContent=l.name;var col=act?'#0cbaba':'#2a2f36';b.style.backgroundColor=col;b.style.borderColor=col;b.onclick=function(){currentLayerId=l.id;renderStructure();};lt.appendChild(b);});}
+cf.layers.forEach(l=>{var b=document.createElement('button');var a=l.id===currentLayerId;b.className='layer-btn'+(a?' active':'');b.textContent=l.name;var c=a?'#0cbaba':'#2a2f36';b.style.backgroundColor=c;b.style.borderColor=c;b.onclick=function(){currentLayerId=l.id;renderStructure();};lt.appendChild(b);});}
 renderPlan(cf);}
-function renderPlan(f){var c=document.getElementById('planContainer');if(!f||!f.image){c.innerHTML='<div class="loading">Изображение не загружено</div>';return;}c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';renderDevices(f);}
+function renderPlan(f){var c=document.getElementById('planContainer');if(!f||!f.image){c.innerHTML='<div class="loading">Нет изображения</div>';return;}c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image" onerror="planImageMissing()"><div id="devicesLayer"></div>';renderDevices(f);}
 function renderDevices(f){var layer=document.getElementById('devicesLayer');if(!layer)return;layer.innerHTML='';
 var clo=null;for(var i=0;i<(f.layers||[]).length;i++)if(f.layers[i].id===currentLayerId){clo=f.layers[i];break;}if(!clo)return;
-(clo.devices||[]).forEach(dev=>{var s=effSettings(dev);
- var stateVal=null;if(dev.stateIds&&dev.stateIds.length>0)stateVal=deviceStates[dev.stateIds[0]];
- var sk=getStateKey(dev,stateVal);
- var m=document.createElement('div');m.className='marker';m.style.left=dev.x+'%';m.style.top=dev.y+'%';m.style.width=s.size+'px';m.style.height=s.size+'px';m.style.fontSize=(s.size*0.6)+'px';m.style.opacity=s.opacity;
- m.style.backgroundColor=s.bg[sk]||'#fff';m.style.borderColor=s.border[sk]||'#2c3e50';
- if(stateVal)m.style.boxShadow='0 0 15px '+(s.border[sk]||'#0cbaba');
- if(dev.iconType==='mfd'&&dev.iconName){var u=(dev.iconBaseUrl||'/icons-mfd-png/')+esc(dev.iconName)+'.png'+CACHE_BUSTER;m.innerHTML='<span class="icon-mask" style="background-color:'+(s.color[sk]||'#000')+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
- else{var em=stateVal?(dev.iconOn||'💡'):(dev.iconOff||'🌑');m.innerHTML='<span class="emoji-icon" style="filter:'+(stateVal?'none':'grayscale(100%) brightness(0.7)')+'">'+em+'</span>';}
- if(dev.stateIds&&dev.stateIds.length>0){var vd=document.createElement('span');vd.className='lbl lbl-pos-'+(s.valueFont.position||'overlay');applyFont(vd,s.valueFont);
-  dev.stateIds.forEach((sid,idx)=>{var val=deviceStates[sid];var pr=(dev.prefixes&&dev.prefixes[idx])?dev.prefixes[idx]:'';var po=(dev.postfixes&&dev.postfixes[idx])?dev.postfixes[idx]:'';var line=document.createElement('span');line.style.display='block';line.textContent=pr+((val!==undefined&&val!==null)?val:'N/A')+po;vd.appendChild(line);});
-  m.appendChild(vd);}
- var nm=document.createElement('span');nm.className='lbl lbl-pos-'+(s.nameFont.position||'bottom');nm.textContent=dev.name||'';applyFont(nm,s.nameFont);m.appendChild(nm);
+(clo.devices||[]).forEach(dev=>{var ic=dev.icon||defaultIcon(dev.objType);var v=dev.stateIds&&dev.stateIds[0]?deviceStates[dev.stateIds[0]]:null;var key=getStateKey(dev,v);
+ var m=document.createElement('div');m.className='marker';m.style.left=dev.x+'%';m.style.top=dev.y+'%';m.style.width=(ic.size||48)+'px';m.style.height=(ic.size||48)+'px';m.style.opacity=ic.opacity!=null?ic.opacity:1;
+ m.style.backgroundColor=(ic.bg&&ic.bg[key])||'#fff';m.style.borderColor=(ic.border&&ic.border[key])||defColor(key);
+ if(v)m.style.boxShadow='0 0 15px '+((ic.border&&ic.border[key])||defColor(key));
+ m.innerHTML=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
+ if(dev.showValue!==false&&dev.stateIds&&dev.stateIds.length){var vd=document.createElement('span');vd.className='lbl lbl-pos-'+((dev.valueFont&&dev.valueFont.position)||'overlay');applyFont(vd,dev.valueFont||{family:'Arial',weight:'bold',size:'12px',color:'#fff',bgColor:'transparent'});
+  dev.stateIds.forEach((sid,idx)=>{var val=deviceStates[sid];var pr=(dev.prefixes&&dev.prefixes[idx])?dev.prefixes[idx]:'';var po=(dev.postfixes&&dev.postfixes[idx])?dev.postfixes[idx]:'';var ln=document.createElement('span');ln.style.display='block';ln.textContent=pr+((val!==undefined&&val!==null)?val:'N/A')+po;vd.appendChild(ln);});m.appendChild(vd);}
+ if(dev.showName!==false){var nm=document.createElement('span');nm.className='lbl lbl-pos-'+((dev.nameFont&&dev.nameFont.position)||'bottom');nm.textContent=dev.name||'';applyFont(nm,dev.nameFont||{family:'Arial',weight:'normal',size:'12px',color:'#fff',bgColor:'transparent'});m.appendChild(nm);}
  m.onclick=function(){toggleDevice(dev);};layer.appendChild(m);});}
 function toggleDevice(dev){var t=dev.objType||'switch';var sid=dev.stateIds&&dev.stateIds[0];if(!sid)return;var cur=deviceStates[sid];
- if(t==='switch'){set(sid,!cur);}
- else if(t==='value_write'){var v=prompt('Введите числовое значение:',cur);if(v!==null)set(sid,isNaN(+v)?v:+v);}
- else if(t==='list'){var vv=prompt('Введите одно из: '+(dev.listValues||[]).join(', '),cur);if(vv!==null)set(sid,vv);}
- else{alert((dev.name||'')+': '+((cur!==undefined&&cur!==null)?cur:'N/A'));}}
-function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(()=>{deviceStates[sid]=val;rerenderDevices();}).catch(()=>alert('Ошибка управления'));}
+ if(t==='switch')set(sid,!cur);
+ else if(t==='value_write'){var v=prompt('Числовое значение:',cur);if(v!==null)set(sid,isNaN(+v)?v:+v);}
+ else if(t==='list'){var vv=prompt('Одно из: '+(dev.listValues||[]).join(', '),cur);if(vv!==null)set(sid,vv);}
+ else alert((dev.name||'')+': '+((cur!==undefined&&cur!==null)?cur:'N/A'));}
+function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(()=>{deviceStates[sid]=val;rerender();}).catch(()=>alert('Ошибка'));}
 window.planImageMissing=planImageMissing;
 </script>
 </body>
