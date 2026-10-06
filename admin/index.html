@@ -1,54 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
+<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
+<script type="text/javascript" src="../../js/translate.js"></script>
+<script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+<script type="text/javascript" src="../../js/adapter-settings.js"></script>
 <style>
- body{font-family:'Segoe UI',sans-serif;padding:20px}
- .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
- .col{flex:1;min-width:200px}
- label{display:block;font-size:13px;color:#555;margin-bottom:6px}
- input{width:100%;padding:10px;border:1px solid #bbb;border-radius:6px}
- .links{background:#eef4fb;border:1px solid #cfe0f4;border-radius:10px;padding:16px;margin-top:20px}
- .links a{display:inline-block;margin:6px 16px 0 0;color:#0061a4;font-weight:600;text-decoration:none}
- .links a:hover{text-decoration:underline}
-</style>
-</head>
-<body>
+body{font-family:'Segoe UI',sans-serif;padding:20px}
+.row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.col{flex:1;min-width:200px}
+label{display:block;font-size:13px;color:#555;margin-bottom:6px}
+input{width:100%;padding:10px;border:1px solid #bbb;border-radius:6px}
+.links{background:#eef4fb;border:1px solid #cfe0f4;border-radius:10px;padding:16px;margin-top:20px}
+.links a{display:inline-block;margin:6px 16px 0 0;color:#0061a4;font-weight:600;text-decoration:none}
+.links a:hover{text-decoration:underline}
+</style></head><body>
 <h3>Floor Plan Visualizer</h3>
 <div class="row">
- <div class="col"><label>Порт редактора</label><input id="adminPort" type="number"></div>
- <div class="col"><label>Порт презентации</label><input id="presentationPort" type="number"></div>
- <div class="col"><label>IP (0.0.0.0 = все)</label><input id="bind" type="text"></div>
-</div>
+<div class="col"><label>Порт редактора</label><input class="value" id="adminPort" type="number"></div>
+<div class="col"><label>Порт презентации</label><input class="value" id="presentationPort" type="number"></div>
+<div class="col"><label>IP (0.0.0.0 = все)</label><input class="value" id="bind" type="text"></div></div>
 <div class="links"><strong>Открыть:</strong><br>
- <a id="linkEditor" target="_blank" rel="noopener">Редактор</a>
- <a id="linkPres" target="_blank" rel="noopener">Презентация</a>
-</div>
+<a id="linkEditor" target="_blank" rel="noopener">Редактор</a>
+<a id="linkPres" target="_blank" rel="noopener">Презентация</a></div>
 <script>
-function ip(){var b=document.getElementById('bind').value;return (b&&b!=='0.0.0.0')?b:location.hostname;}
-function upd(){
- var e='http://'+ip()+':'+(document.getElementById('adminPort').value||8083)+'/editor.html';
- var p='http://'+ip()+':'+(document.getElementById('presentationPort').value||8084)+'/';
- var a=document.getElementById('linkEditor');a.href=e;a.textContent='Редактор — '+e;
- var c=document.getElementById('linkPres');c.href=p;c.textContent='Презентация — '+p;
-}
-function load(s,onChange){
- s=s||{};
- document.getElementById('adminPort').value=s.adminPort||8083;
- document.getElementById('presentationPort').value=s.presentationPort||8084;
- document.getElementById('bind').value=s.bind||'0.0.0.0';
- ['adminPort','presentationPort','bind'].forEach(function(id){
-   document.getElementById(id).addEventListener('input',function(){if(onChange)onChange();upd();});
- });
- upd();
- if(onChange)onChange(false);
-}
-function save(cb){
- cb({adminPort:+document.getElementById('adminPort').value||8083,
-     presentationPort:+document.getElementById('presentationPort').value||8084,
-     bind:document.getElementById('bind').value||'0.0.0.0'});
-}
-</script>
-</body>
-</html>
+function curIp(){var b=$('#bind').val();return(b&&b!=='0.0.0.0')?b:location.hostname;}
+function updLinks(){
+var e='http://'+curIp()+':'+($('#adminPort').val()||8083)+'/editor.html';
+var p='http://'+curIp()+':'+($('#presentationPort').val()||8084)+'/';
+$('#linkEditor').attr('href',e).text('Редактор — '+e);
+$('#linkPres').attr('href',p).text('Презентация — '+p);}
+function load(settings,onChange){
+settings=settings||{};
+$('#adminPort').val(settings.adminPort!=null?settings.adminPort:8083);
+$('#presentationPort').val(settings.presentationPort!=null?settings.presentationPort:8084);
+$('#bind').val(settings.bind||'0.0.0.0');
+$('.value').on('change input',function(){onChange();updLinks();});
+updLinks();
+onChange(false);}
+function save(callback){
+callback({adminPort:parseInt($('#adminPort').val(),10)||8083,
+presentationPort:parseInt($('#presentationPort').val(),10)||8084,
+bind:$('#bind').val()||'0.0.0.0'});}
+</script></body></html>
