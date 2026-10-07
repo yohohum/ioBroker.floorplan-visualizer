@@ -71,9 +71,11 @@ else b.innerHTML=lblHtml;
 return b;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
 function scaleMode(){return(config&&config.scaleMode)||'height';}
+// === ХЭШ СТРУКТУРЫ (включает scaleMode) ===
 function computeStructureHash(cfg){
-if(!cfg||!cfg.floors)return'';
-var h=[];
+if(!cfg)return'';
+var h=[cfg.scaleMode||'height',cfg.planBg||''];
+if(cfg.floors){
 cfg.floors.forEach(function(f){
 var fh=[f.id,f.name,f.image,f.icon?JSON.stringify(f.icon):''];
 (f.layers||[]).forEach(function(l){
@@ -85,6 +87,7 @@ fh.push(lh.join('|'));
 });
 h.push(fh.join('||'));
 });
+}
 return h.join('|||');
 }
 document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);setInterval(checkLocks,1000);});
