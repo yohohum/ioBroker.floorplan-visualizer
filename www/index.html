@@ -37,7 +37,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;p
 <div class="wrapper"><div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div></div>
 <script>
 'use strict';
-var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='',lastStructureHash='',CACHE_BUSTER='?v='+Date.now();
+var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='';
 var urlParams=new URLSearchParams(location.search);var requestedFloorId=urlParams.get('floor');
 var DEF_VF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
 var DEF_NF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
@@ -71,39 +71,56 @@ else b.innerHTML=lblHtml;
 return b;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
 function scaleMode(){return(config&&config.scaleMode)||'height';}
-// === ХЭШ СТРУКТУРЫ (включает scaleMode) ===
-function computeStructureHash(cfg){
-if(!cfg)return'';
-var h=[cfg.scaleMode||'height',cfg.planBg||''];
-if(cfg.floors){
-cfg.floors.forEach(function(f){
-var fh=[f.id,f.name,f.image,f.icon?JSON.stringify(f.icon):''];
-(f.layers||[]).forEach(function(l){
-var lh=[l.id,l.name,l.icon?JSON.stringify(l.icon):''];
-(l.devices||[]).forEach(function(d){
-lh.push([d.id,d.name,d.x,d.y,d.objType,d.iconType,d.iconOn,d.iconOff,d.iconName,d.showValue,d.showName].join('|'));
-});
-fh.push(lh.join('|'));
-});
-h.push(fh.join('||'));
-});
+// === Проверяет, изменились ли только locked/lockedUntil ===
+function isOnlyLockChange(oldCfg,newCfg){
+if(!oldCfg||!newCfg)return false;
+if(oldCfg.scaleMode!==newCfg.scaleMode)return false;
+if(oldCfg.planBg!==newCfg.planBg)return false;
+if(!oldCfg.floors||!newCfg.floors)return false;
+if(oldCfg.floors.length!==newCfg.floors.length)return false;
+for(var i=0;i<oldCfg.floors.length;i++){
+var of=oldCfg.floors[i],nf=newCfg.floors[i];
+if(of.id!==nf.id||of.name!==nf.name||of.image!==nf.image)return false;
+if(JSON.stringify(of.icon)!==JSON.stringify(nf.icon))return false;
+if(!of.layers||!nf.layers)return false;
+if(of.layers.length!==nf.layers.length)return false;
+for(var j=0;j<of.layers.length;j++){
+var ol=of.layers[j],nl=nf.layers[j];
+if(ol.id!==nl.id||ol.name!==nl.name)return false;
+if(JSON.stringify(ol.icon)!==JSON.stringify(nl.icon))return false;
+if(!ol.devices||!nl.devices)return false;
+if(ol.devices.length!==nl.devices.length)return false;
+for(var k=0;k<ol.devices.length;k++){
+var od=ol.devices[k],nd=nl.devices[k];
+if(od.id!==nd.id||od.name!==nd.name||od.x!==nd.x||od.y!==nd.y)return false;
+if(od.objType!==nd.objType||od.iconType!==nd.iconType)return false;
+if(od.iconOn!==nd.iconOn||od.iconOff!==nd.iconOff||od.iconName!==nd.iconName)return false;
+if(od.showValue!==nd.showValue||od.showName!==nd.showName)return false;
+if(JSON.stringify(od.icon)!==JSON.stringify(nd.icon))return false;
+if(JSON.stringify(od.valueFont)!==JSON.stringify(nd.valueFont))return false;
+if(JSON.stringify(od.nameFont)!==JSON.stringify(nd.nameFont))return false;
+// Игнорируем locked и lockedUntil
 }
-return h.join('|||');
+}
+}
+return true;
 }
 document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);setInterval(checkLocks,1000);});
 function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
-function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;lastConfigJson=JSON.stringify(d);lastStructureHash=computeStructureHash(config);renderStructure();}).catch(function(){});}
+function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;lastConfigJson=JSON.stringify(d);renderStructure();}).catch(function(){});}
 function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){
 var s=JSON.stringify(d);
 if(s!==lastConfigJson){
-var newHash=computeStructureHash(d);
-if(newHash!==lastStructureHash){
-CACHE_BUSTER='?v='+Date.now();
-lastConfigJson=s;config=d;lastStructureHash=newHash;
-renderStructure();
-}else{
-lastConfigJson=s;config=d;lastStructureHash=newHash;
+if(isOnlyLockChange(config,d)){
+// Изменились только locked/lockedUntil — обновляем только маркеры
+config=d;
+lastConfigJson=s;
 updatePresentationMarkers();
+}else{
+// Изменилась структура — полная перерисовка
+config=d;
+lastConfigJson=s;
+renderStructure();
 }
 }
 }).catch(function(){});}
@@ -156,7 +173,6 @@ if(d.lockedUntil&&now>d.lockedUntil){d.locked=true;d.lockedUntil=null;changed=tr
 });});});
 if(changed){
 lastConfigJson=JSON.stringify(config);
-lastStructureHash=computeStructureHash(config);
 saveConfig();
 updatePresentationMarkers();
 }
@@ -172,7 +188,7 @@ var c=document.getElementById('planContainer');
 c.style.background=planBg();
 c.className='plan-container scale-'+scaleMode();
 if(!f||!f.image){c.innerHTML='<div class="loading">Нет изображения</div>';return;}
-c.innerHTML='<div class="plan-inner"><img src="'+f.image+CACHE_BUSTER+'" class="plan-image" onerror="planImageMissing()"></div><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
+c.innerHTML='<div class="plan-inner"><img src="'+f.image+'" class="plan-image" onerror="planImageMissing()"></div><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
 buildBars(f);renderDevices(f);}
 function buildBars(f){
 var fb=document.getElementById('floorBar');var lb=document.getElementById('layerBar');
@@ -211,12 +227,12 @@ var sid=dev.stateIds&&dev.stateIds[0];if(!sid)return;
 var cur=deviceStates[sid];
 if(dev.locked){
 dev.locked=false;dev.lockedUntil=Date.now()+10000;
-lastConfigJson=JSON.stringify(config);lastStructureHash=computeStructureHash(config);
+lastConfigJson=JSON.stringify(config);
 saveConfig();updatePresentationMarkers();return;
 }
 if(dev.lockedUntil&&Date.now()<dev.lockedUntil){
 set(sid,!cur);dev.locked=true;dev.lockedUntil=null;
-lastConfigJson=JSON.stringify(config);lastStructureHash=computeStructureHash(config);
+lastConfigJson=JSON.stringify(config);
 saveConfig();updatePresentationMarkers();return;
 }
 set(sid,!cur);}
