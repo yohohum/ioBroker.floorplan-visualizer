@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "14.3.6",
+    "version": "14.3.7",
     "news": {
       "14.3.0": {
         "en": "Fix flicker, alignment, guides, icons",

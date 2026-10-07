@@ -12,11 +12,11 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;p
 .wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px;flex:1;display:flex;flex-direction:column;min-height:0}
 /* === КОНТЕЙНЕР ПЛАНА === */
 .plan-container{position:relative;border-radius:16px;display:flex;padding:20px;flex:1;min-height:0;overflow:hidden}
-.plan-inner{position:relative;display:block;margin:auto}
+.plan-inner{position:relative}
 .plan-container img{display:block;user-select:none}
 /* Режим: По высоте */
 .plan-container.scale-height{align-items:center;justify-content:center}
-.plan-container.scale-height .plan-inner{max-width:100%;max-height:100%}
+.plan-container.scale-height .plan-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .plan-container.scale-height .plan-inner img{max-width:100%;max-height:100%;object-fit:contain}
 /* Режим: По ширине */
 .plan-container.scale-width{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto}
@@ -24,6 +24,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;p
 .plan-container.scale-width .plan-inner img{width:100%;height:auto}
 /* Режим: Без масштабирования */
 .plan-container.scale-none{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto;width:fit-content;margin:0 auto}
+.plan-container.scale-none .plan-inner{display:inline-block}
 .plan-container.scale-none .plan-inner img{display:block}
 .bar{position:absolute;z-index:60;display:flex}
 .bar button{cursor:pointer;border:2px solid;display:flex;align-items:center;gap:6px;padding:0 12px;min-width:0;box-sizing:border-box}
@@ -48,7 +49,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;p
 <div class="wrapper"><div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div></div>
 <script>
 'use strict';
-var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='',CACHE_BUSTER='?v='+Date.now();
+var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='',lastStructureHash='',CACHE_BUSTER='?v='+Date.now();
 var urlParams=new URLSearchParams(location.search);var requestedFloorId=urlParams.get('floor');
 var DEF_VF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
 var DEF_NF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
@@ -89,10 +90,43 @@ b.innerHTML=lblHtml;
 return b;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
 function scaleMode(){return(config&&config.scaleMode)||'height';}
+// === ХЭШ СТРУКТУРЫ (без locked/lockedUntil) ===
+function configStructureHash(){
+if(!config||!config.floors)return'';
+var h=[];
+config.floors.forEach(function(f){
+var fh=[f.id,f.name,f.image,f.icon?JSON.stringify(f.icon):''];
+(f.layers||[]).forEach(function(l){
+var lh=[l.id,l.name,l.icon?JSON.stringify(l.icon):''];
+(l.devices||[]).forEach(function(d){
+var dh=[d.id,d.name,d.x,d.y,d.objType,d.iconType,d.iconOn,d.iconOff,d.iconName,d.showValue,d.showName];
+lh.push(dh.join('|'));
+});
+fh.push(lh.join('|'));
+});
+h.push(fh.join('||'));
+});
+return h.join('|||');
+}
 document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);setInterval(checkLocks,1000);});
 function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
-function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(function(){});}
-function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){var s=JSON.stringify(d);if(s!==lastConfigJson){lastConfigJson=s;config=d;CACHE_BUSTER='?v='+Date.now();renderStructure();}}).catch(function(){});}
+function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){lastConfigJson=JSON.stringify(d);lastStructureHash=configStructureHash();config=d;renderStructure();}).catch(function(){});}
+function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){
+var s=JSON.stringify(d);
+if(s!==lastConfigJson){
+var oldHash=lastStructureHash;
+lastConfigJson=s;
+config=d;
+var newHash=configStructureHash();
+if(newHash!==oldHash){
+CACHE_BUSTER='?v='+Date.now();
+renderStructure();
+}else{
+updatePresentationMarkers();
+}
+lastStructureHash=newHash;
+}
+}).catch(function(){});}
 function collectIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(function(f){(f.layers||[]).forEach(function(l){(l.devices||[]).forEach(function(d){(d.stateIds||[]).forEach(function(s){if(s&&ids.indexOf(s)<0)ids.push(s);});});});});return ids;}
 function pollStates(){
 if(!config)return;
@@ -235,11 +269,7 @@ if(dev.locked){
 dev.locked=false;
 dev.lockedUntil=Date.now()+10000;
 saveConfig();
-var m=document.querySelector('.marker[data-dev-id="'+dev.id+'"]');
-if(m){
-var lockEl=m.querySelector('.lock-icon');
-if(lockEl)lockEl.remove();
-}
+updatePresentationMarkers();
 return;
 }
 if(dev.lockedUntil&&Date.now()<dev.lockedUntil){
@@ -247,16 +277,7 @@ set(sid,!cur);
 dev.locked=true;
 dev.lockedUntil=null;
 saveConfig();
-var m=document.querySelector('.marker[data-dev-id="'+dev.id+'"]');
-if(m){
-var lockEl=m.querySelector('.lock-icon');
-if(!lockEl){
-var lk=document.createElement('div');
-lk.className='lock-icon';
-lk.textContent='🔒';
-m.appendChild(lk);
-}
-}
+updatePresentationMarkers();
 return;
 }
 set(sid,!cur);}
