@@ -9,8 +9,8 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;padding:20px}
 .wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px}
-.plan-container{position:relative;width:100%;border-radius:16px;overflow:hidden;min-height:500px}
-.plan-image{width:100%;height:auto;display:block;user-select:none}
+.plan-container{position:relative;width:100%;border-radius:16px;overflow:hidden;min-height:500px;max-height:80vh;display:flex;align-items:center;justify-content:center}
+.plan-image{max-width:100%;max-height:100%;object-fit:contain;display:block;user-select:none}
 .bar{position:absolute;z-index:60;display:flex}
 .bar button{cursor:pointer;border:2px solid;display:flex;align-items:center;gap:6px;padding:0 12px;min-width:0;box-sizing:border-box}
 .bar button .bicon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -74,12 +74,33 @@ b.innerHTML=lblHtml;
 }
 return b;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
-document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);});
+document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);setInterval(checkLocks,1000);});
 function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
 function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(function(){});}
 function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){var s=JSON.stringify(d);if(s!==lastConfigJson){lastConfigJson=s;config=d;CACHE_BUSTER='?v='+Date.now();renderStructure();}}).catch(function(){});}
 function collectIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(function(f){(f.layers||[]).forEach(function(l){(l.devices||[]).forEach(function(d){(d.stateIds||[]).forEach(function(s){if(s&&ids.indexOf(s)<0)ids.push(s);});});});});return ids;}
 function pollStates(){if(!config)return;collectIds().forEach(function(sid){fetch('/api/state/'+sid).then(function(r){return r.json();}).then(function(d){if(d&&deviceStates[sid]!==d.val){deviceStates[sid]=d.val;rerender();}}).catch(function(){});});}
+function checkLocks(){
+var now=Date.now();
+var changed=false;
+if(!config||!config.floors)return;
+config.floors.forEach(function(f){
+(f.layers||[]).forEach(function(l){
+(l.devices||[]).forEach(function(d){
+if(d.lockedUntil&&now>d.lockedUntil){
+d.locked=true;
+d.lockedUntil=null;
+changed=true;
+}
+});
+});
+});
+if(changed){
+saveConfig();
+rerender();
+}
+}
+function saveConfig(){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).catch(function(){});}
 function rerender(){var f=getFloor();if(f)renderDevices(f);}
 function getFloor(){if(!config||!config.floors)return null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return config.floors[i];return null;}
 function renderStructure(){
@@ -126,12 +147,15 @@ layer.appendChild(m);});}
 function toggleDevice(dev){
 var sid=dev.stateIds&&dev.stateIds[0];if(!sid)return;
 var cur=deviceStates[sid];
-// Логика блокировки
 if(dev.locked){
 dev.locked=false;
 dev.lockedUntil=Date.now()+10000;
 saveConfig();
-rerender();
+var m=document.querySelector('.marker[data-dev-id="'+dev.id+'"]');
+if(m){
+var lockEl=m.querySelector('.lock-icon');
+if(lockEl)lockEl.remove();
+}
 return;
 }
 if(dev.lockedUntil&&Date.now()<dev.lockedUntil){
@@ -139,11 +163,19 @@ set(sid,!cur);
 dev.locked=true;
 dev.lockedUntil=null;
 saveConfig();
-rerender();
+var m=document.querySelector('.marker[data-dev-id="'+dev.id+'"]');
+if(m){
+var lockEl=m.querySelector('.lock-icon');
+if(!lockEl){
+var lk=document.createElement('div');
+lk.className='lock-icon';
+lk.textContent='🔒';
+m.appendChild(lk);
+}
+}
 return;
 }
 set(sid,!cur);}
-function saveConfig(){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).catch(function(){});}
 function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(function(){deviceStates[sid]=val;rerender();}).catch(function(){alert('Ошибка');});}
 window.planImageMissing=planImageMissing;
 </script>

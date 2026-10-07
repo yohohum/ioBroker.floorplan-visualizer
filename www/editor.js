@@ -288,9 +288,48 @@ function saveSettingsModal(){config.planBg=gv('planBg');var t=gv('barTarget');va
 active:{bg:gv('bar-a-bg'),border:gv('bar-a-bd'),font:{family:gv('bar-a-ff'),weight:gv('bar-a-fw'),size:gv('bar-a-fs'),color:gv('bar-a-fc')}},
 inactive:{bg:gv('bar-i-bg'),border:gv('bar-i-bd'),font:{family:gv('bar-i-ff'),weight:gv('bar-i-fw'),size:gv('bar-i-fs'),color:gv('bar-i-fc')}}};
 if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();saveConfig(renderFloorWorkspace);}
+// === ПРОВЕРКА БЛОКИРОВОК ===
+function checkLocks(){
+var now=Date.now();
+var changed=false;
+var cur=getCurrentFloor();
+if(!cur)return;
+(cur.floor.layers||[]).forEach(function(l){
+(l.devices||[]).forEach(function(d){
+if(d.lockedUntil&&now>d.lockedUntil){
+d.locked=true;
+d.lockedUntil=null;
+changed=true;
+}
+});
+});
+if(changed){
+saveConfig();
+updateLocksOnly();
+}
+}
+function updateLocksOnly(){
+var cur=getCurrentFloor();if(!cur||!cur.floor.image)return;
+var layer=cur.floor.layers.find(function(l){return l.id===currentLayerId;});
+if(!layer)return;
+(layer.devices||[]).forEach(function(dev){
+var m=document.querySelector('.marker[data-dev-id="'+dev.id+'"]');
+if(!m)return;
+var lockEl=m.querySelector('.lock-icon');
+var hasLock=!!dev.locked;
+if(hasLock&&!lockEl){
+var lk=document.createElement('div');
+lk.className='lock-icon';
+lk.textContent='🔒';
+m.appendChild(lk);
+}else if(!hasLock&&lockEl){
+lockEl.remove();
+}
+});
+}
 // === ЖИВЫЕ ДАННЫЕ ===
 function collectStates(){var ids=[];var cur=getCurrentFloor();if(!cur)return ids;(cur.floor.layers||[]).forEach(function(l){(l.devices||[]).forEach(function(d){(d.stateIds||[]).forEach(function(s){if(s&&ids.indexOf(s)<0)ids.push(s);});});});return ids;}
-function startLive(){stopLive();pollLive();liveTimer=setInterval(pollLive,2000);}
+function startLive(){stopLive();pollLive();checkLocks();liveTimer=setInterval(function(){pollLive();checkLocks();},2000);}
 function stopLive(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
 function pollLive(){
 var changed=false;
@@ -304,7 +343,6 @@ changed=true;
 });
 if(changed)updateLiveVisuals();
 }
-// Обновляем visuals (цвета/иконки/замки/тексты) БЕЗ пересоздания DOM
 function updateLiveVisuals(){
 var cur=getCurrentFloor();if(!cur||!cur.floor.image)return;
 var layer=cur.floor.layers.find(function(l){return l.id===currentLayerId;});
@@ -325,7 +363,7 @@ if(m.style.boxShadow!==newShadow)m.style.boxShadow=newShadow;
 var iconEl=m.querySelector('.mi,.im');
 var newIcon=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
 if(iconEl&&iconEl.outerHTML!==newIcon)iconEl.outerHTML=newIcon;
-// Замок — обновляем только если изменился
+// Замок
 var lockEl=m.querySelector('.lock-icon');
 var hasLock=!!dev.locked;
 if(hasLock&&!lockEl){var lk=document.createElement('div');lk.className='lock-icon';lk.textContent='🔒';m.appendChild(lk);}
@@ -376,97 +414,15 @@ if(dev.showName!==false){var nm=document.createElement('span');nm.className='lbl
 return m;}
 var ctxMenuEl=null;function hideCtxMenu(){if(ctxMenuEl)ctxMenuEl.classList.remove('active');}
 function showCtxMenu(x,y,items){if(!ctxMenuEl){ctxMenuEl=document.createElement('div');ctxMenuEl.className='cm';document.body.appendChild(ctxMenuEl);document.addEventListener('click',hideCtxMenu);}ctxMenuEl.innerHTML='';items.forEach(function(it){var d=document.createElement('div');d.className='ci'+(it.danger?' d':'');d.textContent=it.label;d.onclick=function(e){e.stopPropagation();hideCtxMenu();it.action();};ctxMenuEl.appendChild(d);});ctxMenuEl.style.left=Math.min(x,innerWidth-190)+'px';ctxMenuEl.style.top=Math.min(y,innerHeight-140)+'px';ctxMenuEl.classList.add('active');}
-// === ОБНОВЛЕНИЕ МАРКЕРОВ БЕЗ ПЕРЕСОЗДАНИЯ DOM ===
-function updateMarker(m,dev,stateVal,fIdx,lIdx){
-var ic=dev.icon||defaultIcon(dev.objType);
-var key=getStateKey(dev,stateVal);
-m.style.left=(dev.x||50)+'%';
-m.style.top=(dev.y||50)+'%';
-m.style.width=(ic.size||48)+'px';
-m.style.height=(ic.size||48)+'px';
-m.style.opacity=ic.opacity!=null?ic.opacity:1;
-m.style.backgroundColor=(ic.bg&&ic.bg[key])||'#fff';
-m.style.borderColor=(ic.border&&ic.border[key])||defColor(key);
-if(stateVal)m.style.boxShadow='0 0 15px '+((ic.border&&ic.border[key])||defColor(key));
-else m.style.boxShadow='none';
-// Иконка
-var iconEl=m.querySelector('.mi,.im');
-var newIcon=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
-if(!iconEl||iconEl.outerHTML!==newIcon){
-if(iconEl)iconEl.outerHTML=newIcon;
-else m.insertAdjacentHTML('afterbegin',newIcon);
-}
-// Замок
-var lockEl=m.querySelector('.lock-icon');
-var hasLock=!!dev.locked;
-if(hasLock&&!lockEl){var lk=document.createElement('div');lk.className='lock-icon';lk.textContent='🔒';m.appendChild(lk);}
-else if(!hasLock&&lockEl)lockEl.remove();
-// Значения
-var existingVd=m.querySelector('.lbl');
-if(dev.showValue!==false&&dev.stateIds&&dev.stateIds.length){
-if(!existingVd){
-existingVd=document.createElement('span');
-existingVd.className='lbl lp-'+({bottom:'b',top:'t',right:'r',left:'l',overlay:'o'}[(dev.valueFont&&dev.valueFont.position)||'overlay']);
-applyFont(existingVd,dev.valueFont||DEF_VF);
-m.appendChild(existingVd);
-}
-existingVd.innerHTML='';
-dev.stateIds.forEach(function(sid,idx){
-var val=liveStates[sid];
-var pr=(dev.prefixes&&dev.prefixes[idx]!=null)?dev.prefixes[idx]:'';
-var po=(dev.postfixes&&dev.postfixes[idx]!=null)?dev.postfixes[idx]:'';
-var ln=document.createElement('span');
-ln.style.display='block';
-ln.textContent=pr+((val!==undefined&&val!==null)?val:'N/A')+po;
-existingVd.appendChild(ln);
-});
-}else if(existingVd)existingVd.remove();
-// Название
-var existingNm=m.querySelectorAll('.lbl')[dev.showValue!==false&&dev.stateIds&&dev.stateIds.length?1:0];
-if(dev.showName!==false){
-if(!existingNm){
-existingNm=document.createElement('span');
-existingNm.className='lbl lp-'+({bottom:'b',top:'t',right:'r',left:'l',overlay:'o'}[(dev.nameFont&&dev.nameFont.position)||'bottom']);
-m.appendChild(existingNm);
-}
-existingNm.textContent=dev.name||'';
-applyFont(existingNm,dev.nameFont||DEF_NF);
-}else if(existingNm)existingNm.remove();
-}
-function renderPlanMarkers(floor,fIdx){
-var area=$('pea');if(!area)return;
-if(!currentLayerId){area.querySelectorAll('.marker').forEach(function(m){m.remove();});return;}
-var layer=null,lIdx=-1;
-for(var i=0;i<floor.layers.length;i++)if(floor.layers[i].id===currentLayerId){layer=floor.layers[i];lIdx=i;break;}
-if(!layer){area.querySelectorAll('.marker').forEach(function(m){m.remove();});return;}
-var existingMarkers={};
-area.querySelectorAll('.marker').forEach(function(m){existingMarkers[m.dataset.devId]=m;});
-var usedIds={};
-(layer.devices||[]).forEach(function(dev){
-usedIds[dev.id]=true;
-var stateVal=liveStates[dev.stateIds&&dev.stateIds[0]];
-var m=existingMarkers[dev.id];
-if(m){
-// Обновляем существующий маркер
-updateMarker(m,dev,stateVal,fIdx,lIdx);
-if(selectedDevices.has(dev.id))m.classList.add('selected');
-else m.classList.remove('selected');
-}else{
-// Создаём новый маркер
-m=buildMarker(dev,stateVal);
+function renderPlanMarkers(floor,fIdx){var area=$('pea');if(!area)return;area.querySelectorAll('.marker').forEach(function(m){m.remove();});if(!currentLayerId)return;
+var layer=null,lIdx=-1;for(var i=0;i<floor.layers.length;i++)if(floor.layers[i].id===currentLayerId){layer=floor.layers[i];lIdx=i;break;}if(!layer)return;
+(layer.devices||[]).forEach(function(dev){var m=buildMarker(dev,liveStates[dev.stateIds&&dev.stateIds[0]]);
 if(selectedDevices.has(dev.id))m.classList.add('selected');
 attachDrag(m,dev);
 m.addEventListener('click',function(e){e.stopPropagation();handleMarkerClick(dev,e);});
 m.addEventListener('dblclick',function(e){e.preventDefault();openEditDeviceModal(fIdx,lIdx,dev.id);});
 m.addEventListener('contextmenu',function(e){e.preventDefault();showCtxMenu(e.clientX,e.clientY,[{label:'✏️ Редактировать',action:function(){openEditDeviceModal(fIdx,lIdx,dev.id);}},{label:'⧉ Копировать',action:function(){copyDevice(fIdx,lIdx,dev.id);}},{label:'🗑 Удалить',danger:true,action:function(){deleteDeviceById(fIdx,lIdx,dev.id);}}]);});
-area.appendChild(m);
-}
-});
-// Удаляем маркеры, которых больше нет в слое
-for(var id in existingMarkers){
-if(!usedIds[id])existingMarkers[id].remove();
-}
-}
+area.appendChild(m);});}
 function copyDevice(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var s=l.devices.find(function(d){return d.id===id;});if(!s)return;var c=JSON.parse(JSON.stringify(s));c.id='dev_'+Date.now();c.x=Math.min(100,(s.x||50)+4);c.y=Math.min(100,(s.y||50)+4);l.devices.push(c);saveConfig(renderFloorWorkspace);}
 function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(function(d){return d.id!==id;});selectedDevices.delete(id);saveConfig(renderFloorWorkspace);}
 function attachDrag(m,dev){m.addEventListener('mousedown',function(e){
@@ -541,11 +497,9 @@ function readIcon(){var ic=editingDevice.icon;ic.size=+gv('iconSize');ic.opacity
 function saveDevice(){readDeviceFields();readIcon();var d=editingDevice;if(!d.name){alert('Введите название');return;}
 var f=config.floors[editingLayerRef.fIdx];var toIdx=f.layers.findIndex(function(l){return l.id===gv('deviceLayer');});if(toIdx<0)toIdx=editingLayerRef.lIdx;
 if(editingIsNew)f.layers[toIdx].devices.push(d);else{var from=f.layers[editingLayerRef.lIdx];var i=from.devices.findIndex(function(x){return x.id===d.id;});if(i>=0)from.devices.splice(i,1);f.layers[toIdx].devices.push(d);}
-closeDeviceModal();
-// Сохраняем и обновляем только маркеры (без перерисовки всего плана)
-saveConfig(function(){currentLayerId=f.layers[toIdx].id;renderPlanMarkers(f,editingLayerRef.fIdx);});}
+closeDeviceModal();saveConfig(function(){currentLayerId=f.layers[toIdx].id;renderFloorWorkspace();});}
 function cancelDevice(){closeDeviceModal();}
-function deleteDevice(){if(editingIsNew)return;if(!confirm('Удалить?'))return;var f=config.floors[editingLayerRef.fIdx];var l=f.layers[editingLayerRef.lIdx];l.devices=l.devices.filter(function(x){return x.id!==editingDevice.id;});closeDeviceModal();saveConfig(function(){renderPlanMarkers(f,editingLayerRef.fIdx);});}
+function deleteDevice(){if(editingIsNew)return;if(!confirm('Удалить?'))return;config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx].devices=config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx].devices.filter(function(x){return x.id!==editingDevice.id;});closeDeviceModal();saveConfig(renderFloorWorkspace);}
 function closeDeviceModal(){$('deviceModal').classList.remove('active');editingDevice=null;}
 function addExtraIdRow(v){var c=$('extraIdsContainer');var r=document.createElement('div');r.className='er';r.innerHTML='<input type="text" class="extra-id-input" value="'+esc(v||'')+'"><button class="md-btn tonal small" onclick="openObjectTreeForExtra(this)">🔍</button><button class="md-btn danger small" onclick="this.parentNode.remove()">×</button>';c.appendChild(r);}
 function setExtraIdValue(i,v){var r=document.querySelectorAll('.extra-id-input');if(r[i])r[i].value=v;}
