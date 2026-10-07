@@ -7,13 +7,21 @@
 <title>План умного дома</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;padding:20px}
-.wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px}
-/* Контейнер плана — overflow:visible чтобы изображение не обрезалось */
-.plan-container{position:relative;width:100%;border-radius:16px;overflow:visible;min-height:500px;max-height:80vh;display:flex;align-items:center;justify-content:center}
-.plan-image.scale-height{max-width:100%;max-height:100%;object-fit:contain;display:block}
-.plan-image.scale-width{max-width:100%;height:auto;display:block}
-.plan-image.scale-none{display:block}
+html,body{height:100%}
+body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;padding:20px;display:flex;flex-direction:column}
+.wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px;flex:1;display:flex;flex-direction:column;min-height:0}
+/* === КОНТЕЙНЕР ПЛАНА === */
+.plan-container{position:relative;border-radius:16px;display:flex;padding:20px;flex:1;min-height:0;overflow:hidden}
+.plan-container img{display:block;user-select:none}
+/* Режим: По высоте */
+.plan-container.scale-height{align-items:center;justify-content:center}
+.plan-container.scale-height .plan-image{max-width:100%;max-height:100%;object-fit:contain}
+/* Режим: По ширине */
+.plan-container.scale-width{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto}
+.plan-container.scale-width .plan-image{width:100%;height:auto}
+/* Режим: Без масштабирования */
+.plan-container.scale-none{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto;width:fit-content;margin:0 auto}
+.plan-container.scale-none .plan-image{display:block}
 .bar{position:absolute;z-index:60;display:flex}
 .bar button{cursor:pointer;border:2px solid;display:flex;align-items:center;gap:6px;padding:0 12px;min-width:0;box-sizing:border-box}
 .bar button .bicon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -83,7 +91,6 @@ function planImageMissing(){document.getElementById('planContainer').innerHTML='
 function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(function(){});}
 function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){var s=JSON.stringify(d);if(s!==lastConfigJson){lastConfigJson=s;config=d;CACHE_BUSTER='?v='+Date.now();renderStructure();}}).catch(function(){});}
 function collectIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(function(f){(f.layers||[]).forEach(function(l){(l.devices||[]).forEach(function(d){(d.stateIds||[]).forEach(function(s){if(s&&ids.indexOf(s)<0)ids.push(s);});});});});return ids;}
-// === ОБНОВЛЕНИЕ БЕЗ МОРГАНИЯ ===
 function pollStates(){
 if(!config)return;
 var changed=false;
@@ -114,16 +121,13 @@ if(m.style.backgroundColor!==newBg)m.style.backgroundColor=newBg;
 if(m.style.borderColor!==newBd)m.style.borderColor=newBd;
 var newShadow=stateVal?'0 0 15px '+newBd:'none';
 if(m.style.boxShadow!==newShadow)m.style.boxShadow=newShadow;
-// Иконка
 var iconEl=m.querySelector('.mi,.im');
 var newIcon=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
 if(iconEl&&iconEl.outerHTML!==newIcon)iconEl.outerHTML=newIcon;
-// Замок
 var lockEl=m.querySelector('.lock-icon');
 var hasLock=!!dev.locked;
 if(hasLock&&!lockEl){var lk=document.createElement('div');lk.className='lock-icon';lk.textContent='🔒';m.appendChild(lk);}
 else if(!hasLock&&lockEl)lockEl.remove();
-// Значения
 if(dev.showValue!==false&&dev.stateIds&&dev.stateIds.length){
 var vd=m.querySelector('.lbl');
 if(!vd){
@@ -183,10 +187,11 @@ if(!config||!config.floors||!config.floors.length){document.getElementById('plan
 if(!currentFloorId)currentFloorId=(requestedFloorId&&config.floors.some(function(f){return f.id===requestedFloorId;}))?requestedFloorId:config.floors[0].id;
 renderPlan(getFloor());}
 function renderPlan(f){
-var c=document.getElementById('planContainer');c.style.background=planBg();
+var c=document.getElementById('planContainer');
+c.style.background=planBg();
+c.className='plan-container scale-'+scaleMode();
 if(!f||!f.image){c.innerHTML='<div class="loading">Нет изображения</div>';return;}
-var sm=scaleMode();
-c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image scale-'+sm+'" onerror="planImageMissing()"><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
+c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image" onerror="planImageMissing()"><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
 buildBars(f);renderDevices(f);}
 function buildBars(f){
 var fb=document.getElementById('floorBar');var lb=document.getElementById('layerBar');

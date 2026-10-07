@@ -58,11 +58,12 @@ d.y=Math.max(0,Math.min(100,d.y+dy));
 });
 saveConfig(renderFloorWorkspace);
 });
-// === НАПРАВЛЯЮЩИЕ (используем контейнер .pea вместо img) ===
+function scaleMode(){return(config&&config.scaleMode)||'height';}
 function renderGuides(){
 var area=$('pea');if(!area)return;
 area.querySelectorAll('.guide').forEach(function(g){g.remove();});
 if(!config.guides||config.guides.length===0)return;
+var img=$('peaImg');
 config.guides.forEach(function(g){
 var el=document.createElement('div');
 el.className='guide '+(g.type==='h'?'horizontal':'vertical');
@@ -77,8 +78,8 @@ el.addEventListener('dblclick',function(e){e.stopPropagation();if(confirm('Уд�
 el.addEventListener('mousedown',function(e){
 if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
-function mv(ev){
 var r=area.getBoundingClientRect();
+function mv(ev){
 var pos=g.type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
 pos=Math.max(0,Math.min(100,pos));
 pos=Math.round(pos*10)/10;
@@ -116,8 +117,8 @@ config.guides.push(guide);
 renderGuides();
 var el=area.querySelector('[data-guide-id="'+guide.id+'"]');
 if(!el)return;
-function mv(ev){
 var r=area.getBoundingClientRect();
+function mv(ev){
 var p=type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
 p=Math.max(0,Math.min(100,p));
 p=Math.round(p*10)/10;
@@ -146,7 +147,6 @@ if(!config.guides||config.guides.length===0)return{x:dev.x,y:dev.y};
 var threshold=1.5;
 var area=$('pea');if(!area)return{x:dev.x,y:dev.y};
 var img=$('peaImg');if(!img)return{x:dev.x,y:dev.y};
-// Координаты изображения относительно контейнера
 var areaRect=area.getBoundingClientRect();
 var imgRect=img.getBoundingClientRect();
 var imgOffsetX=(imgRect.left-areaRect.left)/areaRect.width*100;
@@ -244,7 +244,6 @@ function removeFloor(i,e){if(e)e.stopPropagation();if(!confirm('Удалить �
 function selectFloor(id){currentFloorId=id;currentLayerId=null;clearSelection();renderFloorWorkspace();}
 function getCurrentFloor(){for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return{floor:config.floors[i],idx:i};return null;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
-function scaleMode(){return(config&&config.scaleMode)||'height';}
 function renderFloorWorkspace(){
 renderFloorTabs();
 var w=$('fw');var cur=getCurrentFloor();
@@ -266,8 +265,8 @@ chips+='</div>';});
 var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
 h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
 var sm=scaleMode();
-if(floor.image)h+='<div class="pea" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg" class="scale-'+sm+'"></div>';
-else h+='<div class="pea" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
+if(floor.image)h+='<div class="pea scale-'+sm+'" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div>';
+else h+='<div class="pea scale-'+sm+'" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
 w.innerHTML=h;
 if(floor.image){renderPlanMarkers(floor,fIdx);renderGuides();attachGuideZones();startLive();}
 else stopLive();
@@ -368,16 +367,13 @@ if(m.style.backgroundColor!==newBg)m.style.backgroundColor=newBg;
 if(m.style.borderColor!==newBd)m.style.borderColor=newBd;
 var newShadow=stateVal?'0 0 15px '+newBd:'none';
 if(m.style.boxShadow!==newShadow)m.style.boxShadow=newShadow;
-// Иконка — обновляем только если изменилась
 var iconEl=m.querySelector('.mi,.im');
 var newIcon=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
 if(iconEl&&iconEl.outerHTML!==newIcon)iconEl.outerHTML=newIcon;
-// Замок
 var lockEl=m.querySelector('.lock-icon');
 var hasLock=!!dev.locked;
 if(hasLock&&!lockEl){var lk=document.createElement('div');lk.className='lock-icon';lk.textContent='🔒';m.appendChild(lk);}
 else if(!hasLock&&lockEl)lockEl.remove();
-// Значения
 if(dev.showValue!==false&&dev.stateIds&&dev.stateIds.length){
 var vd=m.querySelector('.lbl');
 if(!vd){
