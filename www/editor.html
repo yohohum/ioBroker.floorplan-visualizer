@@ -47,21 +47,16 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 .lc .btn-ic{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:0 0 auto}
 .lc .btn-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lc button.act{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;flex:0 0 auto}
-/* === КОНТЕЙНЕР ПЛАНА === */
 .pea{position:relative;border-radius:12px;display:flex;padding:var(--plan-pad);flex:1;min-height:0;overflow:hidden}
-.plan-inner{position:relative}
+.plan-inner{position:relative;display:inline-block}
 .pea img{display:block;user-select:none;pointer-events:none}
-/* Режим: По высоте */
 .pea.scale-height{align-items:center;justify-content:center}
-.pea.scale-height .plan-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.pea.scale-height .plan-inner{max-width:100%;max-height:100%}
 .pea.scale-height .plan-inner img{max-width:100%;max-height:100%;object-fit:contain}
-/* Режим: По ширине */
-.pea.scale-width{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto}
+.pea.scale-width{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto;width:100%}
 .pea.scale-width .plan-inner{width:100%}
 .pea.scale-width .plan-inner img{width:100%;height:auto}
-/* Режим: Без масштабирования */
-.pea.scale-none{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto;width:fit-content;margin:0 auto}
-.pea.scale-none .plan-inner{display:inline-block}
+.pea.scale-none{align-items:flex-start;justify-content:flex-start;overflow:auto;flex:0 0 auto}
 .pea.scale-none .plan-inner img{display:block}
 .pempty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--v);width:100%}
 .marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;z-index:10;transform:translate(-50%,-50%)}
@@ -104,8 +99,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 .io:hover{background:var(--pc)}
 .io .ipv{width:28px;height:28px;display:flex;align-items:center;justify-content:center}
 .io .in{font-size:8px;color:var(--v);word-break:break-all;max-height:18px;overflow:hidden;text-align:center}
-.iw{display:flex;gap:6px}
-.iw input{flex:1}
+.iw{display:flex;gap:6px}.iw input{flex:1}
 .er{display:flex;gap:6px;margin-bottom:6px;align-items:center}
 .er input{flex:1;padding:6px;border:1px solid var(--o);border-radius:6px;font-size:12px}
 .cm{position:fixed;z-index:3000;background:var(--s);border-radius:10px;min-width:170px;padding:4px;display:none}
@@ -160,137 +154,73 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 <button class="align-btn" onclick="alignTop()" title="По верхнему краю">⫠</button>
 <button class="align-btn" onclick="alignCenterV()" title="По центру верт.">⫾</button>
 <button class="align-btn" onclick="alignBottom()" title="По нижнему краю">⫟</button>
-</div>
-<div class="align-divider"></div>
+</div><div class="align-divider"></div>
 <div class="align-panel-grid">
 <button class="align-btn" onclick="distributeH()" title="Распределить гориз." style="grid-column:1/3">⋯</button>
 <button class="align-btn" onclick="distributeV()" title="Распределить верт." style="grid-column:3/4">⋮</button>
 </div>
 <button class="md-btn text small" onclick="clearSelection()" style="margin-top:4px">Снять выделение</button>
 </div>
-
 <div class="mo" id="deviceModal"><div class="modal"><h2 id="dmt">Объект</h2>
 <div class="md-field indent"><label>Название</label><input id="deviceName"></div>
 <div class="settings-grid indent">
 <div class="md-field"><label>Тип</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="indicator">Индикатор</option><option value="value">Значение</option></select></div>
-<div class="md-field"><label>Слой</label><select id="deviceLayer"></select></div>
-</div>
+<div class="md-field"><label>Слой</label><select id="deviceLayer"></select></div></div>
 <div class="md-field indent" id="lockField" style="display:none"><label class="chk"><input type="checkbox" id="deviceLocked"> 🔒 Блокировка от случайных нажатий</label></div>
 <div class="md-section"><div class="md-section-title">Шаблоны</div><div class="settings-grid">
 <div class="md-field"><label>Применить</label><select id="templateSelect" onchange="applyTemplate(this.value)"><option value="">—</option></select></div>
-<div class="md-field"><label>&nbsp;</label><button class="md-btn tonal" onclick="saveTemplate()">💾 Сохранить шаблон</button></div>
-</div></div>
+<div class="md-field"><label>&nbsp;</label><button class="md-btn tonal" onclick="saveTemplate()">💾 Сохранить шаблон</button></div></div></div>
 <div class="md-field indent"><label>Состояние ioBroker</label><div class="iw"><input id="deviceId"><button class="md-btn tonal small" onclick="openObjectTree('main',-1)">🔍</button></div></div>
 <div class="md-field indent" id="thresholdFields" style="display:none"><div class="settings-grid">
 <div class="md-field"><label>Тревога мин</label><input type="number" id="warnBelow"></div>
-<div class="md-field"><label>Тревога макс</label><input type="number" id="warnAbove"></div>
-</div></div>
+<div class="md-field"><label>Тревога макс</label><input type="number" id="warnAbove"></div></div></div>
 <div class="md-field indent"><label>Доп. состояния</label><div id="extraIdsContainer"></div><button class="md-btn tonal small" onclick="addExtraIdRow()">+ Добавить</button></div>
 <div class="md-section"><div class="md-section-title">Иконка</div>
-<div class="settings-grid">
-<div class="md-field"><label>Размер</label><input type="number" id="iconSize"></div>
-<div class="md-field"><label>Прозрачность</label><input type="number" id="iconOpacity" step="0.1" min="0" max="1"></div>
-</div>
+<div class="settings-grid"><div class="md-field"><label>Размер</label><input type="number" id="iconSize"></div><div class="md-field"><label>Прозрачность</label><input type="number" id="iconOpacity" step="0.1" min="0" max="1"></div></div>
 <div id="iconSlots"></div>
 <div class="md-field"><label>Фон</label><div class="color-grid" id="colBg"></div></div>
 <div class="md-field"><label>Цвет иконки</label><div class="color-grid" id="colIc"></div></div>
-<div class="md-field"><label>Рамка</label><div class="color-grid" id="colBd"></div></div>
-</div>
+<div class="md-field"><label>Рамка</label><div class="color-grid" id="colBd"></div></div></div>
 <div class="md-section"><div class="md-section-title">Шрифт значения</div>
 <label class="chk"><input type="checkbox" id="vf-show" checked> Выводить значение</label>
 <div class="settings-grid">
-<div class="md-field"><label>Шрифт</label><select id="vf-family"></select></div>
-<div class="md-field"><label>Начертание</label><select id="vf-weight"></select></div>
-<div class="md-field"><label>Размер</label><input id="vf-size"></div>
-<div class="md-field"><label>Цвет</label><input type="color" id="vf-color"></div>
-<div class="md-field"><label>Фон</label><input type="color" id="vf-bg"></div>
-<div class="md-field"><label>Позиция</label><select id="vf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div>
-</div>
+<div class="md-field"><label>Шрифт</label><select id="vf-family"></select></div><div class="md-field"><label>Начертание</label><select id="vf-weight"></select></div><div class="md-field"><label>Размер</label><input id="vf-size"></div><div class="md-field"><label>Цвет</label><input type="color" id="vf-color"></div><div class="md-field"><label>Фон</label><input type="color" id="vf-bg"></div><div class="md-field"><label>Позиция</label><select id="vf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div></div>
 <label class="chk"><input type="checkbox" id="vf-nobg"> Фон прозрачный</label>
-<div class="settings-grid">
-<div class="md-field"><label>Префиксы</label><input id="devicePrefixes"></div>
-<div class="md-field"><label>Постфиксы</label><input id="devicePostfixes"></div>
-</div></div>
+<div class="settings-grid"><div class="md-field"><label>Префиксы</label><input id="devicePrefixes"></div><div class="md-field"><label>Постфиксы</label><input id="devicePostfixes"></div></div></div>
 <div class="md-section"><div class="md-section-title">Шрифт названия</div>
 <label class="chk"><input type="checkbox" id="nf-show" checked> Выводить название</label>
 <div class="settings-grid">
-<div class="md-field"><label>Шрифт</label><select id="nf-family"></select></div>
-<div class="md-field"><label>Начертание</label><select id="nf-weight"></select></div>
-<div class="md-field"><label>Размер</label><input id="nf-size"></div>
-<div class="md-field"><label>Цвет</label><input type="color" id="nf-color"></div>
-<div class="md-field"><label>Фон</label><input type="color" id="nf-bg"></div>
-<div class="md-field"><label>Позиция</label><select id="nf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div>
-</div>
-<label class="chk"><input type="checkbox" id="nf-nobg"> Фон прозрачный</label>
-</div>
+<div class="md-field"><label>Шрифт</label><select id="nf-family"></select></div><div class="md-field"><label>Начертание</label><select id="nf-weight"></select></div><div class="md-field"><label>Размер</label><input id="nf-size"></div><div class="md-field"><label>Цвет</label><input type="color" id="nf-color"></div><div class="md-field"><label>Фон</label><input type="color" id="nf-bg"></div><div class="md-field"><label>Позиция</label><select id="nf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div></div>
+<label class="chk"><input type="checkbox" id="nf-nobg"> Фон прозрачный</label></div>
 <div class="ma"><button class="md-btn danger" id="btnDel" onclick="deleteDevice()">Удалить</button><span class="spacer"></span><button class="md-btn text" onclick="cancelDevice()">Отменить</button><button class="md-btn filled" onclick="saveDevice()">Сохранить</button></div>
 </div></div>
-
 <div class="mo" id="settingsModal"><div class="modal"><h2>Настройки</h2>
 <div class="md-section indent"><div class="md-section-title">План</div><div class="settings-grid">
 <div class="md-field"><label>Фон плана</label><input type="color" id="planBg"></div>
-<div class="md-field"><label>Масштабирование</label><select id="scaleMode"><option value="height">По высоте</option><option value="width">По ширине</option><option value="none">Без масштабирования</option></select></div>
-</div></div>
+<div class="md-field"><label>Масштабирование</label><select id="scaleMode"><option value="height">По высоте</option><option value="width">По ширине</option><option value="none">Без масштабирования</option></select></div></div></div>
 <div class="md-field indent"><label>Панель</label><select id="barTarget" onchange="fillBarFields()"><option value="floor">Этажи</option><option value="layer">Слои</option></select></div>
 <div class="settings-grid indent">
-<div class="md-field"><label>Высота</label><input type="number" id="bar-height"></div>
-<div class="md-field"><label>Длина</label><input type="number" id="bar-width"></div>
-<div class="md-field"><label>Отступ</label><input type="number" id="bar-gap"></div>
-<div class="md-field"><label>Радиус</label><input type="number" id="bar-radius"></div>
-<div class="md-field"><label>Ориентация</label><select id="bar-orient"><option value="h">Гориз.</option><option value="v">Верт.</option></select></div>
-<div class="md-field"><label>Позиция</label><select id="bar-position"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option></select></div>
-<div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">Центр</option><option value="left">Лево</option><option value="right">Право</option></select></div>
-<div class="md-field"><label>Текст в кнопке</label><select id="bar-textalign"><option value="left">Слева</option><option value="center">По центру</option><option value="right">Справа</option></select></div>
-</div>
+<div class="md-field"><label>Высота</label><input type="number" id="bar-height"></div><div class="md-field"><label>Длина</label><input type="number" id="bar-width"></div><div class="md-field"><label>Отступ</label><input type="number" id="bar-gap"></div><div class="md-field"><label>Радиус</label><input type="number" id="bar-radius"></div><div class="md-field"><label>Ориентация</label><select id="bar-orient"><option value="h">Гориз.</option><option value="v">Верт.</option></select></div><div class="md-field"><label>Позиция</label><select id="bar-position"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option></select></div><div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">Центр</option><option value="left">Лево</option><option value="right">Право</option></select></div><div class="md-field"><label>Текст в кнопке</label><select id="bar-textalign"><option value="left">Слева</option><option value="center">По центру</option><option value="right">Справа</option></select></div></div>
 <div class="md-section"><div class="md-section-title">Иконка кнопки</div><div class="settings-grid">
-<div class="md-field"><label>Иконка</label><div style="display:flex;gap:6px;align-items:center"><button class="md-btn tonal small" onclick="openBarDisk()">📁</button><button class="md-btn tonal small" onclick="openBarMfd()">MFD</button><button class="md-btn danger small" onclick="clearBarIcon()">✕</button><span id="barIconPreview" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center"></span></div></div>
-<div class="md-field"><label>Место</label><select id="bar-iconpos"><option value="left">Слева</option><option value="right">Справа</option></select></div>
-</div></div>
+<div class="md-field"><label>Иконка</label><div style="display:flex;gap:6px;align-items:center"><button class="md-btn tonal small" onclick="openBarDisk()">📁</button><button class="md-btn tonal small" onclick="openBarMfd()">MFD</button><button class="md-btn danger small" onclick="clearBarIcon()">✕</button><span id="barIconPreview" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center"></span></div></div><div class="md-field"><label>Место</label><select id="bar-iconpos"><option value="left">Слева</option><option value="right">Справа</option></select></div></div></div>
 <div class="md-section"><div class="md-section-title">Активная</div><div class="settings-grid">
-<div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div>
-<div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div>
-<div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div>
-<div class="md-field"><label>Начерт.</label><select id="bar-a-fw"></select></div>
-<div class="md-field"><label>Размер</label><input id="bar-a-fs"></div>
-<div class="md-field"><label>Цвет</label><input type="color" id="bar-a-fc"></div>
-</div></div>
+<div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-a-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-a-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-a-fc"></div></div></div>
 <div class="md-section"><div class="md-section-title">Неактивная</div><div class="settings-grid">
-<div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div>
-<div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div>
-<div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div>
-<div class="md-field"><label>Начерт.</label><select id="bar-i-fw"></select></div>
-<div class="md-field"><label>Размер</label><input id="bar-i-fs"></div>
-<div class="md-field"><label>Цвет</label><input type="color" id="bar-i-fc"></div>
-</div></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div>
-</div></div>
-
+<div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-i-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-i-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-i-fc"></div></div></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div></div></div>
 <div class="mo" id="iconPickerModal"><div class="modal"><h2 id="pickerTitle">Выбор иконки</h2>
 <div class="picker-preview"><div class="pv-box" id="pickerPreviewBox">📄</div><div class="pv-name" id="pickerPreviewName">не выбрано</div><button class="md-btn danger small" onclick="clearPickerIcon()">✕ Удалить</button></div>
-<div class="picker-tabs">
-<button class="picker-tab active" data-tab="emoji" onclick="switchPickerTab('emoji')">Emoji</button>
-<button class="picker-tab" data-tab="mfd" onclick="switchPickerTab('mfd')">MFD</button>
-<button class="picker-tab" data-tab="file" onclick="switchPickerTab('file')">📁 Файл</button>
-</div>
+<div class="picker-tabs"><button class="picker-tab active" data-tab="emoji" onclick="switchPickerTab('emoji')">Emoji</button><button class="picker-tab" data-tab="mfd" onclick="switchPickerTab('mfd')">MFD</button><button class="picker-tab" data-tab="file" onclick="switchPickerTab('file')">📁 Файл</button></div>
 <div class="picker-content" id="pickerContent"></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconPicker()">Закрыть</button></div>
-</div></div>
-
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconPicker()">Закрыть</button></div></div></div>
 <div class="mo" id="treeModal"><div class="modal ml"><h2>Объект ioBroker</h2>
 <div class="ots"><input id="treeSearch" oninput="filterTree()"><button class="md-btn tonal small" onclick="expandAllBranches()">+</button><button class="md-btn tonal small" onclick="collapseAllBranches()">−</button></div>
 <div class="ot" id="objectTree"><div class="tl">Загрузка</div></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div>
-</div></div>
-
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div></div></div>
 <div class="mo" id="emojiModal"><div class="modal"><h2>Emoji</h2><div class="ip" id="emojiPalette"></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div>
-</div></div>
-
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div></div></div>
 <div class="mo" id="mfdModal"><div class="modal ml"><h2>MFD</h2>
-<div class="ots"><input id="mfdSearch" oninput="filterMfdPalette()"></div>
-<div class="ip" id="mfdPalette"><div class="tl">Загрузка</div></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeMfdModal()">Закрыть</button></div>
-</div></div>
-
+<div class="ots"><input id="mfdSearch" oninput="filterMfdPalette()"></div><div class="ip" id="mfdPalette"><div class="tl">Загрузка</div></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeMfdModal()">Закрыть</button></div></div></div>
 <script src="editor.js"></script>
 </body></html>
