@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
-<title>Редактор v14.7</title><style>
+<title>Редактор v14.8</title><style>
 :root{--p:#0061a4;--pc:#d1e4ff;--s:#e8ebf1;--s2:#eef1f6;--o:#73777f;--ov:#c3c7cf;--v:#43484e;--e:#ba1a1a;--ec:#f9dedc;--gap:8px;--pad:12px;--indent:16px;--plan-pad:20px}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
@@ -49,16 +49,20 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 .lc button.act{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;flex:0 0 auto}
 /* === КОНТЕЙНЕР ПЛАНА === */
 .pea{position:relative;border-radius:12px;display:flex;padding:var(--plan-pad);flex:1;min-height:0;overflow:hidden}
+/* Внутренний контейнер для изображения и маркеров */
+.plan-inner{position:relative;display:inline-block}
 .pea img{display:block;user-select:none;pointer-events:none}
-/* Режим: По высоте — контейнер на всю доступную высоту, изображение вписано */
+/* Режим: По высоте */
 .pea.scale-height{align-items:center;justify-content:center}
-.pea.scale-height img{max-width:100%;max-height:100%;object-fit:contain}
-/* Режим: По ширине — изображение на всю ширину, высота по содержимому */
+.pea.scale-height .plan-inner{max-width:100%;max-height:100%}
+.pea.scale-height .plan-inner img{max-width:100%;max-height:100%;object-fit:contain}
+/* Режим: По ширине */
 .pea.scale-width{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto}
-.pea.scale-width img{width:100%;height:auto}
-/* Режим: Без масштабирования — изображение в исходном размере */
+.pea.scale-width .plan-inner{width:100%}
+.pea.scale-width .plan-inner img{width:100%;height:auto}
+/* Режим: Без масштабирования */
 .pea.scale-none{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto;width:fit-content;margin:0 auto}
-.pea.scale-none img{display:block}
+.pea.scale-none .plan-inner img{display:block}
 .pempty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--v);width:100%}
 .marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;z-index:10;transform:translate(-50%,-50%)}
 .marker.selected{border-color:var(--p);box-shadow:0 0 0 3px var(--pc);z-index:15}
@@ -142,7 +146,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 .guide.vertical .guide-label{left:10px;top:10px}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
-<div class="header"><h1>Редактор плана этажа <span class="ver">v14.7</span></h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
+<div class="header"><h1>Редактор плана этажа <span class="ver">v14.8</span></h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none">
 <input type="file" id="barIconInput" accept="image/*" style="display:none">
