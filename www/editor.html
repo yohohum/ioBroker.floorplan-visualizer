@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
-<title>Редактор v14.2</title><style>
+<title>Редактор v14.3</title><style>
 :root{--p:#0061a4;--pc:#d1e4ff;--s:#e8ebf1;--s2:#eef1f6;--o:#73777f;--ov:#c3c7cf;--v:#43484e;--e:#ba1a1a;--ec:#f9dedc;--gap:8px;--pad:12px;--indent:16px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;padding:20px}
@@ -15,7 +15,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 .md-field input,.md-field select{width:100%;padding:8px;border:1px solid var(--o);border-radius:6px;background:#fff;font-family:inherit;font-size:13px}
 .md-field input[type=color]{height:36px;padding:2px}
 /* Отступ для основных полей */
-.md-field.indent{padding-left:var(--indent)}
+.indent{padding-left:var(--indent)}
 .md-section{background:var(--s);border-radius:12px;padding:var(--pad);margin-bottom:var(--gap)}
 .md-section-title{font-size:13px;color:var(--p);font-weight:500;margin-bottom:8px}
 .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--gap);margin-bottom:var(--gap)}
@@ -130,7 +130,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 .guide.vertical .guide-label{left:10px;top:10px}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
-<div class="header"><h1>Редактор плана этажа <span class="ver">v14.2</span></h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
+<div class="header"><h1>Редактор плана этажа <span class="ver">v14.3</span></h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
 <input type="file" id="diskIconInput" accept="image/*" style="display:none">
 <input type="file" id="barIconInput" accept="image/*" style="display:none">
@@ -211,9 +211,9 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;p
 </div></div>
 
 <div class="mo" id="settingsModal"><div class="modal"><h2>Настройки</h2>
-<div class="md-section"><div class="md-section-title">План</div><div class="settings-grid"><div class="md-field"><label>Фон плана</label><input type="color" id="planBg"></div></div></div>
-<div class="md-field"><label>Панель</label><select id="barTarget" onchange="fillBarFields()"><option value="floor">Этажи</option><option value="layer">Слои</option></select></div>
-<div class="settings-grid">
+<div class="md-section indent"><div class="md-section-title">План</div><div class="settings-grid"><div class="md-field"><label>Фон плана</label><input type="color" id="planBg"></div></div></div>
+<div class="md-field indent"><label>Панель</label><select id="barTarget" onchange="fillBarFields()"><option value="floor">Этажи</option><option value="layer">Слои</option></select></div>
+<div class="settings-grid indent">
 <div class="md-field"><label>Высота</label><input type="number" id="bar-height"></div>
 <div class="md-field"><label>Длина</label><input type="number" id="bar-width"></div>
 <div class="md-field"><label>Отступ</label><input type="number" id="bar-gap"></div>

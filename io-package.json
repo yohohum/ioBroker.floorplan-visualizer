@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "14.1.1",
+    "version": "14.1.12,
     "news": {
       "14.0.1": {
         "en": "Fix snap, icon, admin buttons, lock",
