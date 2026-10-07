@@ -1,17 +1,38 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "14.1.12,
+    "version": "14.3.0",
     "news": {
-      "14.0.1": {
-        "en": "Fix snap, icon, admin buttons, lock",
-        "ru": "Исправление snap, иконки, кнопок админки, блокировки"
+      "14.3.0": {
+        "en": "Fix flicker, alignment, guides, icons",
+        "ru": "Fix flicker, alignment, guides, icons"
+      },
+      "14.0.0": {
+        "en": "Lock feature, guides, alignment, README",
+        "ru": "Lock feature, guides, alignment, README"
+      },
+      "1.0.0": {
+        "en": "Initial release",
+        "ru": "Initial release"
       }
     },
     "title": "Floor Plan Visualizer",
-    "desc": "Interactive floor plan visualization",
-    "authors": ["YoHoHum <yohohum@gmail.com>"],
-    "keywords": ["floorplan", "visualization", "smart home"],
+    "titleLang": {
+      "en": "Floor Plan Visualizer",
+      "ru": "Floor Plan Visualizer"
+    },
+    "desc": {
+      "en": "Interactive floor plan visualization",
+      "ru": "Interactive floor plan visualization"
+    },
+    "authors": [
+      "YoHoHum <yohohum@gmail.com>"
+    ],
+    "keywords": [
+      "floorplan",
+      "visualization",
+      "smart home"
+    ],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -20,7 +41,9 @@
     "compact": true,
     "connectionType": "local",
     "dataSource": "push",
-    "adminUI": { "config": "html" },
+    "adminUI": {
+      "config": "html"
+    },
     "localLink": "http://%ip%:8083/editor.html",
     "icon": "icon.svg",
     "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
@@ -28,7 +51,11 @@
     "tier": 3,
     "enabled": true
   },
-  "native": { "adminPort": 8083, "presentationPort": 8084, "bind": "0.0.0.0" },
+  "native": {
+    "adminPort": 8083,
+    "presentationPort": 8084,
+    "bind": "0.0.0.0"
+  },
   "objects": [],
   "states": []
 }
