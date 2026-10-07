@@ -58,6 +58,7 @@ d.y=Math.max(0,Math.min(100,d.y+dy));
 });
 saveConfig(renderFloorWorkspace);
 });
+// === НАПРАВЛЯЮЩИЕ (используем контейнер .pea вместо img) ===
 function renderGuides(){
 var area=$('pea');if(!area)return;
 area.querySelectorAll('.guide').forEach(function(g){g.remove();});
@@ -76,9 +77,8 @@ el.addEventListener('dblclick',function(e){e.stopPropagation();if(confirm('Уд�
 el.addEventListener('mousedown',function(e){
 if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
-var img=$('peaImg');if(!img)return;
 function mv(ev){
-var r=img.getBoundingClientRect();
+var r=area.getBoundingClientRect();
 var pos=g.type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
 pos=Math.max(0,Math.min(100,pos));
 pos=Math.round(pos*10)/10;
@@ -110,7 +110,6 @@ zone.className='guide-zone '+side;
 zone.addEventListener('mousedown',function(e){
 if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
-var img=$('peaImg');if(!img)return;
 var type=(side==='top'||side==='bottom')?'h':'v';
 var guide={id:'guide_'+Date.now(),type:type,position:50};
 config.guides.push(guide);
@@ -118,7 +117,7 @@ renderGuides();
 var el=area.querySelector('[data-guide-id="'+guide.id+'"]');
 if(!el)return;
 function mv(ev){
-var r=img.getBoundingClientRect();
+var r=area.getBoundingClientRect();
 var p=type==='h'?((ev.clientY-r.top)/r.height)*100:((ev.clientX-r.left)/r.width)*100;
 p=Math.max(0,Math.min(100,p));
 p=Math.round(p*10)/10;
@@ -145,15 +144,23 @@ area.appendChild(zone);
 function snapToGuides(dev,size){
 if(!config.guides||config.guides.length===0)return{x:dev.x,y:dev.y};
 var threshold=1.5;
+var area=$('pea');if(!area)return{x:dev.x,y:dev.y};
 var img=$('peaImg');if(!img)return{x:dev.x,y:dev.y};
-var halfW=(size/img.clientWidth)*100/2;
-var halfH=(size/img.clientHeight)*100/2;
-var left=dev.x-halfW;
-var right=dev.x+halfW;
-var top=dev.y-halfH;
-var bottom=dev.y+halfH;
-var centerX=dev.x;
-var centerY=dev.y;
+// Координаты изображения относительно контейнера
+var areaRect=area.getBoundingClientRect();
+var imgRect=img.getBoundingClientRect();
+var imgOffsetX=(imgRect.left-areaRect.left)/areaRect.width*100;
+var imgOffsetY=(imgRect.top-areaRect.top)/areaRect.height*100;
+var imgWidthPct=imgRect.width/areaRect.width*100;
+var imgHeightPct=imgRect.height/areaRect.height*100;
+var halfW=(size/img.clientWidth)*imgWidthPct/2;
+var halfH=(size/img.clientHeight)*imgHeightPct/2;
+var left=imgOffsetX+dev.x*imgWidthPct/100-halfW;
+var right=imgOffsetX+dev.x*imgWidthPct/100+halfW;
+var top=imgOffsetY+dev.y*imgHeightPct/100-halfH;
+var bottom=imgOffsetY+dev.y*imgHeightPct/100+halfH;
+var centerX=imgOffsetX+dev.x*imgWidthPct/100;
+var centerY=imgOffsetY+dev.y*imgHeightPct/100;
 var newX=dev.x,newY=dev.y;
 var snappedX=false,snappedY=false;
 config.guides.forEach(function(g){
@@ -161,7 +168,7 @@ if(g.type==='v'&&!snappedX){
 var edges=[left,centerX,right];
 for(var i=0;i<edges.length;i++){
 if(Math.abs(edges[i]-g.position)<threshold){
-newX=g.position-(edges[i]-dev.x);
+newX=(g.position-(edges[i]-centerX)-imgOffsetX)*100/imgWidthPct;
 snappedX=true;
 break;
 }
@@ -170,7 +177,7 @@ break;
 var edges=[top,centerY,bottom];
 for(var i=0;i<edges.length;i++){
 if(Math.abs(edges[i]-g.position)<threshold){
-newY=g.position-(edges[i]-dev.y);
+newY=(g.position-(edges[i]-centerY)-imgOffsetY)*100/imgHeightPct;
 snappedY=true;
 break;
 }
@@ -237,6 +244,7 @@ function removeFloor(i,e){if(e)e.stopPropagation();if(!confirm('Удалить �
 function selectFloor(id){currentFloorId=id;currentLayerId=null;clearSelection();renderFloorWorkspace();}
 function getCurrentFloor(){for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return{floor:config.floors[i],idx:i};return null;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
+function scaleMode(){return(config&&config.scaleMode)||'height';}
 function renderFloorWorkspace(){
 renderFloorTabs();
 var w=$('fw');var cur=getCurrentFloor();
@@ -257,7 +265,8 @@ chips+='<button class="act" onclick="event.stopPropagation();removeLayer('+fIdx+
 chips+='</div>';});
 var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
 h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
-if(floor.image)h+='<div class="pea" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div>';
+var sm=scaleMode();
+if(floor.image)h+='<div class="pea" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg" class="scale-'+sm+'"></div>';
 else h+='<div class="pea" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
 w.innerHTML=h;
 if(floor.image){renderPlanMarkers(floor,fIdx);renderGuides();attachGuideZones();startLive();}
@@ -270,7 +279,7 @@ function renameLayer(fIdx,lIdx){var f=config.floors[fIdx];var l=f.layers[lIdx];v
 function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой?'))return;var f=config.floors[fIdx];var i=f.layers.findIndex(function(l){return l.id===lId;});if(i>=0)f.layers.splice(i,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
 function saveFloorName(fIdx){config.floors[fIdx].name=gv('floorNameInput')||'Без названия';saveConfig(renderFloorTabs);}
 function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'floor_'+fIdx+'_'+Date.now()+'.png',base64Data:e.target.result})}).then(function(x){return x.json();}).then(function(d){if(d.success){config.floors[fIdx].image=d.url;saveConfig(renderFloorWorkspace);}});};r.readAsDataURL(f);}
-function openSettingsModal(){sv('planBg',config.planBg||'#2a2f36');fillBarFields();$('settingsModal').classList.add('active');$('settingsModal').querySelector('.modal').scrollTop=0;}
+function openSettingsModal(){sv('planBg',config.planBg||'#2a2f36');sv('scaleMode',config.scaleMode||'height');fillBarFields();$('settingsModal').classList.add('active');$('settingsModal').querySelector('.modal').scrollTop=0;}
 function closeSettingsModal(){$('settingsModal').classList.remove('active');}
 function getBar(t){return(t==='floor'?config.floorBar:config.layerBar)||barDefaults();}
 function barIconHtml(icon,h){if(!icon)return'';if(icon.kind==='emoji')return'<span style="font-size:'+h+';line-height:1">'+esc(icon.value)+'</span>';var u=icon.kind==='mfd'?(mfdBaseUrl+icon.value+'.png'):icon.value;return'<span class="im" style="width:'+h+';height:'+h+';background-color:currentColor;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
@@ -284,7 +293,7 @@ fillFont($('bar-a-ff'),s.active.font.family);fillWeight($('bar-a-fw'),s.active.f
 fillFont($('bar-i-ff'),s.inactive.font.family);fillWeight($('bar-i-fw'),s.inactive.font.weight);
 sv('bar-a-bg',s.active.bg);sv('bar-a-bd',s.active.border);sv('bar-a-fs',s.active.font.size);sv('bar-a-fc',s.active.font.color);
 sv('bar-i-bg',s.inactive.bg);sv('bar-i-bd',s.inactive.border);sv('bar-i-fs',s.inactive.font.size);sv('bar-i-fc',s.inactive.font.color);}
-function saveSettingsModal(){config.planBg=gv('planBg');var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),textAlign:gv('bar-textalign'),icon:barIcon,iconPos:gv('bar-iconpos'),
+function saveSettingsModal(){config.planBg=gv('planBg');config.scaleMode=gv('scaleMode');var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),textAlign:gv('bar-textalign'),icon:barIcon,iconPos:gv('bar-iconpos'),
 active:{bg:gv('bar-a-bg'),border:gv('bar-a-bd'),font:{family:gv('bar-a-ff'),weight:gv('bar-a-fw'),size:gv('bar-a-fs'),color:gv('bar-a-fc')}},
 inactive:{bg:gv('bar-i-bg'),border:gv('bar-i-bd'),font:{family:gv('bar-i-ff'),weight:gv('bar-i-fw'),size:gv('bar-i-fs'),color:gv('bar-i-fc')}}};
 if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();saveConfig(renderFloorWorkspace);}

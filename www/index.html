@@ -9,8 +9,11 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;padding:20px}
 .wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px}
-.plan-container{position:relative;width:100%;border-radius:16px;overflow:hidden;min-height:500px;max-height:80vh;display:flex;align-items:center;justify-content:center}
-.plan-image{max-width:100%;max-height:100%;object-fit:contain;display:block;user-select:none}
+/* Контейнер плана — overflow:visible чтобы изображение не обрезалось */
+.plan-container{position:relative;width:100%;border-radius:16px;overflow:visible;min-height:500px;max-height:80vh;display:flex;align-items:center;justify-content:center}
+.plan-image.scale-height{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.plan-image.scale-width{max-width:100%;height:auto;display:block}
+.plan-image.scale-none{display:block}
 .bar{position:absolute;z-index:60;display:flex}
 .bar button{cursor:pointer;border:2px solid;display:flex;align-items:center;gap:6px;padding:0 12px;min-width:0;box-sizing:border-box}
 .bar button .bicon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -74,12 +77,84 @@ b.innerHTML=lblHtml;
 }
 return b;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
+function scaleMode(){return(config&&config.scaleMode)||'height';}
 document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,5000);setInterval(checkLocks,1000);});
 function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
 function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){lastConfigJson=JSON.stringify(d);config=d;renderStructure();}).catch(function(){});}
 function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){var s=JSON.stringify(d);if(s!==lastConfigJson){lastConfigJson=s;config=d;CACHE_BUSTER='?v='+Date.now();renderStructure();}}).catch(function(){});}
 function collectIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(function(f){(f.layers||[]).forEach(function(l){(l.devices||[]).forEach(function(d){(d.stateIds||[]).forEach(function(s){if(s&&ids.indexOf(s)<0)ids.push(s);});});});});return ids;}
-function pollStates(){if(!config)return;collectIds().forEach(function(sid){fetch('/api/state/'+sid).then(function(r){return r.json();}).then(function(d){if(d&&deviceStates[sid]!==d.val){deviceStates[sid]=d.val;rerender();}}).catch(function(){});});}
+// === ОБНОВЛЕНИЕ БЕЗ МОРГАНИЯ ===
+function pollStates(){
+if(!config)return;
+var changed=false;
+collectIds().forEach(function(sid){
+fetch('/api/state/'+sid).then(function(r){return r.json();}).then(function(d){
+if(d&&deviceStates[sid]!==d.val){
+deviceStates[sid]=d.val;
+changed=true;
+}
+}).catch(function(){});
+});
+if(changed)updatePresentationMarkers();
+}
+function updatePresentationMarkers(){
+var f=getFloor();if(!f)return;
+var layer=null;
+for(var i=0;i<(f.layers||[]).length;i++)if(f.layers[i].id===currentLayerId){layer=f.layers[i];break;}
+if(!layer)return;
+(layer.devices||[]).forEach(function(dev){
+var m=document.querySelector('.marker[data-dev-id="'+dev.id+'"]');
+if(!m)return;
+var stateVal=dev.stateIds&&dev.stateIds[0]?deviceStates[dev.stateIds[0]]:null;
+var ic=dev.icon||defaultIcon(dev.objType);
+var key=getStateKey(dev,stateVal);
+var newBg=(ic.bg&&ic.bg[key])||'#fff';
+var newBd=(ic.border&&ic.border[key])||defColor(key);
+if(m.style.backgroundColor!==newBg)m.style.backgroundColor=newBg;
+if(m.style.borderColor!==newBd)m.style.borderColor=newBd;
+var newShadow=stateVal?'0 0 15px '+newBd:'none';
+if(m.style.boxShadow!==newShadow)m.style.boxShadow=newShadow;
+// Иконка
+var iconEl=m.querySelector('.mi,.im');
+var newIcon=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
+if(iconEl&&iconEl.outerHTML!==newIcon)iconEl.outerHTML=newIcon;
+// Замок
+var lockEl=m.querySelector('.lock-icon');
+var hasLock=!!dev.locked;
+if(hasLock&&!lockEl){var lk=document.createElement('div');lk.className='lock-icon';lk.textContent='🔒';m.appendChild(lk);}
+else if(!hasLock&&lockEl)lockEl.remove();
+// Значения
+if(dev.showValue!==false&&dev.stateIds&&dev.stateIds.length){
+var vd=m.querySelector('.lbl');
+if(!vd){
+vd=document.createElement('span');
+vd.className='lbl lp-'+({bottom:'b',top:'t',right:'r',left:'l',overlay:'o'}[(dev.valueFont&&dev.valueFont.position)||'overlay']);
+applyFont(vd,dev.valueFont||DEF_VF);
+m.appendChild(vd);
+}
+var newText='';
+dev.stateIds.forEach(function(s,idx){
+var val=deviceStates[s];
+var pr=(dev.prefixes&&dev.prefixes[idx]!=null)?dev.prefixes[idx]:'';
+var po=(dev.postfixes&&dev.postfixes[idx]!=null)?dev.postfixes[idx]:'';
+newText+=pr+((val!==undefined&&val!==null)?val:'N/A')+po+'\n';
+});
+newText=newText.trim();
+if(vd.textContent!==newText){
+vd.innerHTML='';
+dev.stateIds.forEach(function(s,idx){
+var val=deviceStates[s];
+var pr=(dev.prefixes&&dev.prefixes[idx]!=null)?dev.prefixes[idx]:'';
+var po=(dev.postfixes&&dev.postfixes[idx]!=null)?dev.postfixes[idx]:'';
+var ln=document.createElement('span');
+ln.style.display='block';
+ln.textContent=pr+((val!==undefined&&val!==null)?val:'N/A')+po;
+vd.appendChild(ln);
+});
+}
+}
+});
+}
 function checkLocks(){
 var now=Date.now();
 var changed=false;
@@ -97,7 +172,7 @@ changed=true;
 });
 if(changed){
 saveConfig();
-rerender();
+updatePresentationMarkers();
 }
 }
 function saveConfig(){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).catch(function(){});}
@@ -110,7 +185,8 @@ renderPlan(getFloor());}
 function renderPlan(f){
 var c=document.getElementById('planContainer');c.style.background=planBg();
 if(!f||!f.image){c.innerHTML='<div class="loading">Нет изображения</div>';return;}
-c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image" onerror="planImageMissing()"><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
+var sm=scaleMode();
+c.innerHTML='<img src="'+f.image+CACHE_BUSTER+'" class="plan-image scale-'+sm+'" onerror="planImageMissing()"><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
 buildBars(f);renderDevices(f);}
 function buildBars(f){
 var fb=document.getElementById('floorBar');var lb=document.getElementById('layerBar');
@@ -128,7 +204,7 @@ dev.objType=normalizeType(dev.objType);
 var ic=dev.icon||defaultIcon(dev.objType);
 var v=dev.stateIds&&dev.stateIds[0]?deviceStates[dev.stateIds[0]]:null;
 var key=getStateKey(dev,v);
-var m=document.createElement('div');m.className='marker';
+var m=document.createElement('div');m.className='marker';m.dataset.devId=dev.id;
 m.style.left=dev.x+'%';m.style.top=dev.y+'%';m.style.width=(ic.size||48)+'px';m.style.height=(ic.size||48)+'px';m.style.opacity=ic.opacity!=null?ic.opacity:1;
 m.style.backgroundColor=(ic.bg&&ic.bg[key])||'#fff';m.style.borderColor=(ic.border&&ic.border[key])||defColor(key);
 if(v)m.style.boxShadow='0 0 15px '+((ic.border&&ic.border[key])||defColor(key));
@@ -176,7 +252,7 @@ m.appendChild(lk);
 return;
 }
 set(sid,!cur);}
-function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(function(){deviceStates[sid]=val;rerender();}).catch(function(){alert('Ошибка');});}
+function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(function(){deviceStates[sid]=val;updatePresentationMarkers();}).catch(function(){alert('Ошибка');});}
 window.planImageMissing=planImageMissing;
 </script>
 </body>
