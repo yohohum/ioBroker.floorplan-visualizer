@@ -5,20 +5,22 @@
 html,body{height:100%}
 body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;padding:20px;display:flex;flex-direction:column}
 .wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px;flex:1;display:flex;flex-direction:column;min-height:0}
-.plan-container{position:relative;border-radius:16px;display:flex;padding:20px;flex:1;min-height:0;overflow:hidden}
-.plan-inner{position:relative}
+/* === КОНТЕЙНЕР ПЛАНА === */
+.plan-container{position:relative;border-radius:16px;padding:20px;flex:1;min-height:0;overflow:hidden}
+/* Базовый стиль для plan-inner */
+.plan-inner{position:relative;display:block;margin:0 auto}
 .plan-container img{display:block;user-select:none}
 /* Режим: По высоте */
-.plan-container.scale-height{align-items:center;justify-content:center}
-.plan-container.scale-height .plan-inner{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
-.plan-container.scale-height .plan-inner img{max-width:100%;max-height:100%;object-fit:contain}
+.plan-container.scale-height{display:flex;align-items:center;justify-content:center}
+.plan-container.scale-height .plan-inner{max-width:100%;max-height:100%;margin:0}
+.plan-container.scale-height .plan-inner img{max-width:100%;max-height:100%;object-fit:contain;margin:0 auto}
 /* Режим: По ширине */
-.plan-container.scale-width{align-items:flex-start;justify-content:center;overflow:visible;flex:0 0 auto;width:100%}
-.plan-container.scale-width .plan-inner{width:100%}
+.plan-container.scale-width{display:block;overflow:visible}
+.plan-container.scale-width .plan-inner{width:100%;margin:0}
 .plan-container.scale-width .plan-inner img{width:100%;height:auto}
 /* Режим: Без масштабирования */
-.plan-container.scale-none{align-items:flex-start;justify-content:flex-start;overflow:auto;flex:0 0 auto}
-.plan-container.scale-none .plan-inner{display:inline-block}
+.plan-container.scale-none{display:block;overflow:auto}
+.plan-container.scale-none .plan-inner{margin:0;width:auto}
 .plan-container.scale-none .plan-inner img{display:block}
 .bar{position:absolute;z-index:60;display:flex}
 .bar button{cursor:pointer;border:2px solid;display:flex;align-items:center;gap:6px;padding:0 12px;min-width:0;box-sizing:border-box}
@@ -109,25 +111,18 @@ return true;
 }
 document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,1000);setInterval(checkLocks,1000);});
 function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
-function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;lastConfigJson=JSON.stringify(d);lastScaleMode=scaleMode();console.log('Initial scaleMode:', lastScaleMode);renderStructure();}).catch(function(){});}
+function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;lastConfigJson=JSON.stringify(d);lastScaleMode=scaleMode();renderStructure();}).catch(function(){});}
 function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){
 var s=JSON.stringify(d);
 if(s!==lastConfigJson){
-console.log('Config changed, new scaleMode:', d.scaleMode);
 if(isOnlyLockChange(config,d)){
-console.log('Only lock change');
 config=d;
 lastConfigJson=s;
 updatePresentationMarkers();
 }else{
-console.log('Structure change, calling renderStructure');
 config=d;
 lastConfigJson=s;
-var newScaleMode=scaleMode();
-if(newScaleMode!==lastScaleMode){
-console.log('ScaleMode changed from', lastScaleMode, 'to', newScaleMode);
-lastScaleMode=newScaleMode;
-}
+lastScaleMode=scaleMode();
 renderStructure();
 }
 }
@@ -188,17 +183,13 @@ updatePresentationMarkers();
 function saveConfig(){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).catch(function(){});}
 function getFloor(){if(!config||!config.floors)return null;for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return config.floors[i];return null;}
 function renderStructure(){
-console.log('renderStructure called, scaleMode:', scaleMode());
 if(!config||!config.floors||!config.floors.length){document.getElementById('planContainer').innerHTML='<div class="loading">План не настроен.</div>';return;}
 if(!currentFloorId)currentFloorId=(requestedFloorId&&config.floors.some(function(f){return f.id===requestedFloorId;}))?requestedFloorId:config.floors[0].id;
 renderPlan(getFloor());}
 function renderPlan(f){
-console.log('renderPlan called, scaleMode:', scaleMode());
 var c=document.getElementById('planContainer');
 c.style.background=planBg();
-var newClass='plan-container scale-'+scaleMode();
-console.log('Setting className to:', newClass);
-c.className=newClass;
+c.className='plan-container scale-'+scaleMode();
 if(!f||!f.image){c.innerHTML='<div class="loading">Нет изображения</div>';return;}
 c.innerHTML='<div class="plan-inner"><img src="'+f.image+'" class="plan-image" onerror="planImageMissing()"></div><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
 buildBars(f);renderDevices(f);}
