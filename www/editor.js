@@ -110,7 +110,6 @@ zone.addEventListener('mousedown',function(e){
 if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
 var img=$('peaImg');if(!img)return;
-var r=img.getBoundingClientRect();
 var type=(side==='top'||side==='bottom')?'h':'v';
 var pos=50;
 var guide={id:'guide_'+Date.now(),type:type,position:pos};
@@ -149,11 +148,13 @@ area.appendChild(zone);
 function snapToGuides(dev,size){
 if(!config.guides||config.guides.length===0)return{x:dev.x,y:dev.y};
 var threshold=1.5;
-var half=size/2;
-var left=dev.x-half;
-var right=dev.x+half;
-var top=dev.y-half;
-var bottom=dev.y+half;
+var img=$('peaImg');if(!img)return{x:dev.x,y:dev.y};
+var halfW=(size/img.clientWidth)*100/2;
+var halfH=(size/img.clientHeight)*100/2;
+var left=dev.x-halfW;
+var right=dev.x+halfW;
+var top=dev.y-halfH;
+var bottom=dev.y+halfH;
 var centerX=dev.x;
 var centerY=dev.y;
 var newX=dev.x,newY=dev.y;
@@ -273,7 +274,6 @@ var m=document.createElement('div');m.className='marker';m.dataset.devId=dev.id;
 m.style.backgroundColor=(ic.bg&&ic.bg[key])||'#fff';m.style.borderColor=(ic.border&&ic.border[key])||defColor(key);
 if(stateVal)m.style.boxShadow='0 0 15px '+((ic.border&&ic.border[key])||defColor(key));
 m.innerHTML=slotHtml((ic.slots||{})[key],(ic.color&&ic.color[key])||defColor(key));
-// Блокировка
 if(dev.locked){var lock=document.createElement('div');lock.className='lock-icon';lock.textContent='🔒';m.appendChild(lock);}
 if(dev.showValue!==false&&dev.stateIds&&dev.stateIds.length){var vd=document.createElement('span');vd.className='lbl lp-'+({bottom:'b',top:'t',right:'r',left:'l',overlay:'o'}[(dev.valueFont&&dev.valueFont.position)||'overlay']);applyFont(vd,dev.valueFont||DEF_VF);
 dev.stateIds.forEach(function(sid,idx){var val=liveStates[sid];var pr=(dev.prefixes&&dev.prefixes[idx]!=null)?dev.prefixes[idx]:'';var po=(dev.postfixes&&dev.postfixes[idx]!=null)?dev.postfixes[idx]:'';var ln=document.createElement('span');ln.style.display='block';ln.textContent=pr+((val!==undefined&&val!==null)?val:'N/A')+po;vd.appendChild(ln);});m.appendChild(vd);}
@@ -307,7 +307,7 @@ x=Math.max(0,Math.min(100,x));
 y=Math.max(0,Math.min(100,y));
 x=Math.round(x*10)/10;
 y=Math.round(y*10)/10;
-var snapped=snapToGuides({x:x,y:y},sizePct);
+var snapped=snapToGuides({x:x,y:y},size);
 dev.x=snapped.x;
 dev.y=snapped.y;
 m.style.left=dev.x+'%';

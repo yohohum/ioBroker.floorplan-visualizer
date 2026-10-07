@@ -1,11 +1,11 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "14.0.0",
+    "version": "14.0.1",
     "news": {
-      "14.0.0": {
-        "en": "Lock feature, guides fix, MD3 layout, README",
-        "ru": "Блокировка, исправление направляющих, MD3 разметка, README"
+      "14.0.1": {
+        "en": "Fix snap, icon, admin buttons, lock",
+        "ru": "Исправление snap, иконки, кнопок админки, блокировки"
       }
     },
     "title": "Floor Plan Visualizer",
@@ -22,7 +22,7 @@
     "dataSource": "push",
     "adminUI": { "config": "html" },
     "localLink": "http://%ip%:8083/editor.html",
-    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwMDYxYTQiLz48cGF0aCBkPSJNMzIgMTQgTDUwIDMwIFY1MCBIMzggVjM4IEgyNiBWNTAgSDE0IFYzMCBaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
+    "icon": "icon.svg",
     "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
     "loglevel": "info",
     "tier": 3,
