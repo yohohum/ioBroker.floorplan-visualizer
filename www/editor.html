@@ -2,50 +2,99 @@
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
 <title>Редактор v14</title><style>
 :root{--p:#0061a4;--pc:#d1e4ff;--s:#e8ebf1;--s2:#eef1f6;--o:#73777f;--ov:#c3c7cf;--v:#43484e;--e:#ba1a1a;--ec:#f9dedc;--gap:8px;--pad:12px}
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;padding:20px}
-.container{max-width:1600px;margin:0 auto}.header{background:var(--pc);padding:16px 20px;border-radius:20px;margin-bottom:var(--gap);display:flex;gap:12px;align-items:center}.header h1{font-size:20px;flex:1}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Roboto,'Segoe UI',sans-serif;background:#f7f9fc;color:#1a1c20;padding:20px}
+.container{max-width:1600px;margin:0 auto}
+.header{background:var(--pc);padding:16px 20px;border-radius:20px;margin-bottom:var(--gap);display:flex;gap:12px;align-items:center}
+.header h1{font-size:20px;flex:1}
+.header .ver{font-size:11px;opacity:.6;margin-left:8px}
 #debugBanner{display:none;background:var(--ec);color:var(--e);padding:10px 16px;border-radius:10px;margin-bottom:12px}
 .content{background:var(--s2);border-radius:20px;padding:20px}
-.md-field{margin-bottom:var(--gap);display:flex;flex-direction:column;align-items:stretch;width:100%}.md-field label{display:block;margin-bottom:4px;font-size:12px;color:var(--v);text-align:left;width:100%}
-.md-field input,.md-field select{width:100%;padding:8px;border:1px solid var(--o);border-radius:6px;background:#fff;font-family:inherit;font-size:13px;text-align:left}
+.md-field{margin-bottom:var(--gap)}
+.md-field label{display:block;margin-bottom:4px;font-size:12px;color:var(--v)}
+.md-field input,.md-field select{width:100%;padding:8px;border:1px solid var(--o);border-radius:6px;background:#fff;font-family:inherit;font-size:13px}
 .md-field input[type=color]{height:36px;padding:2px}
-.md-section{background:var(--s);border-radius:12px;padding:var(--pad);margin-bottom:var(--gap)}.md-section-title{font-size:13px;color:var(--p);font-weight:500;margin-bottom:8px}
+.md-section{background:var(--s);border-radius:12px;padding:var(--pad);margin-bottom:var(--gap)}
+.md-section-title{font-size:13px;color:var(--p);font-weight:500;margin-bottom:8px}
 .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--gap);margin-bottom:var(--gap)}
-.color-grid{display:grid;gap:var(--gap);margin-top:4px}.color-item{display:flex;flex-direction:column;align-items:center;gap:2px}.color-item input[type=color]{width:100%;height:36px;border:1px solid var(--o);border-radius:6px;padding:2px}.color-item span{font-size:11px;color:var(--v)}
-.chk{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--v);margin-top:4px;justify-content:flex-start;width:100%}
-.chk input[type=checkbox]{margin:0;flex:0 0 auto}
-.chk label{margin:0;flex:1;text-align:left}
-.md-btn{border:none;border-radius:100px;padding:8px 16px;font-weight:500;cursor:pointer;font-family:inherit;font-size:13px}.md-btn.filled{background:var(--p);color:#fff}.md-btn.tonal{background:#d8e2ec;color:#101c26}.md-btn.text{background:none;color:var(--p)}.md-btn.danger{background:var(--ec);color:var(--e)}.md-btn.small{padding:6px 12px;font-size:12px}
+.color-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-top:4px}
+.color-item{display:flex;flex-direction:column;align-items:center;gap:2px}
+.color-item input[type=color]{width:100%;height:36px;border:1px solid var(--o);border-radius:6px;padding:2px}
+.color-item span{font-size:11px;color:var(--v)}
+.chk{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--v);margin-top:4px}
+.chk input[type=checkbox]{margin:0;flex:0 0 16px;width:16px;height:16px}
+.md-btn{border:none;border-radius:100px;padding:8px 16px;font-weight:500;cursor:pointer;font-family:inherit;font-size:13px}
+.md-btn.filled{background:var(--p);color:#fff}
+.md-btn.tonal{background:#d8e2ec;color:#101c26}
+.md-btn.text{background:none;color:var(--p)}
+.md-btn.danger{background:var(--ec);color:var(--e)}
+.md-btn.small{padding:6px 12px;font-size:12px}
 .spacer{flex:1}
 .ftc{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:var(--gap);padding-bottom:var(--gap);border-bottom:1px solid var(--ov)}
-.fte{padding:6px 10px;background:var(--s);border-radius:100px;cursor:pointer;font-size:12px;display:flex;gap:4px;align-items:center}.fte.active{background:var(--p);color:#fff}.fte button{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:11px}
+.fte{padding:6px 10px;background:var(--s);border-radius:100px;cursor:pointer;font-size:12px;display:flex;gap:4px;align-items:center}
+.fte.active{background:var(--p);color:#fff}
+.fte button{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:11px}
 .fte .icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
-.fw{display:flex;flex-direction:column;gap:var(--gap)}.ftb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:var(--s);border-radius:12px}.ftb input[type=text]{flex:1;min-width:140px;padding:8px;border:1px solid var(--o);border-radius:6px;font-size:13px}
-.ls{display:flex;gap:4px;flex-wrap:wrap}.lc{padding:5px 10px;background:#fff;border:1px solid var(--ov);border-radius:100px;cursor:pointer;font-size:11px;display:flex;gap:4px;align-items:center}.lc.active{background:var(--p);color:#fff}.lc button{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px}
+.fw{display:flex;flex-direction:column;gap:var(--gap)}
+.ftb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:var(--s);border-radius:12px}
+.ftb input[type=text]{flex:1;min-width:140px;padding:8px;border:1px solid var(--o);border-radius:6px;font-size:13px}
+.ls{display:flex;gap:4px;flex-wrap:wrap}
+.lc{padding:5px 10px;background:#fff;border:1px solid var(--ov);border-radius:100px;cursor:pointer;font-size:11px;display:flex;gap:4px;align-items:center}
+.lc.active{background:var(--p);color:#fff}
+.lc button{border:none;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px}
 .lc .icon-btn{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
-.pea{position:relative;width:100%;border-radius:12px;overflow:hidden;min-height:500px}.pea img{width:100%;display:block;user-select:none;pointer-events:none}.pempty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--v)}
+.pea{position:relative;width:100%;border-radius:12px;overflow:hidden;min-height:500px}
+.pea img{width:100%;display:block;user-select:none;pointer-events:none}
+.pempty{display:flex;align-items:center;justify-content:center;min-height:500px;color:var(--v)}
 .marker{position:absolute;border-radius:50%;background:#fff;border:3px solid #2c3e50;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;z-index:10;transform:translate(-50%,-50%)}
 .marker.selected{border-color:var(--p);box-shadow:0 0 0 3px var(--pc);z-index:15}
 .marker .mi{line-height:1;pointer-events:none}
 .marker .lock-icon{position:absolute;bottom:-2px;right:-2px;font-size:10px;background:#fff;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.3);z-index:22}
 .im{display:inline-block;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;pointer-events:none}
 .lbl{position:absolute;pointer-events:none;white-space:nowrap;padding:2px 6px;border-radius:4px;z-index:21;font-size:11px}
-.lp-b{top:100%;left:50%;transform:translate(-50%,4px)}.lp-t{bottom:100%;left:50%;transform:translate(-50%,-4px)}.lp-r{left:100%;top:50%;transform:translate(4px,-50%)}.lp-l{right:100%;top:50%;transform:translate(-4px,-50%)}.lp-o{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:max-content}
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}.mo.active{display:flex}
-.modal{background:var(--s);border-radius:20px;padding:20px;max-width:820px;width:92%;max-height:88vh;overflow-y:auto}.modal h2{margin-bottom:var(--gap);font-size:18px}
-.ma{display:flex;gap:8px;align-items:center;margin-top:var(--gap);padding-top:var(--gap);border-top:1px solid var(--ov)}.ml{max-width:900px}
-.sr{display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#fff;border:1px solid var(--ov);border-radius:10px;padding:6px}.sr .sl{width:100px;font-size:12px;color:var(--v)}.sr .sp{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:50%;flex:0 0 36px;overflow:hidden}
-.ots{display:flex;gap:6px;margin-bottom:var(--gap)}.ots input{flex:1;padding:8px;border:1px solid var(--o);border-radius:6px;font-size:13px}
+.lp-b{top:100%;left:50%;transform:translate(-50%,4px)}
+.lp-t{bottom:100%;left:50%;transform:translate(-50%,-4px)}
+.lp-r{left:100%;top:50%;transform:translate(4px,-50%)}
+.lp-l{right:100%;top:50%;transform:translate(-4px,-50%)}
+.lp-o{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:max-content}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.mo.active{display:flex}
+.modal{background:var(--s);border-radius:20px;padding:20px;max-width:820px;width:92%;max-height:88vh;overflow-y:auto}
+.modal h2{margin-bottom:var(--gap);font-size:18px}
+.ma{display:flex;gap:8px;align-items:center;margin-top:var(--gap);padding-top:var(--gap);border-top:1px solid var(--ov)}
+.ml{max-width:900px}
+.sr{display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#fff;border:1px solid var(--ov);border-radius:10px;padding:6px}
+.sr .sl{width:100px;font-size:12px;color:var(--v)}
+.sr .sp{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:50%;flex:0 0 36px;overflow:hidden}
+.ots{display:flex;gap:6px;margin-bottom:var(--gap)}
+.ots input{flex:1;padding:8px;border:1px solid var(--o);border-radius:6px;font-size:13px}
 .ot{border:1px solid var(--ov);border-radius:10px;max-height:450px;overflow-y:auto;background:#fff;font-size:12px}
-.tbh{padding:6px 10px;cursor:pointer;display:flex;gap:6px;align-items:center;user-select:none}.tbh:hover{background:var(--pc)}.bt{width:12px;color:var(--p);font-size:10px}.bn{font-weight:500;font-size:12px}.bc{color:var(--v);font-size:10px}.tm{color:var(--v);font-size:10px}
-.tn{padding:4px 8px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:12px}.tn:hover{background:var(--pc)}.tn.sel{background:var(--p);color:#fff}.tn .ti{font-family:Consolas,monospace;font-size:10px;color:var(--v);max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbh{padding:6px 10px;cursor:pointer;display:flex;gap:6px;align-items:center;user-select:none}
+.tbh:hover{background:var(--pc)}
+.bt{width:12px;color:var(--p);font-size:10px}
+.bn{font-weight:500;font-size:12px}
+.bc{color:var(--v);font-size:10px}
+.tm{color:var(--v);font-size:10px}
+.tn{padding:4px 8px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.tn:hover{background:var(--pc)}
+.tn.sel{background:var(--p);color:#fff}
+.tn .ti{font-family:Consolas,monospace;font-size:10px;color:var(--v);max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tn.sel .tm{color:rgba(255,255,255,.85)}
 .tl{padding:20px;text-align:center;color:var(--v)}
 .ip{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;max-height:400px;overflow-y:auto;border:1px solid var(--ov);border-radius:10px;padding:8px;background:#fff}
-.io{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid transparent;border-radius:8px;cursor:pointer;padding:4px;gap:2px}.io:hover{background:var(--pc)}.io .ipv{width:28px;height:28px;display:flex;align-items:center;justify-content:center}.io .in{font-size:8px;color:var(--v);word-break:break-all;max-height:18px;overflow:hidden;text-align:center}
-.iw{display:flex;gap:6px;align-items:stretch;width:100%}.iw input{flex:1}
-.er{display:flex;gap:6px;margin-bottom:6px;align-items:center}.er input{flex:1;padding:6px;border:1px solid var(--o);border-radius:6px;font-size:12px}
-.cm{position:fixed;z-index:3000;background:var(--s);border-radius:10px;min-width:170px;padding:4px;display:none}.cm.active{display:block}.ci{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px}.ci:hover{background:var(--pc)}.ci.d{color:var(--e)}
+.io{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid transparent;border-radius:8px;cursor:pointer;padding:4px;gap:2px}
+.io:hover{background:var(--pc)}
+.io .ipv{width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.io .in{font-size:8px;color:var(--v);word-break:break-all;max-height:18px;overflow:hidden;text-align:center}
+.iw{display:flex;gap:6px}
+.iw input{flex:1}
+.er{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.er input{flex:1;padding:6px;border:1px solid var(--o);border-radius:6px;font-size:12px}
+.cm{position:fixed;z-index:3000;background:var(--s);border-radius:10px;min-width:170px;padding:4px;display:none}
+.cm.active{display:block}
+.ci{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.ci:hover{background:var(--pc)}
+.ci.d{color:var(--e)}
 .picker-tabs{display:flex;gap:4px;margin-bottom:var(--gap);background:var(--s2);padding:4px;border-radius:100px}
 .picker-tab{flex:1;padding:6px 12px;background:transparent;border:none;border-radius:100px;cursor:pointer;font-size:12px;font-weight:500;color:var(--v);font-family:inherit}
 .picker-tab:hover{background:var(--s)}
@@ -61,7 +110,6 @@
 .align-panel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .align-btn{width:36px;height:36px;border:1px solid var(--ov);border-radius:6px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s}
 .align-btn:hover{background:var(--pc);border-color:var(--p)}
-.align-btn:active{transform:scale(.95)}
 .align-divider{height:1px;background:var(--ov);margin:2px 0}
 .guide-zone{position:absolute;z-index:999;background:rgba(0,97,164,.05);transition:background .2s}
 .guide-zone:hover{background:rgba(0,97,164,.15)}
@@ -80,65 +128,147 @@
 .guide.vertical .guide-label{left:10px;top:10px}
 </style></head><body>
 <div class="container"><div id="debugBanner"></div>
-<div class="header"><h1>Редактор плана этажа</h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
+<div class="header"><h1>Редактор плана этажа <span class="ver">v14.1</span></h1><button class="md-btn tonal" onclick="openSettingsModal()">⚙ Настройки</button></div>
 <div class="content"><div class="ftc" id="fte"></div><div class="fw" id="fw"></div></div></div>
-<input type="file" id="diskIconInput" accept="image/*" style="display:none"><input type="file" id="barIconInput" accept="image/*" style="display:none"><input type="file" id="pickerFileInput" accept="image/*" style="display:none">
+<input type="file" id="diskIconInput" accept="image/*" style="display:none">
+<input type="file" id="barIconInput" accept="image/*" style="display:none">
+<input type="file" id="pickerFileInput" accept="image/*" style="display:none">
 <div class="align-panel" id="alignPanel">
 <div class="align-panel-title">Выравнивание (<span id="alignCount">0</span>)</div>
 <div class="align-panel-grid">
 <button class="align-btn" onclick="alignLeft()" title="По левому краю">⫷</button>
-<button class="align-btn" onclick="alignCenterH()" title="По центру (горизонтально)">⫿</button>
+<button class="align-btn" onclick="alignCenterH()" title="По центру гориз.">⫿</button>
 <button class="align-btn" onclick="alignRight()" title="По правому краю">⫸</button>
 <button class="align-btn" onclick="alignTop()" title="По верхнему краю">⫠</button>
-<button class="align-btn" onclick="alignCenterV()" title="По центру (вертикально)">⫾</button>
+<button class="align-btn" onclick="alignCenterV()" title="По центру верт.">⫾</button>
 <button class="align-btn" onclick="alignBottom()" title="По нижнему краю">⫟</button>
 </div>
 <div class="align-divider"></div>
 <div class="align-panel-grid">
-<button class="align-btn" onclick="distributeH()" title="Распределить горизонтально" style="grid-column:1/3">⋯</button>
-<button class="align-btn" onclick="distributeV()" title="Распределить вертикально" style="grid-column:3/4">⋮</button>
+<button class="align-btn" onclick="distributeH()" title="Распределить гориз." style="grid-column:1/3">⋯</button>
+<button class="align-btn" onclick="distributeV()" title="Распределить верт." style="grid-column:3/4">⋮</button>
 </div>
 <button class="md-btn text small" onclick="clearSelection()" style="margin-top:4px">Снять выделение</button>
 </div>
+
 <div class="mo" id="deviceModal"><div class="modal"><h2 id="dmt">Объект</h2>
 <div class="md-field"><label>Название</label><input id="deviceName"></div>
-<div class="settings-grid"><div class="md-field"><label>Тип</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="indicator">Индикатор</option><option value="value">Значение</option></select></div>
-<div class="md-field"><label>Слой</label><select id="deviceLayer"></select></div></div>
-<div class="md-field" id="lockField" style="display:none"><div class="chk"><input type="checkbox" id="deviceLocked"><label for="deviceLocked">🔒 Блокировка (защита от случайных нажатий)</label></div></div>
+<div class="settings-grid">
+<div class="md-field"><label>Тип</label><select id="deviceObjType" onchange="onObjTypeChange()"><option value="switch">Переключатель</option><option value="indicator">Индикатор</option><option value="value">Значение</option></select></div>
+<div class="md-field"><label>Слой</label><select id="deviceLayer"></select></div>
+</div>
+<div class="md-field" id="lockField" style="display:none"><label class="chk"><input type="checkbox" id="deviceLocked"> 🔒 Блокировка от случайных нажатий</label></div>
 <div class="md-section"><div class="md-section-title">Шаблоны</div><div class="settings-grid">
 <div class="md-field"><label>Применить</label><select id="templateSelect" onchange="applyTemplate(this.value)"><option value="">—</option></select></div>
-<div class="md-field"><label>&nbsp;</label><button class="md-btn tonal" onclick="saveTemplate()">💾 Сохранить шаблон</button></div></div></div>
+<div class="md-field"><label>&nbsp;</label><button class="md-btn tonal" onclick="saveTemplate()">💾 Сохранить шаблон</button></div>
+</div></div>
 <div class="md-field"><label>Состояние ioBroker</label><div class="iw"><input id="deviceId"><button class="md-btn tonal small" onclick="openObjectTree('main',-1)">🔍</button></div></div>
-<div class="md-field" id="thresholdFields" style="display:none"><div class="settings-grid"><div class="md-field"><label>Тревога мин</label><input type="number" id="warnBelow"></div><div class="md-field"><label>Тревога макс</label><input type="number" id="warnAbove"></div></div></div>
+<div class="md-field" id="thresholdFields" style="display:none"><div class="settings-grid">
+<div class="md-field"><label>Тревога мин</label><input type="number" id="warnBelow"></div>
+<div class="md-field"><label>Тревога макс</label><input type="number" id="warnAbove"></div>
+</div></div>
 <div class="md-field"><label>Доп. состояния</label><div id="extraIdsContainer"></div><button class="md-btn tonal small" onclick="addExtraIdRow()">+ Добавить</button></div>
-<div class="md-section"><div class="md-section-title">Иконка</div><div class="settings-grid"><div class="md-field"><label>Размер</label><input type="number" id="iconSize"></div><div class="md-field"><label>Прозрачность</label><input type="number" id="iconOpacity" step="0.1" min="0" max="1"></div></div>
-<div id="iconSlots"></div><div class="md-field"><label>Фон</label><div class="color-grid" id="colBg"></div></div><div class="md-field"><label>Цвет иконки</label><div class="color-grid" id="colIc"></div></div><div class="md-field"><label>Рамка</label><div class="color-grid" id="colBd"></div></div></div>
-<div class="md-section"><div class="md-section-title">Шрифт значения</div><div class="chk"><input type="checkbox" id="vf-show" checked><label for="vf-show">Выводить значение</label></div>
-<div class="settings-grid"><div class="md-field"><label>Шрифт</label><select id="vf-family"></select></div><div class="md-field"><label>Начертание</label><select id="vf-weight"></select></div><div class="md-field"><label>Размер</label><input id="vf-size"></div><div class="md-field"><label>Цвет</label><input type="color" id="vf-color"></div><div class="md-field"><label>Фон</label><input type="color" id="vf-bg"></div><div class="md-field"><label>Позиция</label><select id="vf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div></div>
-<div class="chk"><input type="checkbox" id="vf-nobg"><label for="vf-nobg">Фон прозрачный</label></div>
-<div class="settings-grid"><div class="md-field"><label>Префиксы</label><input id="devicePrefixes"></div><div class="md-field"><label>Постфиксы</label><input id="devicePostfixes"></div></div></div>
-<div class="md-section"><div class="md-section-title">Шрифт названия</div><div class="chk"><input type="checkbox" id="nf-show" checked><label for="nf-show">Выводить название</label></div>
-<div class="settings-grid"><div class="md-field"><label>Шрифт</label><select id="nf-family"></select></div><div class="md-field"><label>Начертание</label><select id="nf-weight"></select></div><div class="md-field"><label>Размер</label><input id="nf-size"></div><div class="md-field"><label>Цвет</label><input type="color" id="nf-color"></div><div class="md-field"><label>Фон</label><input type="color" id="nf-bg"></div><div class="md-field"><label>Позиция</label><select id="nf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div></div>
-<div class="chk"><input type="checkbox" id="nf-nobg"><label for="nf-nobg">Фон прозрачный</label></div></div>
-<div class="ma"><button class="md-btn danger" id="btnDel" onclick="deleteDevice()">Удалить</button><span class="spacer"></span><button class="md-btn text" onclick="cancelDevice()">Отменить</button><button class="md-btn filled" onclick="saveDevice()">Сохранить</button></div></div></div>
+<div class="md-section"><div class="md-section-title">Иконка</div>
+<div class="settings-grid">
+<div class="md-field"><label>Размер</label><input type="number" id="iconSize"></div>
+<div class="md-field"><label>Прозрачность</label><input type="number" id="iconOpacity" step="0.1" min="0" max="1"></div>
+</div>
+<div id="iconSlots"></div>
+<div class="md-field"><label>Фон</label><div class="color-grid" id="colBg"></div></div>
+<div class="md-field"><label>Цвет иконки</label><div class="color-grid" id="colIc"></div></div>
+<div class="md-field"><label>Рамка</label><div class="color-grid" id="colBd"></div></div>
+</div>
+<div class="md-section"><div class="md-section-title">Шрифт значения</div>
+<label class="chk"><input type="checkbox" id="vf-show" checked> Выводить значение</label>
+<div class="settings-grid">
+<div class="md-field"><label>Шрифт</label><select id="vf-family"></select></div>
+<div class="md-field"><label>Начертание</label><select id="vf-weight"></select></div>
+<div class="md-field"><label>Размер</label><input id="vf-size"></div>
+<div class="md-field"><label>Цвет</label><input type="color" id="vf-color"></div>
+<div class="md-field"><label>Фон</label><input type="color" id="vf-bg"></div>
+<div class="md-field"><label>Позиция</label><select id="vf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div>
+</div>
+<label class="chk"><input type="checkbox" id="vf-nobg"> Фон прозрачный</label>
+<div class="settings-grid">
+<div class="md-field"><label>Префиксы</label><input id="devicePrefixes"></div>
+<div class="md-field"><label>Постфиксы</label><input id="devicePostfixes"></div>
+</div></div>
+<div class="md-section"><div class="md-section-title">Шрифт названия</div>
+<label class="chk"><input type="checkbox" id="nf-show" checked> Выводить название</label>
+<div class="settings-grid">
+<div class="md-field"><label>Шрифт</label><select id="nf-family"></select></div>
+<div class="md-field"><label>Начертание</label><select id="nf-weight"></select></div>
+<div class="md-field"><label>Размер</label><input id="nf-size"></div>
+<div class="md-field"><label>Цвет</label><input type="color" id="nf-color"></div>
+<div class="md-field"><label>Фон</label><input type="color" id="nf-bg"></div>
+<div class="md-field"><label>Позиция</label><select id="nf-position"><option value="bottom">Снизу</option><option value="top">Сверху</option><option value="right">Справа</option><option value="left">Слева</option><option value="overlay">Поверх</option></select></div>
+</div>
+<label class="chk"><input type="checkbox" id="nf-nobg"> Фон прозрачный</label>
+</div>
+<div class="ma"><button class="md-btn danger" id="btnDel" onclick="deleteDevice()">Удалить</button><span class="spacer"></span><button class="md-btn text" onclick="cancelDevice()">Отменить</button><button class="md-btn filled" onclick="saveDevice()">Сохранить</button></div>
+</div></div>
+
 <div class="mo" id="settingsModal"><div class="modal"><h2>Настройки</h2>
 <div class="md-section"><div class="md-section-title">План</div><div class="settings-grid"><div class="md-field"><label>Фон плана</label><input type="color" id="planBg"></div></div></div>
 <div class="md-field"><label>Панель</label><select id="barTarget" onchange="fillBarFields()"><option value="floor">Этажи</option><option value="layer">Слои</option></select></div>
-<div class="settings-grid"><div class="md-field"><label>Высота</label><input type="number" id="bar-height"></div><div class="md-field"><label>Длина</label><input type="number" id="bar-width"></div><div class="md-field"><label>Отступ</label><input type="number" id="bar-gap"></div><div class="md-field"><label>Радиус</label><input type="number" id="bar-radius"></div><div class="md-field"><label>Ориентация</label><select id="bar-orient"><option value="h">Гориз.</option><option value="v">Верт.</option></select></div><div class="md-field"><label>Позиция</label><select id="bar-position"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option></select></div><div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">Центр</option><option value="left">Лево</option><option value="right">Право</option></select></div></div>
-<div class="md-section"><div class="md-section-title">Иконка кнопки</div><div class="settings-grid"><div class="md-field"><label>Иконка</label><div style="display:flex;gap:6px;align-items:center"><button class="md-btn tonal small" onclick="openBarDisk()">📁</button><button class="md-btn tonal small" onclick="openBarMfd()">MFD</button><button class="md-btn danger small" onclick="clearBarIcon()">✕</button><span id="barIconPreview" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center"></span></div></div><div class="md-field"><label>Место</label><select id="bar-iconpos"><option value="left">Слева</option><option value="right">Справа</option></select></div></div></div>
-<div class="md-section"><div class="md-section-title">Активная</div><div class="settings-grid"><div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-a-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-a-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-a-fc"></div></div></div>
-<div class="md-section"><div class="md-section-title">Неактивная</div><div class="settings-grid"><div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div><div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div><div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div><div class="md-field"><label>Начерт.</label><select id="bar-i-fw"></select></div><div class="md-field"><label>Размер</label><input id="bar-i-fs"></div><div class="md-field"><label>Цвет</label><input type="color" id="bar-i-fc"></div></div></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div></div></div>
+<div class="settings-grid">
+<div class="md-field"><label>Высота</label><input type="number" id="bar-height"></div>
+<div class="md-field"><label>Длина</label><input type="number" id="bar-width"></div>
+<div class="md-field"><label>Отступ</label><input type="number" id="bar-gap"></div>
+<div class="md-field"><label>Радиус</label><input type="number" id="bar-radius"></div>
+<div class="md-field"><label>Ориентация</label><select id="bar-orient"><option value="h">Гориз.</option><option value="v">Верт.</option></select></div>
+<div class="md-field"><label>Позиция</label><select id="bar-position"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option></select></div>
+<div class="md-field"><label>Выравнивание</label><select id="bar-align"><option value="center">Центр</option><option value="left">Лево</option><option value="right">Право</option></select></div>
+</div>
+<div class="md-section"><div class="md-section-title">Иконка кнопки</div><div class="settings-grid">
+<div class="md-field"><label>Иконка</label><div style="display:flex;gap:6px;align-items:center"><button class="md-btn tonal small" onclick="openBarDisk()">📁</button><button class="md-btn tonal small" onclick="openBarMfd()">MFD</button><button class="md-btn danger small" onclick="clearBarIcon()">✕</button><span id="barIconPreview" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center"></span></div></div>
+<div class="md-field"><label>Место</label><select id="bar-iconpos"><option value="left">Слева</option><option value="right">Справа</option></select></div>
+</div></div>
+<div class="md-section"><div class="md-section-title">Активная</div><div class="settings-grid">
+<div class="md-field"><label>Фон</label><input type="color" id="bar-a-bg"></div>
+<div class="md-field"><label>Рамка</label><input type="color" id="bar-a-bd"></div>
+<div class="md-field"><label>Шрифт</label><select id="bar-a-ff"></select></div>
+<div class="md-field"><label>Начерт.</label><select id="bar-a-fw"></select></div>
+<div class="md-field"><label>Размер</label><input id="bar-a-fs"></div>
+<div class="md-field"><label>Цвет</label><input type="color" id="bar-a-fc"></div>
+</div></div>
+<div class="md-section"><div class="md-section-title">Неактивная</div><div class="settings-grid">
+<div class="md-field"><label>Фон</label><input type="color" id="bar-i-bg"></div>
+<div class="md-field"><label>Рамка</label><input type="color" id="bar-i-bd"></div>
+<div class="md-field"><label>Шрифт</label><select id="bar-i-ff"></select></div>
+<div class="md-field"><label>Начерт.</label><select id="bar-i-fw"></select></div>
+<div class="md-field"><label>Размер</label><input id="bar-i-fs"></div>
+<div class="md-field"><label>Цвет</label><input type="color" id="bar-i-fc"></div>
+</div></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeSettingsModal()">Закрыть</button><button class="md-btn filled" onclick="saveSettingsModal()">Сохранить</button></div>
+</div></div>
+
 <div class="mo" id="iconPickerModal"><div class="modal"><h2 id="pickerTitle">Выбор иконки</h2>
 <div class="picker-preview"><div class="pv-box" id="pickerPreviewBox">📄</div><div class="pv-name" id="pickerPreviewName">не выбрано</div><button class="md-btn danger small" onclick="clearPickerIcon()">✕ Удалить</button></div>
 <div class="picker-tabs">
 <button class="picker-tab active" data-tab="emoji" onclick="switchPickerTab('emoji')">Emoji</button>
 <button class="picker-tab" data-tab="mfd" onclick="switchPickerTab('mfd')">MFD</button>
-<button class="picker-tab" data-tab="file" onclick="switchPickerTab('file')">📁 Файл</button></div>
+<button class="picker-tab" data-tab="file" onclick="switchPickerTab('file')">📁 Файл</button>
+</div>
 <div class="picker-content" id="pickerContent"></div>
-<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconPicker()">Закрыть</button></div></div></div>
-<div class="mo" id="treeModal"><div class="modal ml"><h2>Объект ioBroker</h2><div class="ots"><input id="treeSearch" oninput="filterTree()"><button class="md-btn tonal small" onclick="expandAllBranches()">+</button><button class="md-btn tonal small" onclick="collapseAllBranches()">−</button></div><div class="ot" id="objectTree"><div class="tl">Загрузка</div></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div></div></div>
-<div class="mo" id="emojiModal"><div class="modal"><h2>Emoji</h2><div class="ip" id="emojiPalette"></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div></div></div>
-<div class="mo" id="mfdModal"><div class="modal ml"><h2>MFD</h2><div class="ots"><input id="mfdSearch" oninput="filterMfdPalette()"></div><div class="ip" id="mfdPalette"><div class="tl">Загрузка</div></div><div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeMfdModal()">Закрыть</button></div></div></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeIconPicker()">Закрыть</button></div>
+</div></div>
+
+<div class="mo" id="treeModal"><div class="modal ml"><h2>Объект ioBroker</h2>
+<div class="ots"><input id="treeSearch" oninput="filterTree()"><button class="md-btn tonal small" onclick="expandAllBranches()">+</button><button class="md-btn tonal small" onclick="collapseAllBranches()">−</button></div>
+<div class="ot" id="objectTree"><div class="tl">Загрузка</div></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeTreeModal()">Закрыть</button></div>
+</div></div>
+
+<div class="mo" id="emojiModal"><div class="modal"><h2>Emoji</h2><div class="ip" id="emojiPalette"></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeEmojiModal()">Закрыть</button></div>
+</div></div>
+
+<div class="mo" id="mfdModal"><div class="modal ml"><h2>MFD</h2>
+<div class="ots"><input id="mfdSearch" oninput="filterMfdPalette()"></div>
+<div class="ip" id="mfdPalette"><div class="tl">Загрузка</div></div>
+<div class="ma"><span class="spacer"></span><button class="md-btn text" onclick="closeMfdModal()">Закрыть</button></div>
+</div></div>
+
 <script src="editor.js"></script>
 </body></html>
