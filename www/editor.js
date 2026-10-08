@@ -59,6 +59,15 @@ d.y=Math.max(0,Math.min(100,d.y+dy));
 saveConfig(renderFloorWorkspace);
 });
 function scaleMode(){return(config&&config.scaleMode)||'height';}
+// === УДАЛЕНИЕ ВСЕХ НАПРАВЛЯЮЩИХ ===
+function deleteAllGuides(){
+if(!config.guides||config.guides.length===0)return;
+if(!confirm('Удалить все направляющие ('+config.guides.length+')?'))return;
+config.guides=[];
+saveConfig(renderFloorWorkspace);
+}
+// === КОНТЕКСТНОЕ МЕНЮ ДЛЯ ПЛАНА (блокировка стандартного) ===
+function handlePlanContextMenu(e){e.preventDefault();}
 function renderGuides(){
 var inner=document.querySelector('.plan-inner');if(!inner)return;
 inner.querySelectorAll('.guide').forEach(function(g){g.remove();});
@@ -74,6 +83,19 @@ label.className='guide-label';
 label.textContent=g.position.toFixed(1)+'%';
 el.appendChild(label);
 el.addEventListener('dblclick',function(e){e.stopPropagation();if(confirm('Удалить направляющую?')){config.guides=config.guides.filter(function(x){return x.id!==g.id;});saveConfig(renderFloorWorkspace);}});
+el.addEventListener('contextmenu',function(e){
+e.preventDefault();
+e.stopPropagation();
+showCtxMenu(e.clientX,e.clientY,[
+{label:'🗑 Удалить направляющую',danger:true,action:function(){
+config.guides=config.guides.filter(function(x){return x.id!==g.id;});
+saveConfig(renderFloorWorkspace);
+}},
+{label:'🗑 Удалить все направляющие',danger:true,action:function(){
+deleteAllGuides();
+}}
+]);
+});
 el.addEventListener('mousedown',function(e){
 if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
@@ -257,7 +279,7 @@ chips+='</div>';});
 var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
 h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
 var sm=scaleMode();
-if(floor.image)h+='<div class="pea scale-'+sm+'" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)"><div class="plan-inner" id="planInner"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div></div>';
+if(floor.image)h+='<div class="pea scale-'+sm+'" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)" oncontextmenu="handlePlanContextMenu(event)"><div class="plan-inner" id="planInner"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div></div>';
 else h+='<div class="pea scale-'+sm+'" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
 w.innerHTML=h;
 if(floor.image){renderPlanMarkers(floor,fIdx);renderGuides();attachGuideZones();startLive();}
@@ -543,3 +565,4 @@ window.saveTemplate=saveTemplate;window.applyTemplate=applyTemplate;
 window.openObjectTree=openObjectTree;window.closeTreeModal=closeTreeModal;window.selectObject=selectObject;window.filterTree=filterTree;window.expandAllBranches=expandAllBranches;window.collapseAllBranches=collapseAllBranches;
 window.openEmojiForSlot=openEmojiForSlot;window.selectEmoji=selectEmoji;window.closeEmojiModal=closeEmojiModal;window.openMfdForSlot=openMfdForSlot;window.selectMfd=selectMfd;window.closeMfdModal=closeMfdModal;window.filterMfdPalette=filterMfdPalette;window.openDiskForSlot=openDiskForSlot;
 window.handleMarkerClick=handleMarkerClick;window.clearSelection=clearSelection;window.alignLeft=alignLeft;window.alignRight=alignRight;window.alignCenterH=alignCenterH;window.alignTop=alignTop;window.alignBottom=alignBottom;window.alignCenterV=alignCenterV;window.distributeH=distributeH;window.distributeV=distributeV;window.handlePlanClick=handlePlanClick;
+window.deleteAllGuides=deleteAllGuides;window.handlePlanContextMenu=handlePlanContextMenu;
