@@ -2,251 +2,215 @@
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.floorplan-visualizer.svg)](https://www.npmjs.com/package/iobroker.floorplan-visualizer)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.floorplan-visualizer.svg)](https://www.npmjs.com/package/iobroker.floorplan-visualizer)
+[![License](https://img.shields.io/github/license/yohohum/ioBroker.floorplan-visualizer)](LICENSE)
+[![Donation](https://img.shields.io/badge/donation-PayPal-blue.svg)](https://www.paypal.com/donate)
 
 **Interactive floor plan visualization adapter for ioBroker**
 
 ---
 
-## 📖 Description / Описание
-
-**English:**  
-Floor Plan Visualizer is an ioBroker adapter for creating interactive floor plans of smart homes. It allows you to place device icons on a floor plan image, bind them to ioBroker states, and control devices or view sensor values in real time.
-
-**Русский:**  
-Floor Plan Visualizer — адаптер ioBroker для создания интерактивных планов этажей умного дома. Позволяет размещать иконки устройств на изображении плана, привязывать их к состояниям ioBroker и управлять устройствами или просматривать показания датчиков в реальном времени.
+**Language / Язык:** [🇬🇧 English](#english) | [🇷🇺 Русский](#русский)
 
 ---
 
-## ✨ Features / Возможности
+<a name="english"></a>
+# 🇬🇧 English
 
-### English
-- **Multi-floor support** — create any number of floors with unique images
-- **Layers** — organize devices into logical layers (lighting, sensors, security, etc.)
-- **Three object types**:
-  - **Switch** — toggle device state on click
-  - **Indicator** — read-only display of state
-  - **Value** — numeric state with thresholds (min/max alerts)
-- **Icon sources**: Emoji, MFD icons (ioBroker), custom images from disk
-- **Per-state styling** — different colors for active/inactive/alert states
-- **Multi-value sensors** — display multiple state values on a single icon
-- **Visual editor** — drag & drop placement, alignment tools, guides
-- **Templates** — save and reuse device configurations
-- **Lock feature** — prevent accidental toggles with confirmation click
-- **Live data** — real-time state updates via polling
-- **Unique URLs** — embed specific floors in external interfaces
+## 📖 Description
 
-### Русский
-- **Множество этажей** — создание любого количества этажей с уникальными изображениями
-- **Слои** — организация устройств по логическим слоям (освещение, датчики, безопасность и т.д.)
-- **Три типа объектов**:
-  - **Переключатель** — изменение состояния устройства по клику
-  - **Индикатор** — отображение состояния только для чтения
-  - **Значение** — числовое состояние с порогами (тревога мин/макс)
-- **Источники иконок**: Emoji, MFD-иконки (ioBroker), свои изображения с диска
-- **Стилизация по состояниям** — разные цвета для активных/неактивных/тревожных состояний
-- **Многозначные датчики** — отображение нескольких значений на одной иконке
-- **Визуальный редактор** — размещение перетаскиванием, инструменты выравнивания, направляющие
-- **Шаблоны** — сохранение и повторное использование конфигураций устройств
-- **Блокировка** — защита от случайных переключений двойным кликом
-- **Живые данные** — обновление состояний в реальном времени через опрос
-- **Уникальные URL** — встраивание конкретных этажей во внешние интерфейсы
+**Floor Plan Visualizer** is an ioBroker adapter for creating interactive floor plans of smart homes. It allows you to place device icons on a floor plan image, bind them to ioBroker states, and control devices or view sensor values in real time.
 
----
+The adapter provides a visual editor for designing floor plans and a separate presentation mode for embedding in dashboards (Jarvis, vis, etc.).
 
-## 🚀 Installation / Установка
+## ✨ Features
 
-### English
+### 🏠 Multi-floor structure
+- Unlimited number of floors with unique plan images
+- Logical layers for organizing devices (lighting, climate, security, etc.)
+- Custom icons for each floor and layer (Emoji, MFD, or uploaded file)
+
+### 🎯 Three object types
+1. **Switch** — control devices on click (on/off)
+2. **Indicator** — read-only state display
+3. **Value** — numeric values with alarm thresholds (min/max)
+
+### 🎨 Visual customization
+- **Icon sources**: Emoji, ioBroker MFD icons, disk upload
+- **Per-state styling** — different background, icon, and border colors for active/inactive/alarm states
+- **Multi-value sensors** — display multiple values on a single icon
+- **Fonts** — full customization of value and name fonts (family, weight, size, color, background, position)
+- **Prefixes and postfixes** — add units of measurement or other symbols to values
+
+### 🔒 Switch lock
+- Protection against accidental clicks
+- First click unlocks (shows 🔒 icon)
+- Second click within 10 seconds performs action and restores lock
+- If second click not performed — lock automatically restores after 10 seconds
+
+### 📐 Editing tools
+- **Drag & Drop** — move objects with mouse
+- **Arrow keys** — precise movement of selected objects (0.2% without Shift, 1% with Shift)
+- **Multi-selection** — select multiple objects with Shift+click
+- **Alignment panel** — appears when 2+ objects selected:
+  - Align to left/right/top/bottom edge
+  - Align to center (horizontal/vertical)
+  - Distribute objects with equal spacing
+- **Guides** — drag horizontal/vertical guides from plan edges
+  - Objects snap to guides when nearby (edge, center, or opposite edge)
+  - Double-click guide to delete
+  - Guides auto-delete when dragged to edge (<1%)
+
+### 🖼️ Scaling modes
+1. **By height** — plan occupies 88% of window height, backdrop has 3% padding from window edges
+2. **By width** — plan occupies 88% of window width, backdrop has 3% padding from window edges
+3. **No scaling** — plan at original size, backdrop = plan + 3% padding on each side
+
+### 💾 Templates
+- Save object settings as template
+- Apply template to other objects
+- Quick creation of similar devices
+
+### 🌐 Presentation mode
+- Separate URL for embedding in dashboards (Jarvis, vis, etc.)
+- Support for `?floor=<id>` parameter to display specific floor
+- Real-time data updates (polling every 2 seconds)
+- Automatic configuration change detection
+
+### 🎛️ Button panel settings
+- **Position** — top/bottom/left/right
+- **Alignment** — center/left/right
+- **Orientation** — horizontal/vertical
+- **Dimensions** — height, length, gap between buttons, corner radius
+- **Button icon** — Emoji, MFD, or file with position choice (left/right)
+- **Styles** — separate settings for active and inactive buttons (background, border, font, color)
+- **Text alignment** — left/center/right
+
+## 🚀 Installation
+
 1. In ioBroker admin, go to **Adapters** → **Install from URL**
 2. Enter: `https://github.com/yohohum/ioBroker.floorplan-visualizer`
-3. After installation, configure ports in adapter settings
-4. Open the editor at `http://<your-ip>:8083/editor.html`
+3. After installation, configure ports in adapter settings:
+   - **Editor port** (default 8083)
+   - **Presentation port** (default 8084)
+   - **IP address** (0.0.0.0 = all interfaces)
+4. Open editor: `http://<your-ip>:8083/editor.html`
 
-### Русский
-1. В админке ioBroker перейдите в **Адаптеры** → **Установить из URL**
-2. Введите: `https://github.com/yohohum/ioBroker.floorplan-visualizer`
-3. После установки настройте порты в настройках адаптера
-4. Откройте редактор по адресу `http://<ваш-ip>:8083/editor.html`
+### MFD Icons
+To use the MFD icon set, install the `icons-mfd-png` adapter in ioBroker. The adapter will automatically detect icons and make them available in the editor.
 
----
+## 📖 Usage
 
-## 📖 Usage / Использование
+### Editor (`http://<ip>:8083/editor.html`)
 
-### English
+#### Top panel
+- **⚙ Settings** — global plan and button panel settings
+- **Floor tabs** — switch between floors, sort with ↑↓ buttons
+- **🖼️ Floor icon** — assign icon to floor
+- **👁 Preview** — open presentation in new window
 
-#### Editor (`http://<ip>:8083/editor.html`)
-The main interface for creating and configuring floor plans.
-
-**Top bar:**
-- **⚙ Settings** — global plan settings, button panels styling
-- **Floor tabs** — switch between floors, reorder with ↑↓ buttons
-- **👁 Preview** — open presentation view in new window
-
-**Floor workspace:**
-- **Floor name** — editable, save with 💾
+#### Floor workspace
+- **Floor name** — editable field with save button 💾
 - **🖼️ Plan** — upload floor plan image
-- **Layer chips** — select/reorder layers, ✏️ to rename, 🖼️ to set icon
+- **Layer chips** — select/sort layers
+  - **✏️** — rename layer
+  - **🖼️** — assign icon to layer
+  - **↑↓** — move layer
+  - **×** — delete layer
 - **+ Object** — add new device to current layer
 
-**Object editor (double-click or right-click → Edit):**
-- Name, type, ioBroker state binding
-- Icon selection (Emoji / MFD / File)
-- Per-state colors (background, icon, border)
-- Value and name fonts with position control
-- Templates — save current settings or apply saved template
+#### Object editor (double-click or right-click → Edit)
+- **Name** — displayed object name
+- **Type** — switch/indicator/value
+- **Layer** — choose layer for placement
+- **🔒 Lock** — protection against accidental clicks (switches only)
+- **Templates** — apply/save templates
+- **ioBroker state** — bind to state (with object tree selection)
+- **Alarm min/max** — thresholds for numeric values
+- **Extra states** — additional states for multi-value sensors
+- **Icon** — size, opacity, icon selection for each state
+- **Colors** — background, icon color, border for each state
+- **Value font** — value display settings
+- **Name font** — name display settings
 
-**Alignment panel (appears when 2+ objects selected with Shift):**
-- Align to left/center/right/top/middle/bottom
-- Distribute horizontally/vertically
+#### Plan tools
+- **Click** — select object
+- **Shift+click** — multi-selection
+- **Drag** — move object
+- **Double-click** — edit object
+- **Right-click** — context menu (edit/copy/delete)
+- **Drag from edge** — create guide
+- **Double-click guide** — delete guide
 
-**Guides:**
-- Drag from plan edges to create horizontal/vertical guides
-- Objects snap to guides when moved nearby
-- Double-click guide to delete
+#### Alignment panel
+Appears automatically when 2+ objects selected:
+- ⫷ Align left
+- ⫿ Align center horizontal
+- ⫸ Align right
+- ⫠ Align top
+- ⫾ Align center vertical
+- ⫟ Align bottom
+- ⋯ Distribute horizontal
+- ⋮ Distribute vertical
 
-**Keyboard:**
-- Arrow keys — move selected objects (1px step)
-- Shift + Arrow — move faster (5px step)
+### Presentation (`http://<ip>:8084/` or `?floor=<id>`)
 
-#### Presentation (`http://<ip>:8084/` or `?floor=<id>`)
-Clean view for embedding in dashboards (Jarvis, vis, etc.).
+Clean view for embedding in dashboards:
 - Floor and layer buttons styled per settings
 - Click switches to toggle devices
 - Values update in real time
-- Lock feature: first click unlocks (shows lock icon), second click within 10s performs action
+- Lock feature works as in editor
+- Scaling mode applied automatically
 
-### Русский
+## 🔧 Configuration
 
-#### Редактор (`http://<ip>:8083/editor.html`)
-Основной интерфейс для создания и настройки планов этажей.
-
-**Верхняя панель:**
-- **⚙ Настройки** — глобальные настройки плана, стилизация панелей кнопок
-- **Вкладки этажей** — переключение между этажами, сортировка кнопками ↑↓
-- **👁 Просмотр** — открыть презентацию в новом окне
-
-**Рабочая область этажа:**
-- **Название этажа** — редактируемое, сохранить 💾
-- **🖼️ План** — загрузить изображение плана
-- **Чипы слоёв** — выбор/сортировка слоёв, ✏️ для переименования, 🖼️ для иконки
-- **+ Объект** — добавить новое устройство в текущий слой
-
-**Редактор объекта (двойной клик или ПКМ → Редактировать):**
-- Название, тип, привязка к состоянию ioBroker
-- Выбор иконки (Emoji / MFD / Файл)
-- Цвета по состояниям (фон, иконка, рамка)
-- Шрифты значения и названия с управлением позицией
-- Шаблоны — сохранить текущие настройки или применить сохранённый шаблон
-
-**Панель выравнивания (появляется при выделении 2+ объектов с Shift):**
-- Выравнивание по левому/центру/правому/верхнему/среднему/нижнему краю
-- Распределение по горизонтали/вертикали
-
-**Направляющие:**
-- Вытяните от края плана для создания горизонтальной/вертикальной направляющей
-- Объекты примагничиваются к направляющим при приближении
-- Двойной клик по направляющей — удаление
-
-**Клавиатура:**
-- Стрелки — перемещение выделенных объектов (шаг 1px)
-- Shift + стрелки — быстрое перемещение (шаг 5px)
-
-#### Презентация (`http://<ip>:8084/` или `?floor=<id>`)
-Чистый вид для встраивания в дашборды (Jarvis, vis и т.д.).
-- Кнопки этажей и слоёв стилизуются по настройкам
-- Клик по переключателю меняет состояние
-- Значения обновляются в реальном времени
-- Блокировка: первый клик разблокирует (показывает замочек), второй клик в течение 10 сек выполняет действие
-
----
-
-## 🔧 Configuration / Настройка
-
-### Adapter Settings / Настройки адаптера
+### Adapter settings
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| Editor port | 8083 | Port for the visual editor |
-| Presentation port | 8084 | Port for the presentation view |
-| Bind IP | 0.0.0.0 | Network interface to bind |
+| Editor port | 8083 | Port for visual editor |
+| Presentation port | 8084 | Port for presentation mode |
+| IP address | 0.0.0.0 | Network interface to bind |
 
-### MFD Icons / MFD-иконки
-Install `icons-mfd-png` adapter in ioBroker to use MFD icon set. The adapter automatically detects and serves icons from ioBroker's file storage.
-
-Установите адаптер `icons-mfd-png` в ioBroker для использования набора иконок MFD. Адаптер автоматически обнаруживает и раздаёт иконки из файлового хранилища ioBroker.
-
----
-
-## 🏗️ Architecture / Архитектура
-
-- **Backend**: Node.js + Express + ioBroker adapter-core
-- **Frontend**: Vanilla JavaScript, no build step
-- **Storage**: ioBroker states (JSON config) + file system (uploads)
-- **Communication**: HTTP REST API + polling (2s for states, 5s for config)
-
----
-
-## 📄 License / Лицензия
-
-MIT License
-
-Icons from MFD set are licensed under CC BY-SA 3.0.
-
----
-
-## 🤖 Development / Разработка
-
-This adapter was developed with AI assistance (Qwen 3.7).
-
-Этот адаптер разработан с помощью ИИ (Qwen 3.7).
-
----
-
-## 🐛 Issues / Проблемы
-
-Report issues at: https://github.com/yohohum/ioBroker.floorplan-visualizer/issues
-
----
-
-## 📝 Changelog / История изменений
-
-### 14.0.0 (2026-10-07)
-- ✨ Lock feature for switches
-- 🐛 Fix guides snap for left/top edges
-- 🎨 MD3 layout spacing
-- 📖 README with full documentation
-- 🔧 Fix admin buttons duplication
-
-### 13.0.0
-- ✨ Guides with snap
-- ✨ Arrow keys movement
-- ✨ Multi-selection and alignment
-
-### 12.0.0
-- ✨ Floor/layer icons
-- ✨ Rooms/functions in object tree
-- ✨ Layer rename
-
-### 11.0.0
-- ✨ Icon picker with tabs
-- ✨ Bar button icons
-
-### 10.0.0
-- ✨ Templates
-- ✨ Bar settings (size, position, colors)
-- ✨ Plan background
-
-### 9.0.0
-- ✨ Floor/layer ordering
-- ✨ Preview button
-- ✨ Value/name font settings
-
-### 8.0.0
-- ✨ Three icon states for Value type
-- ✨ Custom icon upload
-- ✨ Live data in editor
-
-### 7.0.0
-- ✨ Context menu (edit/copy/delete)
-- ✨ Drag & drop placement
-
-### 1.0.0 — 6.0.0
-- Initial versions with basic features
+### Configuration structure
+```json
+{
+  "planBg": "#2a2f36",
+  "scaleMode": "height",
+  "floors": [
+    {
+      "id": "floor_1",
+      "name": "First Floor",
+      "image": "/uploads/floor_1.png",
+      "icon": {"kind": "emoji", "value": "🏠"},
+      "layers": [
+        {
+          "id": "layer_1",
+          "name": "Lighting",
+          "icon": {"kind": "mfd", "value": "light"},
+          "devices": [
+            {
+              "id": "dev_1",
+              "name": "Living Room Light",
+              "objType": "switch",
+              "stateIds": ["javascript.0.light.living"],
+              "x": 50,
+              "y": 50,
+              "locked": false,
+              "icon": {},
+              "valueFont": {},
+              "nameFont": {}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "guides": [
+    {"id": "guide_1", "type": "h", "position": 50},
+    {"id": "guide_2", "type": "v", "position": 30}
+  ],
+  "templates": [
+    {"name": "Switch", "data": {}}
+  ],
+  "floorBar": {},
+  "layerBar": {}
+}

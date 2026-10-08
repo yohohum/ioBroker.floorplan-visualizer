@@ -1,29 +1,39 @@
+
+---
+
+## `io-package.json` (полный, версия 15.0.0)
+
+```json
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "14.4.1",
+    "version": "15.0.0",
     "news": {
-      "14.3.0": {
-        "en": "Fix flicker, alignment, guides, icons",
-        "ru": "Fix flicker, alignment, guides, icons"
+      "15.0.0": {
+        "en": "Stable release with scaling modes, lock feature, guides, alignment",
+        "ru": "Стабильный релиз с режимами масштабирования, блокировкой, направляющими, выравниванием"
       },
       "14.0.0": {
-        "en": "Lock feature, guides, alignment, README",
-        "ru": "Lock feature, guides, alignment, README"
+        "en": "Floor/layer icons, layer renaming, rooms and functions",
+        "ru": "Иконки этажей/слоёв, переименование слоёв, комнаты и функции"
       },
-      "1.0.0": {
-        "en": "Initial release",
-        "ru": "Initial release"
+      "13.0.0": {
+        "en": "Guides, arrow key movement, object alignment",
+        "ru": "Направляющие, перемещение стрелками, выравнивание объектов"
+      },
+      "12.0.0": {
+        "en": "Universal icon picker, panel button settings",
+        "ru": "Универсальный пикер иконок, настройка кнопок панелей"
       }
     },
     "title": "Floor Plan Visualizer",
     "titleLang": {
       "en": "Floor Plan Visualizer",
-      "ru": "Floor Plan Visualizer"
+      "ru": "Визуализатор плана этажа"
     },
     "desc": {
-      "en": "Interactive floor plan visualization",
-      "ru": "Interactive floor plan visualization"
+      "en": "Interactive floor plan visualization for smart homes",
+      "ru": "Интерактивная визуализация плана этажа для умного дома"
     },
     "authors": [
       "YoHoHum <yohohum@gmail.com>"
@@ -31,7 +41,8 @@
     "keywords": [
       "floorplan",
       "visualization",
-      "smart home"
+      "smart home",
+      "ioBroker"
     ],
     "license": "MIT",
     "platform": "Javascript/Node.js",
