@@ -2,25 +2,12 @@
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230061a4"/><path d="M32 14 L50 30 V50 H38 V38 H26 V50 H14 V30 Z" fill="white"/></svg>'>
 <title>План умного дома</title><style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
-body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;padding:20px;display:flex;flex-direction:column}
-.wrapper{max-width:1400px;margin:0 auto;background:#1f2329;border-radius:28px;padding:20px;flex:1;display:flex;flex-direction:column;min-height:0}
-/* === БАЗОВЫЙ КОНТЕЙНЕР ПЛАНА === */
-.plan-container{position:relative;border-radius:16px;flex:1;min-height:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;display:flex;flex-direction:column}
+/* === КОНТЕЙНЕР ПЛАНА === */
+.plan-container{position:relative;flex:1;min-height:0;overflow:auto}
 .plan-inner{position:relative}
 .plan-container img{display:block;user-select:none}
-/* === РЕЖИМ: ПО ВЫСОТЕ === */
-.plan-container.scale-height{display:flex;align-items:center;justify-content:center;overflow:hidden}
-.plan-container.scale-height .plan-inner{max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center}
-.plan-container.scale-height .plan-inner img{max-width:100%;max-height:100%;object-fit:contain}
-/* === РЕЖИМ: ПО ШИРИНЕ === */
-.plan-container.scale-width{display:block;overflow:visible}
-.plan-container.scale-width .plan-inner{width:100%}
-.plan-container.scale-width .plan-inner img{width:100%;height:auto}
-/* === РЕЖИМ: БЕЗ МАСШТАБИРОВАНИЯ === */
-.plan-container.scale-none{display:block;overflow:auto}
-.plan-container.scale-none .plan-inner{width:auto;height:auto;margin:20px auto}
-.plan-container.scale-none .plan-inner img{display:block;width:auto;height:auto}
 .bar{position:absolute;z-index:60;display:flex}
 .bar button{cursor:pointer;border:2px solid;display:flex;align-items:center;gap:6px;padding:0 12px;min-width:0;box-sizing:border-box}
 .bar button .bicon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -39,7 +26,7 @@ body{font-family:Roboto,'Segoe UI',sans-serif;background:#14161a;color:#e8eaed;p
 .lp-o{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:max-content}
 .loading{display:flex;align-items:center;justify-content:center;min-height:400px;color:#9aa0a6}
 </style></head><body>
-<div class="wrapper"><div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div></div>
+<div class="plan-container" id="planContainer"><div class="loading">Загрузка...</div></div>
 <script>
 'use strict';
 var config=null,currentFloorId=null,currentLayerId=null,deviceStates={},lastConfigJson='',lastScaleMode='';
@@ -108,7 +95,7 @@ if(JSON.stringify(od.nameFont)!==JSON.stringify(nd.nameFont))return false;
 }
 return true;
 }
-document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,1000);setInterval(checkLocks,1000);});
+document.addEventListener('DOMContentLoaded',function(){loadConfig();setInterval(pollStates,2000);setInterval(pollConfig,1000);setInterval(checkLocks,1000);window.addEventListener('resize',applyLayout);});
 function planImageMissing(){document.getElementById('planContainer').innerHTML='<div class="loading">План не найден.</div>';}
 function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;lastConfigJson=JSON.stringify(d);lastScaleMode=scaleMode();renderStructure();}).catch(function(){});}
 function pollConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){
@@ -188,9 +175,9 @@ renderPlan(getFloor());}
 function renderPlan(f){
 var c=document.getElementById('planContainer');
 c.style.background=planBg();
-c.className='plan-container scale-'+scaleMode();
+c.className='plan-container';
 if(!f||!f.image){c.innerHTML='<div class="loading">Нет изображения</div>';return;}
-c.innerHTML='<div class="plan-inner"><img src="'+f.image+'" class="plan-image" onerror="planImageMissing()"></div><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
+c.innerHTML='<div class="plan-inner"><img src="'+f.image+'" class="plan-image" onerror="planImageMissing()" onload="applyLayout()"></div><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div id="devicesLayer"></div>';
 buildBars(f);renderDevices(f);}
 function buildBars(f){
 var fb=document.getElementById('floorBar');var lb=document.getElementById('layerBar');
@@ -239,5 +226,63 @@ saveConfig();updatePresentationMarkers();return;
 }
 set(sid,!cur);}
 function set(sid,val){fetch('/api/state/'+sid,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({val:val})}).then(function(){deviceStates[sid]=val;updatePresentationMarkers();}).catch(function(){alert('Ошибка');});}
+// === ЛОГИКА МАСШТАБИРОВАНИЯ ===
+function applyLayout(){
+var c=document.getElementById('planContainer');
+var inner=document.querySelector('.plan-inner');
+var img=document.querySelector('.plan-image');
+if(!c||!inner||!img||!img.naturalWidth)return;
+var mode=scaleMode();
+var winW=c.clientWidth;
+var winH=c.clientHeight;
+var natW=img.naturalWidth;
+var natH=img.naturalHeight;
+var padPct=0.03;
+var targetPct=0.88;
+if(mode==='none'){
+var padW=natW*padPct;
+var padH=natH*padPct;
+inner.style.width=natW+'px';
+inner.style.height=natH+'px';
+inner.style.margin=padH+'px '+padW+'px';
+img.style.width=natW+'px';
+img.style.height=natH+'px';
+}else if(mode==='width'){
+var targetW=winW*targetPct;
+var scale=targetW/natW;
+var dispW=natW*scale;
+var dispH=natH*scale;
+var padW=dispW*padPct;
+var padH=dispH*padPct;
+inner.style.width=dispW+'px';
+inner.style.height=dispH+'px';
+img.style.width=dispW+'px';
+img.style.height=dispH+'px';
+if(dispH<=winH-padH*2){
+var topPad=(winH-dispH)/2;
+inner.style.margin=topPad+'px '+padW+'px';
+}else{
+inner.style.margin=padH+'px '+padW+'px';
+}
+}else if(mode==='height'){
+var targetH=winH*targetPct;
+var scale=targetH/natH;
+var dispW=natW*scale;
+var dispH=natH*scale;
+var padW=dispW*padPct;
+var padH=dispH*padPct;
+inner.style.width=dispW+'px';
+inner.style.height=dispH+'px';
+img.style.width=dispW+'px';
+img.style.height=dispH+'px';
+if(dispW<=winW-padW*2){
+var leftPad=(winW-dispW)/2;
+inner.style.margin=padH+'px '+leftPad+'px';
+}else{
+inner.style.margin=padH+'px '+padW+'px';
+}
+}
+}
 window.planImageMissing=planImageMissing;
+window.applyLayout=applyLayout;
 </script></body></html>
