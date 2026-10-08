@@ -43,9 +43,31 @@ function applyFont(el,f){el.style.fontFamily=f.family;el.style.fontWeight=f.weig
 function slotHtml(slot,color){if(!slot)return'<span class="mi">•</span>';if(slot.kind==='emoji')return'<span class="mi">'+esc(slot.value)+'</span>';var u=slot.kind==='mfd'?('/icons-mfd-png/'+slot.value+'.png'):slot.value;return'<span class="im" style="width:100%;height:100%;background-color:'+color+';-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function barDefaults(){return{height:40,width:120,gap:8,radius:100,orient:'h',position:'top',align:'center',textAlign:'left',icon:null,iconPos:'left',active:{bg:'#0cbaba',border:'#0cbaba',font:{family:'Roboto',weight:'500',size:'14px',color:'#ffffff'}},inactive:{bg:'#2a2f36',border:'#3a4048',font:{family:'Roboto',weight:'500',size:'14px',color:'#e8eaed'}}};}
 function styleBar(el,s){
-el.style.flexDirection=s.orient==='v'?'column':'row';el.style.gap=s.gap+'px';
-el.style.background=st.bg;el.style.borderColor=st.border;
-el.style.fontFamily=st.font.family;el.style.fontWeight=st.font.weight;el.style.fontSize=st.font.size;el.style.color=st.font.color;
+el.style.flexDirection=s.orient==='v'?'column':'row';
+el.style.gap=s.gap+'px';
+el.style.top=el.style.bottom=el.style.left=el.style.right='auto';
+el.style.transform='none';
+if(s.position==='top'){
+el.style.top='8px';
+if(s.align==='center'){el.style.left='50%';el.style.transform='translateX(-50%)';}
+else if(s.align==='left'){el.style.left='8px';}
+else{el.style.right='8px';}
+}else if(s.position==='bottom'){
+el.style.bottom='8px';
+if(s.align==='center'){el.style.left='50%';el.style.transform='translateX(-50%)';}
+else if(s.align==='left'){el.style.left='8px';}
+else{el.style.right='8px';}
+}else if(s.position==='left'){
+el.style.left='8px';
+if(s.align==='center'){el.style.top='50%';el.style.transform='translateY(-50%)';}
+else if(s.align==='left'){el.style.top='8px';}
+else{el.style.bottom='8px';}
+}else{
+el.style.right='8px';
+if(s.align==='center'){el.style.top='50%';el.style.transform='translateY(-50%)';}
+else if(s.align==='left'){el.style.top='8px';}
+else{el.style.bottom='8px';}
+}
 }
 function barIconHtml(icon,h){if(!icon)return'';if(icon.kind==='emoji')return'<span style="font-size:'+h+';line-height:1">'+esc(icon.value)+'</span>';var u=icon.kind==='mfd'?('/icons-mfd-png/'+icon.value+'.png'):icon.value;return'<span class="im" style="width:'+h+';height:'+h+';background-color:currentColor;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function mkBarBtn(label,active,s,icon){
@@ -177,15 +199,11 @@ buildBars(f);renderDevices(f);applyLayout();}
 function buildBars(f){
 var fb=document.getElementById('floorBar');var lb=document.getElementById('layerBar');
 if(requestedFloorId){fb.style.display='none';}
-else{var s=config.floorBar||barDefaults();if(!s.textAlign)s.textAlign='left';
-fb.innerHTML='';
+else{var s=config.floorBar||barDefaults();if(!s.textAlign)s.textAlign='left';styleBar(fb,s);fb.innerHTML='';
 config.floors.forEach(function(fl){var b=mkBarBtn(fl.name,fl.id===currentFloorId,s,fl.icon);b.onclick=function(){currentFloorId=fl.id;currentLayerId=null;renderStructure();};fb.appendChild(b);});}
-var s2=config.layerBar||barDefaults();if(!s2.textAlign)s2.textAlign='left';
-lb.innerHTML='';
+var s2=config.layerBar||barDefaults();if(!s2.textAlign)s2.textAlign='left';styleBar(lb,s2);lb.innerHTML='';
 if(!currentLayerId||!f.layers.some(function(l){return l.id===currentLayerId;}))currentLayerId=f.layers[0]?f.layers[0].id:null;
-f.layers.forEach(function(l){var b=mkBarBtn(l.name,l.id===currentLayerId,s2,l.icon);b.onclick=function(){currentLayerId=l.id;renderStructure();};lb.appendChild(b);});
-fb.style.top='8px';fb.style.left='8px';fb.style.right='auto';fb.style.bottom='auto';fb.style.transform='none';
-lb.style.top='56px';lb.style.left='8px';lb.style.right='auto';lb.style.bottom='auto';lb.style.transform='none';}
+f.layers.forEach(function(l){var b=mkBarBtn(l.name,l.id===currentLayerId,s2,l.icon);b.onclick=function(){currentLayerId=l.id;renderStructure();};lb.appendChild(b);});}
 function renderDevices(f){
 var content=document.getElementById('planContent');if(!content)return;
 var layer=null;for(var i=0;i<(f.layers||[]).length;i++)if(f.layers[i].id===currentLayerId){layer=f.layers[i];break;}if(!layer)return;
