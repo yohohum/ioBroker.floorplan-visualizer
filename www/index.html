@@ -258,17 +258,9 @@ var padPct=0.03;
 var targetPct=0.88;
 var dispW,dispH;
 if(mode==='none'){
+// Без масштабирования: подложка = картинка + 3% картинки с каждой стороны
 dispW=natW;
 dispH=natH;
-}else if(mode==='width'){
-dispW=winW*targetPct;
-var scale=dispW/natW;
-dispH=natH*scale;
-}else if(mode==='height'){
-dispH=winH*targetPct;
-var scale=dispH/natH;
-dispW=natW*scale;
-}
 var padW=dispW*padPct;
 var padH=dispH*padPct;
 var innerW=dispW+2*padW;
@@ -279,19 +271,54 @@ content.style.width=dispW+'px';
 content.style.height=dispH+'px';
 content.style.left=padW+'px';
 content.style.top=padH+'px';
-var leftPos,topPos;
-if(innerW<=winW){
-leftPos=(winW-innerW)/2;
-}else{
-leftPos=padW;
+// Центрируем подложку в окне
+var leftPos=(winW-innerW)/2;
+var topPos=(winH-innerH)/2;
+inner.style.left=Math.max(0,leftPos)+'px';
+inner.style.top=Math.max(0,topPos)+'px';
+}else if(mode==='width'){
+// По ширине: подложка на весь экран, план 88% ширины окна
+var planW=winW*targetPct;
+var scale=planW/natW;
+var planH=natH*scale;
+// Подложка на весь экран
+inner.style.width=winW+'px';
+inner.style.height=winH+'px';
+inner.style.left='0px';
+inner.style.top='0px';
+// План центрирован в подложке
+var planLeft=(winW-planW)/2;
+var planTop=(winH-planH)/2;
+// Если план выше окна — прижимаем к верху с отступом 3%
+if(planH>winH*(1-2*padPct)){
+planTop=winH*padPct;
 }
-if(innerH<=winH){
-topPos=(winH-innerH)/2;
-}else{
-topPos=padH;
+content.style.width=planW+'px';
+content.style.height=planH+'px';
+content.style.left=planLeft+'px';
+content.style.top=planTop+'px';
+}else if(mode==='height'){
+// По высоте: подложка на весь экран, план 88% высоты окна
+var planH=winH*targetPct;
+var scale=planH/natH;
+var planW=natW*scale;
+// Подложка на весь экран
+inner.style.width=winW+'px';
+inner.style.height=winH+'px';
+inner.style.left='0px';
+inner.style.top='0px';
+// План центрирован в подложке
+var planLeft=(winW-planW)/2;
+var planTop=(winH-planH)/2;
+// Если план шире окна — прижимаем к левому краю с отступом 3%
+if(planW>winW*(1-2*padPct)){
+planLeft=winW*padPct;
 }
-inner.style.left=leftPos+'px';
-inner.style.top=topPos+'px';
+content.style.width=planW+'px';
+content.style.height=planH+'px';
+content.style.left=planLeft+'px';
+content.style.top=planTop+'px';
+}
 }
 window.planImageMissing=planImageMissing;
 window.applyLayout=applyLayout;
