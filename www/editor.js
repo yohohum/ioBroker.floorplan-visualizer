@@ -7,6 +7,7 @@ var editingDevice=null,editingLayerRef=null,editingIsNew=false,slotTarget=null,l
 var pickerTab='emoji',pickerIcon=null;
 var selectedDevices=new Set();
 var CACHE_BUSTER='?v='+Date.now(),PRES_PORT=8084;
+var lastRenderedFloorId=null;
 var DEF_VF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
 var DEF_NF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
 var FONTS=['Arial','Arial Black','Verdana','Tahoma','Trebuchet MS','Segoe UI','Roboto','Open Sans','Lato','Montserrat','Times New Roman','Georgia','Garamond','Courier New','Lucida Console','Impact','Comic Sans MS'];
@@ -18,7 +19,23 @@ function esc(s){return(s==null)?'':String(s).replace(/&/g,'&amp;').replace(/"/g,
 function splitKeep(v){v=String(v==null?'':v);if(v==='')return[];return v.split(',');}
 function gv(id){return $(id).value;}
 function sv(id,v){$(id).value=v;}
-function ensureConfig(){if(!config||typeof config!=='object')config={};if(!Array.isArray(config.floors))config.floors=[];if(!Array.isArray(config.templates))config.templates=[];if(!Array.isArray(config.guides))config.guides=[];}
+function ensureConfig(){
+if(!config||typeof config!=='object')config={};
+if(!Array.isArray(config.floors))config.floors=[];
+if(!Array.isArray(config.templates))config.templates=[];
+// Миграция старых направляющих (из глобального массива) в первый этаж
+if(Array.isArray(config.guides)&&config.guides.length>0){
+if(config.floors.length>0){
+if(!Array.isArray(config.floors[0].guides))config.floors[0].guides=[];
+config.floors[0].guides=config.floors[0].guides.concat(config.guides);
+}
+delete config.guides;
+}
+// Обеспечиваем массивы направляющих для всех этажей
+config.floors.forEach(function(f){
+if(!Array.isArray(f.guides))f.guides=[];
+});
+}
 function normalizeType(t){if(t==='value_read'||t==='value_write'||t==='value')return'value';if(t==='list')return'switch';return t||'switch';}
 function isValue(t){return t==='value';}
 function iconStates(){return isValue(gv('deviceObjType'))?[{k:'min',l:'Тревога мин'},{k:'norm',l:'Норма'},{k:'max',l:'Тревога макс'}]:[{k:'on',l:'Вкл'},{k:'off',l:'Выкл'}];}
@@ -33,6 +50,25 @@ function barDefaults(){return{height:40,width:120,gap:8,radius:100,orient:'h',po
 document.addEventListener('DOMContentLoaded',loadConfig);
 function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;ensureConfig();if(!currentFloorId&&config.floors[0])currentFloorId=config.floors[0].id;renderFloorWorkspace();}).catch(function(e){ensureConfig();renderFloorWorkspace();showDebug('Ошибка: '+e.message);});}
 function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).then(function(){if(cb)cb();}).catch(function(){showDebug('Ошибка сохранения');});}
+// === НАПРАВЛЯЮЩИЕ (уникальные для каждого этажа) ===
+function getGuides(){
+var cur=getCurrentFloor();
+if(!cur)return[];
+if(!Array.isArray(cur.floor.guides))cur.floor.guides=[];
+return cur.floor.guides;
+}
+function setGuides(guides){
+var cur=getCurrentFloor();
+if(!cur)return;
+cur.floor.guides=guides;
+}
+function deleteAllGuides(){
+var guides=getGuides();
+if(!guides||guides.length===0)return;
+if(!confirm('Удалить все направляющие ('+guides.length+') на этом этаже?'))return;
+setGuides([]);
+saveConfig(renderFloorWorkspace);
+}
 function moveFloor(i,dir){var a=config.floors;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function moveLayer(fIdx,i,dir){var a=config.floors[fIdx].layers;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;saveConfig(renderFloorWorkspace);}
 function openPreview(fId){window.open('http://'+location.hostname+':'+PRES_PORT+'/?floor='+fId,'_blank');}
@@ -56,23 +92,16 @@ d.x=Math.max(0,Math.min(100,d.x+dx));
 d.y=Math.max(0,Math.min(100,d.y+dy));
 }
 });
-saveConfig(renderFloorWorkspace);
+saveConfig();
+renderPlanMarkers(cur.floor,cur.idx);
 });
 function scaleMode(){return(config&&config.scaleMode)||'height';}
-// === УДАЛЕНИЕ ВСЕХ НАПРАВЛЯЮЩИХ ===
-function deleteAllGuides(){
-if(!config.guides||config.guides.length===0)return;
-if(!confirm('Удалить все направляющие ('+config.guides.length+')?'))return;
-config.guides=[];
-saveConfig(renderFloorWorkspace);
-}
-// === КОНТЕКСТНОЕ МЕНЮ ДЛЯ ПЛАНА (блокировка стандартного) ===
-function handlePlanContextMenu(e){e.preventDefault();}
 function renderGuides(){
 var inner=document.querySelector('.plan-inner');if(!inner)return;
 inner.querySelectorAll('.guide').forEach(function(g){g.remove();});
-if(!config.guides||config.guides.length===0)return;
-config.guides.forEach(function(g){
+var guides=getGuides();
+if(!guides||guides.length===0)return;
+guides.forEach(function(g){
 var el=document.createElement('div');
 el.className='guide '+(g.type==='h'?'horizontal':'vertical');
 if(g.type==='h')el.style.top=g.position+'%';
@@ -82,13 +111,13 @@ var label=document.createElement('div');
 label.className='guide-label';
 label.textContent=g.position.toFixed(1)+'%';
 el.appendChild(label);
-el.addEventListener('dblclick',function(e){e.stopPropagation();if(confirm('Удалить направляющую?')){config.guides=config.guides.filter(function(x){return x.id!==g.id;});saveConfig(renderFloorWorkspace);}});
+el.addEventListener('dblclick',function(e){e.stopPropagation();if(confirm('Удалить направляющую?')){setGuides(getGuides().filter(function(x){return x.id!==g.id;}));saveConfig(renderFloorWorkspace);}});
 el.addEventListener('contextmenu',function(e){
 e.preventDefault();
 e.stopPropagation();
 showCtxMenu(e.clientX,e.clientY,[
 {label:'🗑 Удалить направляющую',danger:true,action:function(){
-config.guides=config.guides.filter(function(x){return x.id!==g.id;});
+setGuides(getGuides().filter(function(x){return x.id!==g.id;}));
 saveConfig(renderFloorWorkspace);
 }},
 {label:'🗑 Удалить все направляющие',danger:true,action:function(){
@@ -113,7 +142,7 @@ function up(){
 document.removeEventListener('mousemove',mv);
 document.removeEventListener('mouseup',up);
 if(g.position<1||g.position>99){
-config.guides=config.guides.filter(function(x){return x.id!==g.id;});
+setGuides(getGuides().filter(function(x){return x.id!==g.id;}));
 }
 saveConfig(renderFloorWorkspace);
 }
@@ -134,7 +163,8 @@ if(e.button!==0)return;
 e.preventDefault();e.stopPropagation();
 var type=(side==='top'||side==='bottom')?'h':'v';
 var guide={id:'guide_'+Date.now(),type:type,position:50};
-config.guides.push(guide);
+var guides=getGuides();
+guides.push(guide);
 renderGuides();
 var el=inner.querySelector('[data-guide-id="'+guide.id+'"]');
 if(!el)return;
@@ -153,7 +183,7 @@ function up(){
 document.removeEventListener('mousemove',mv);
 document.removeEventListener('mouseup',up);
 if(guide.position<1||guide.position>99){
-config.guides=config.guides.filter(function(x){return x.id!==guide.id;});
+setGuides(getGuides().filter(function(x){return x.id!==guide.id;}));
 }
 saveConfig(renderFloorWorkspace);
 }
@@ -164,7 +194,8 @@ inner.appendChild(zone);
 });
 }
 function snapToGuides(dev,size){
-if(!config.guides||config.guides.length===0)return{x:dev.x,y:dev.y};
+var guides=getGuides();
+if(!guides||guides.length===0)return{x:dev.x,y:dev.y};
 var threshold=1.5;
 var inner=document.querySelector('.plan-inner');if(!inner)return{x:dev.x,y:dev.y};
 var halfW=(size/inner.clientWidth)*100/2;
@@ -177,7 +208,7 @@ var centerX=dev.x;
 var centerY=dev.y;
 var newX=dev.x,newY=dev.y;
 var snappedX=false,snappedY=false;
-config.guides.forEach(function(g){
+guides.forEach(function(g){
 if(g.type==='v'&&!snappedX){
 var edges=[left,centerX,right];
 for(var i=0;i<edges.length;i++){
@@ -209,14 +240,14 @@ function clearSelection(){selectedDevices.clear();updateSelectionVisuals();updat
 function updateSelectionVisuals(){document.querySelectorAll('.marker').forEach(function(m){var id=m.dataset.devId;if(selectedDevices.has(id))m.classList.add('selected');else m.classList.remove('selected');});}
 function updateAlignPanel(){var p=$('alignPanel');if(selectedDevices.size>=2){p.classList.add('active');$('alignCount').textContent=selectedDevices.size;}else{p.classList.remove('active');}}
 function getSelectedDevices(){var cur=getCurrentFloor();if(!cur)return[];var layer=cur.floor.layers.find(function(l){return l.id===currentLayerId;});if(!layer)return[];return layer.devices.filter(function(d){return selectedDevices.has(d.id);});}
-function alignLeft(){var devs=getSelectedDevices();if(devs.length<2)return;var minX=Math.min.apply(null,devs.map(function(d){return d.x;}));devs.forEach(function(d){d.x=minX;});saveConfig(renderFloorWorkspace);}
-function alignRight(){var devs=getSelectedDevices();if(devs.length<2)return;var maxX=Math.max.apply(null,devs.map(function(d){return d.x;}));devs.forEach(function(d){d.x=maxX;});saveConfig(renderFloorWorkspace);}
-function alignCenterH(){var devs=getSelectedDevices();if(devs.length<2)return;var avgX=devs.reduce(function(s,d){return s+d.x;},0)/devs.length;devs.forEach(function(d){d.x=avgX;});saveConfig(renderFloorWorkspace);}
-function alignTop(){var devs=getSelectedDevices();if(devs.length<2)return;var minY=Math.min.apply(null,devs.map(function(d){return d.y;}));devs.forEach(function(d){d.y=minY;});saveConfig(renderFloorWorkspace);}
-function alignBottom(){var devs=getSelectedDevices();if(devs.length<2)return;var maxY=Math.max.apply(null,devs.map(function(d){return d.y;}));devs.forEach(function(d){d.y=maxY;});saveConfig(renderFloorWorkspace);}
-function alignCenterV(){var devs=getSelectedDevices();if(devs.length<2)return;var avgY=devs.reduce(function(s,d){return s+d.y;},0)/devs.length;devs.forEach(function(d){d.y=avgY;});saveConfig(renderFloorWorkspace);}
-function distributeH(){var devs=getSelectedDevices();if(devs.length<3)return;devs.sort(function(a,b){return a.x-b.x;});var minX=devs[0].x;var maxX=devs[devs.length-1].x;var step=(maxX-minX)/(devs.length-1);devs.forEach(function(d,i){d.x=minX+step*i;});saveConfig(renderFloorWorkspace);}
-function distributeV(){var devs=getSelectedDevices();if(devs.length<3)return;devs.sort(function(a,b){return a.y-b.y;});var minY=devs[0].y;var maxY=devs[devs.length-1].y;var step=(maxY-minY)/(devs.length-1);devs.forEach(function(d,i){d.y=minY+step*i;});saveConfig(renderFloorWorkspace);}
+function alignLeft(){var devs=getSelectedDevices();if(devs.length<2)return;var minX=Math.min.apply(null,devs.map(function(d){return d.x;}));devs.forEach(function(d){d.x=minX;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function alignRight(){var devs=getSelectedDevices();if(devs.length<2)return;var maxX=Math.max.apply(null,devs.map(function(d){return d.x;}));devs.forEach(function(d){d.x=maxX;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function alignCenterH(){var devs=getSelectedDevices();if(devs.length<2)return;var avgX=devs.reduce(function(s,d){return s+d.x;},0)/devs.length;devs.forEach(function(d){d.x=avgX;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function alignTop(){var devs=getSelectedDevices();if(devs.length<2)return;var minY=Math.min.apply(null,devs.map(function(d){return d.y;}));devs.forEach(function(d){d.y=minY;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function alignBottom(){var devs=getSelectedDevices();if(devs.length<2)return;var maxY=Math.max.apply(null,devs.map(function(d){return d.y;}));devs.forEach(function(d){d.y=maxY;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function alignCenterV(){var devs=getSelectedDevices();if(devs.length<2)return;var avgY=devs.reduce(function(s,d){return s+d.y;},0)/devs.length;devs.forEach(function(d){d.y=avgY;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function distributeH(){var devs=getSelectedDevices();if(devs.length<3)return;devs.sort(function(a,b){return a.x-b.x;});var minX=devs[0].x;var maxX=devs[devs.length-1].x;var step=(maxX-minX)/(devs.length-1);devs.forEach(function(d,i){d.x=minX+step*i;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function distributeV(){var devs=getSelectedDevices();if(devs.length<3)return;devs.sort(function(a,b){return a.y-b.y;});var minY=devs[0].y;var maxY=devs[devs.length-1].y;var step=(maxY-minY)/(devs.length-1);devs.forEach(function(d,i){d.y=minY+step*i;});saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
 function iconHtml(icon,size){if(!icon)return'<span style="font-size:'+size+';line-height:1">📄</span>';if(icon.kind==='emoji')return'<span style="font-size:'+size+';line-height:1">'+esc(icon.value)+'</span>';var u=icon.kind==='mfd'?(mfdBaseUrl+icon.value+'.png'):icon.value;return'<span class="im" style="width:'+size+';height:'+size+';background-color:currentColor;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
 function openFloorIconModal(fIdx){iconTarget={type:'floor',idx:fIdx};pickerIcon=config.floors[fIdx].icon||null;pickerTab='emoji';$('pickerTitle').textContent='Иконка этажа: '+config.floors[fIdx].name;openIconPicker();}
 function openLayerIconModal(fIdx,lIdx){iconTarget={type:'layer',fIdx:fIdx,lIdx:lIdx};var l=config.floors[fIdx].layers[lIdx];pickerIcon=l.icon||null;pickerTab='emoji';$('pickerTitle').textContent='Иконка слоя: '+l.name;openIconPicker();}
@@ -253,9 +284,16 @@ h+='<button class="act" onclick="event.stopPropagation();moveFloor('+i+',1)">↓
 h+='<button class="act" onclick="event.stopPropagation();removeFloor('+i+',event)">×</button>';
 h+='</div>';}
 h+='<button class="md-btn filled small" onclick="addFloor()">+ Этаж</button><span class="spacer"></span>'+(currentFloorId?'<button class="md-btn tonal small" onclick="openPreview(\''+currentFloorId+'\')">👁 Просмотр</button>':'');c.innerHTML=h;}
-function addFloor(){ensureConfig();var id='floor_'+Date.now();config.floors.push({id:id,name:'Новый этаж',image:'',layers:[]});currentFloorId=id;currentLayerId=null;saveConfig(renderFloorWorkspace);}
+function addFloor(){ensureConfig();var id='floor_'+Date.now();var slug='floor_'+(config.floors.length+1);config.floors.push({id:id,name:'Новый этаж',slug:slug,image:'',guides:[],layers:[]});currentFloorId=id;currentLayerId=null;saveConfig(renderFloorWorkspace);}
 function removeFloor(i,e){if(e)e.stopPropagation();if(!confirm('Удалить этаж?'))return;var rid=config.floors[i].id;config.floors.splice(i,1);if(currentFloorId===rid)currentFloorId=config.floors[0]?config.floors[0].id:null;saveConfig(renderFloorWorkspace);}
-function selectFloor(id){currentFloorId=id;currentLayerId=null;clearSelection();renderFloorWorkspace();}
+function selectFloor(id){
+if(currentFloorId===id)return;
+currentFloorId=id;
+currentLayerId=null;
+clearSelection();
+lastRenderedFloorId=null;
+renderFloorWorkspace();
+}
 function getCurrentFloor(){for(var i=0;i<config.floors.length;i++)if(config.floors[i].id===currentFloorId)return{floor:config.floors[i],idx:i};return null;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
 function renderFloorWorkspace(){
@@ -264,6 +302,15 @@ var w=$('fw');var cur=getCurrentFloor();
 if(!cur){w.innerHTML='<div class="pempty" style="background:'+planBg()+'">🏠 Добавьте этаж</div>';stopLive();return;}
 var floor=cur.floor,fIdx=cur.idx;
 if(!currentLayerId||!floor.layers.some(function(l){return l.id===currentLayerId;}))currentLayerId=floor.layers[0]?floor.layers[0].id:null;
+// Если этаж не менялся — не пересоздаём изображение (избегаем мигания)
+if(lastRenderedFloorId===floor.id){
+updateLayerChips(floor,fIdx);
+renderPlanMarkers(floor,fIdx);
+renderGuides();
+attachGuideZones();
+updateAlignPanel();
+return;
+}
 var ls=layerBarSettings();
 var ta=ls.textAlign||'left';
 var chips='';floor.layers.forEach(function(l,i){
@@ -276,22 +323,55 @@ chips+='<button class="act" onclick="event.stopPropagation();moveLayer('+fIdx+',
 chips+='<button class="act" onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',1)">↓</button>';
 chips+='<button class="act" onclick="event.stopPropagation();removeLayer('+fIdx+',\''+l.id+'\',event)">×</button>';
 chips+='</div>';});
-var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
+var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput" placeholder="Название"><input type="text" class="floor-slug" value="'+esc(floor.slug||'')+'" id="floorSlugInput" placeholder="Идентификатор (для ?floor=...)"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
 h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
 var sm=scaleMode();
 if(floor.image)h+='<div class="pea scale-'+sm+'" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)" oncontextmenu="handlePlanContextMenu(event)"><div class="plan-inner" id="planInner"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div></div>';
 else h+='<div class="pea scale-'+sm+'" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
 w.innerHTML=h;
+lastRenderedFloorId=floor.id;
 if(floor.image){renderPlanMarkers(floor,fIdx);renderGuides();attachGuideZones();startLive();}
 else stopLive();
 updateAlignPanel();}
+function updateLayerChips(floor,fIdx){
+var lsEl=document.querySelector('.ls');
+if(!lsEl)return;
+var ls=layerBarSettings();
+var ta=ls.textAlign||'left';
+var chips='';
+floor.layers.forEach(function(l,i){
+chips+='<div class="lc'+(l.id===currentLayerId?' active':'')+'" onclick="selectLayer(\''+l.id+'\')" style="text-align:'+ta+'">';
+chips+='<span class="btn-ic">'+iconHtml(l.icon,'14px')+'</span>';
+chips+='<span class="btn-label" style="text-align:'+ta+'">'+esc(l.name)+'</span>';
+chips+='<button class="act" onclick="event.stopPropagation();renameLayer('+fIdx+','+i+')" title="Переименовать">✏️</button>';
+chips+='<button class="act" onclick="event.stopPropagation();openLayerIconModal('+fIdx+','+i+')" title="Иконка">🖼️</button>';
+chips+='<button class="act" onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',-1)">↑</button>';
+chips+='<button class="act" onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',1)">↓</button>';
+chips+='<button class="act" onclick="event.stopPropagation();removeLayer('+fIdx+',\''+l.id+'\',event)">×</button>';
+chips+='</div>';});
+lsEl.innerHTML=chips;
+}
 function handlePlanClick(e){if(e.target.id==='pea'||e.target.id==='peaImg'||e.target.id==='planInner'){clearSelection();}}
-function selectLayer(id){currentLayerId=id;clearSelection();renderFloorWorkspace();}
+function handlePlanContextMenu(e){e.preventDefault();}
+function selectLayer(id){
+currentLayerId=id;
+clearSelection();
+updateLayerChips(getCurrentFloor().floor,getCurrentFloor().idx);
+renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);
+updateAlignPanel();
+}
 function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
 function renameLayer(fIdx,lIdx){var f=config.floors[fIdx];var l=f.layers[lIdx];var n=prompt('Новое название слоя:',l.name);if(n&&n.trim()){l.name=n.trim();saveConfig(renderFloorWorkspace);}}
 function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой?'))return;var f=config.floors[fIdx];var i=f.layers.findIndex(function(l){return l.id===lId;});if(i>=0)f.layers.splice(i,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
-function saveFloorName(fIdx){config.floors[fIdx].name=gv('floorNameInput')||'Без названия';saveConfig(renderFloorTabs);}
-function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'floor_'+fIdx+'_'+Date.now()+'.png',base64Data:e.target.result})}).then(function(x){return x.json();}).then(function(d){if(d.success){config.floors[fIdx].image=d.url;saveConfig(renderFloorWorkspace);}});};r.readAsDataURL(f);}
+function saveFloorName(fIdx){
+config.floors[fIdx].name=gv('floorNameInput')||'Без названия';
+var slug=gv('floorSlugInput').trim();
+if(slug){
+config.floors[fIdx].slug=slug;
+}
+saveConfig(renderFloorTabs);
+}
+function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'floor_'+fIdx+'_'+Date.now()+'.png',base64Data:e.target.result})}).then(function(x){return x.json();}).then(function(d){if(d.success){config.floors[fIdx].image=d.url;lastRenderedFloorId=null;saveConfig(renderFloorWorkspace);}});};r.readAsDataURL(f);}
 function openSettingsModal(){sv('planBg',config.planBg||'#2a2f36');sv('scaleMode',config.scaleMode||'height');fillBarFields();$('settingsModal').classList.add('active');$('settingsModal').querySelector('.modal').scrollTop=0;}
 function closeSettingsModal(){$('settingsModal').classList.remove('active');}
 function getBar(t){return(t==='floor'?config.floorBar:config.layerBar)||barDefaults();}
@@ -312,7 +392,7 @@ config.scaleMode=gv('scaleMode');
 var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),textAlign:gv('bar-textalign'),icon:barIcon,iconPos:gv('bar-iconpos'),
 active:{bg:gv('bar-a-bg'),border:gv('bar-a-bd'),font:{family:gv('bar-a-ff'),weight:gv('bar-a-fw'),size:gv('bar-a-fs'),color:gv('bar-a-fc')}},
 inactive:{bg:gv('bar-i-bg'),border:gv('bar-i-bd'),font:{family:gv('bar-i-ff'),weight:gv('bar-i-fw'),size:gv('bar-i-fs'),color:gv('bar-i-fc')}}};
-if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();saveConfig(renderFloorWorkspace);}
+if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();lastRenderedFloorId=null;saveConfig(renderFloorWorkspace);}
 function checkLocks(){
 var now=Date.now();
 var changed=false;
@@ -443,8 +523,8 @@ m.addEventListener('click',function(e){e.stopPropagation();handleMarkerClick(dev
 m.addEventListener('dblclick',function(e){e.preventDefault();openEditDeviceModal(fIdx,lIdx,dev.id);});
 m.addEventListener('contextmenu',function(e){e.preventDefault();showCtxMenu(e.clientX,e.clientY,[{label:'✏️ Редактировать',action:function(){openEditDeviceModal(fIdx,lIdx,dev.id);}},{label:'⧉ Копировать',action:function(){copyDevice(fIdx,lIdx,dev.id);}},{label:'🗑 Удалить',danger:true,action:function(){deleteDeviceById(fIdx,lIdx,dev.id);}}]);});
 inner.appendChild(m);});}
-function copyDevice(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var s=l.devices.find(function(d){return d.id===id;});if(!s)return;var c=JSON.parse(JSON.stringify(s));c.id='dev_'+Date.now();c.x=Math.min(100,(s.x||50)+4);c.y=Math.min(100,(s.y||50)+4);l.devices.push(c);saveConfig(renderFloorWorkspace);}
-function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(function(d){return d.id!==id;});selectedDevices.delete(id);saveConfig(renderFloorWorkspace);}
+function copyDevice(fIdx,lIdx,id){var l=config.floors[fIdx].layers[lIdx];var s=l.devices.find(function(d){return d.id===id;});if(!s)return;var c=JSON.parse(JSON.stringify(s));c.id='dev_'+Date.now();c.x=Math.min(100,(s.x||50)+4);c.y=Math.min(100,(s.y||50)+4);l.devices.push(c);saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
+function deleteDeviceById(fIdx,lIdx,id){if(!confirm('Удалить?'))return;var l=config.floors[fIdx].layers[lIdx];l.devices=l.devices.filter(function(d){return d.id!==id;});selectedDevices.delete(id);saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
 function attachDrag(m,dev){m.addEventListener('mousedown',function(e){
 if(e.button!==0||e.shiftKey)return;
 e.preventDefault();
@@ -517,9 +597,9 @@ function readIcon(){var ic=editingDevice.icon;ic.size=+gv('iconSize');ic.opacity
 function saveDevice(){readDeviceFields();readIcon();var d=editingDevice;if(!d.name){alert('Введите название');return;}
 var f=config.floors[editingLayerRef.fIdx];var toIdx=f.layers.findIndex(function(l){return l.id===gv('deviceLayer');});if(toIdx<0)toIdx=editingLayerRef.lIdx;
 if(editingIsNew)f.layers[toIdx].devices.push(d);else{var from=f.layers[editingLayerRef.lIdx];var i=from.devices.findIndex(function(x){return x.id===d.id;});if(i>=0)from.devices.splice(i,1);f.layers[toIdx].devices.push(d);}
-closeDeviceModal();saveConfig(function(){currentLayerId=f.layers[toIdx].id;renderFloorWorkspace();});}
+closeDeviceModal();saveConfig();renderPlanMarkers(f,toIdx);}
 function cancelDevice(){closeDeviceModal();}
-function deleteDevice(){if(editingIsNew)return;if(!confirm('Удалить?'))return;config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx].devices=config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx].devices.filter(function(x){return x.id!==editingDevice.id;});closeDeviceModal();saveConfig(renderFloorWorkspace);}
+function deleteDevice(){if(editingIsNew)return;if(!confirm('Удалить?'))return;config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx].devices=config.floors[editingLayerRef.fIdx].layers[editingLayerRef.lIdx].devices.filter(function(x){return x.id!==editingDevice.id;});closeDeviceModal();saveConfig();renderPlanMarkers(getCurrentFloor().floor,getCurrentFloor().idx);}
 function closeDeviceModal(){$('deviceModal').classList.remove('active');editingDevice=null;}
 function addExtraIdRow(v){var c=$('extraIdsContainer');var r=document.createElement('div');r.className='er';r.innerHTML='<input type="text" class="extra-id-input" value="'+esc(v||'')+'"><button class="md-btn tonal small" onclick="openObjectTreeForExtra(this)">🔍</button><button class="md-btn danger small" onclick="this.parentNode.remove()">×</button>';c.appendChild(r);}
 function setExtraIdValue(i,v){var r=document.querySelectorAll('.extra-id-input');if(r[i])r[i].value=v;}

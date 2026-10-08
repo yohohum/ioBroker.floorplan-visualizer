@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "floorplan-visualizer",
-    "version": "15.1.0",
+    "version": "15.2.0",
     "news": {
+      "15.2.0": {
+        "en": "Per-floor guides, slug for floor URLs, fixed layer switching flicker",
+        "ru": "Направляющие для каждого этажа, идентификатор этажа для ссылок, устранено мигание при переключении слоёв"
+      },
       "15.1.0": {
         "en": "Context menu for guides (delete single/all)",
         "ru": "Контекстное меню для направляющих (удалить одну/все)"

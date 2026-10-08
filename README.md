@@ -243,6 +243,13 @@ This adapter was developed with AI assistance (Qwen 3.7).
 
 ## 📝 Changelog
 
+### 15.2.0 (2026-10-08)
+- ✨ Per-floor guides (each floor has its own guides)
+- ✨ Floor slug/identifier field for URLs (`?floor=floor_<slug>`)
+- 🐛 Fixed flicker when switching layers and floors
+- 🐛 Delete all guides now operates within current floor only
+- ✨ Automatic migration of global guides to first floor
+
 ### 15.1.0 (2026-10-08)
 - ✨ Context menu for guides (right-click)
 - ✨ "Delete guide" and "Delete all guides" actions
@@ -509,6 +516,13 @@ MIT License
 - Оптимизировано для современных браузеров (Chrome, Firefox, Edge, Safari)
 
 ## 📝 История изменений
+
+### 15.2.0 (2026-10-08)
+- ✨ Направляющие уникальны для каждого этажа
+- ✨ Поле "Идентификатор" этажа для ссылок (`?floor=floor_<идентификатор>`)
+- 🐛 Устранено мигание при переключении слоёв и этажей
+- 🐛 Удаление всех направляющих теперь действует только в рамках текущего этажа
+- ✨ Автоматическая миграция глобальных направляющих в первый этаж
 
 ### 15.1.0 (2026-10-08)
 - ✨ Контекстное меню для направляющих (правый клик)
