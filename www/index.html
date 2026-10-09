@@ -155,17 +155,29 @@ renderStructure();
 }
 }).catch(function(){});}
 function collectIds(){var ids=[];if(!config||!config.floors)return ids;config.floors.forEach(function(f){(f.layers||[]).forEach(function(l){(l.devices||[]).forEach(function(d){(d.stateIds||[]).forEach(function(s){if(s&&ids.indexOf(s)<0)ids.push(s);});});});});return ids;}
+// === ИСПРАВЛЕННАЯ ФУНКЦИЯ ОПРОСА СОСТОЯНИЙ ===
 function pollStates(){
-if(!config)return;var changed=false;
-collectIds().forEach(function(sid){
-fetch('/api/state/'+sid+'?v='+Date.now()).then(function(r){return r.json();}).then(function(d){
+if(!config)return;
+var ids=collectIds();
+if(ids.length===0)return;
+var promises=ids.map(function(sid){
+return fetch('/api/state/'+sid+'?v='+Date.now()).then(function(r){
+return r.json();
+}).then(function(d){
 if(d&&deviceStates[sid]!==d.val){
 deviceStates[sid]=d.val;
-changed=true;
+return true;
 }
-}).catch(function(){});
+return false;
+}).catch(function(){
+return false;
 });
-if(changed)updatePresentationMarkers();
+});
+Promise.all(promises).then(function(results){
+if(results.some(function(changed){return changed;})){
+updatePresentationMarkers();
+}
+});
 }
 function updatePresentationMarkers(){
 var f=getFloor();if(!f)return;
