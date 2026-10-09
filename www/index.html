@@ -89,17 +89,16 @@ if(icon){if(s.iconPos==='right')b.innerHTML=lblHtml+'<span class="bicon">'+icHtm
 else b.innerHTML=lblHtml;
 return b;}
 function planBg(){return(config&&config.planBg)||'#2a2f36';}
+function screenBg(){return(config&&config.screenBg)||'#14161a';}
+function backdropRadius(){return(config&&config.backdropRadius!=null)?config.backdropRadius:16;}
 function scaleMode(){return(config&&config.scaleMode)||'height';}
 // === ПОИСК ЭТАЖА ПО ПАРАМЕТРУ ?floor= ===
 function findFloorByParam(param){
 if(!param)return null;
 for(var i=0;i<config.floors.length;i++){
 var f=config.floors[i];
-// Совпадение по id (старая схема)
 if(f.id===param)return f;
-// Совпадение по ?floor=floor_<slug>
 if(f.slug&&('floor_'+f.slug)===param)return f;
-// Совпадение по ?floor=<slug> без префикса (дополнительно)
 if(f.slug&&f.slug===param)return f;
 }
 return null;
@@ -108,6 +107,8 @@ function isOnlyLockChange(oldCfg,newCfg){
 if(!oldCfg||!newCfg)return false;
 if(oldCfg.scaleMode!==newCfg.scaleMode)return false;
 if(oldCfg.planBg!==newCfg.planBg)return false;
+if(oldCfg.screenBg!==newCfg.screenBg)return false;
+if(oldCfg.backdropRadius!==newCfg.backdropRadius)return false;
 if(!oldCfg.floors||!newCfg.floors)return false;
 if(oldCfg.floors.length!==newCfg.floors.length)return false;
 for(var i=0;i<oldCfg.floors.length;i++){
@@ -267,12 +268,13 @@ renderPlan(getFloor());
 }
 function renderPlan(f){
 var c=document.getElementById('planContainer');
-c.style.background=planBg();
+c.style.background=screenBg();
 if(!f||!f.image){
 c.innerHTML='<div class="loading">Нет изображения</div>';
 return;
 }
-c.innerHTML='<div class="plan-inner" id="planInner" style="background:'+planBg()+'"><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div class="plan-content" id="planContent"><img src="'+f.image+'" class="plan-image" onerror="planImageMissing()" onload="applyLayout()"></div></div>';
+var radius=backdropRadius()+'px';
+c.innerHTML='<div class="plan-inner" id="planInner" style="background:'+planBg()+';border-radius:'+radius+'"><div class="bar" id="floorBar"></div><div class="bar" id="layerBar"></div><div class="plan-content" id="planContent"><img src="'+f.image+'" class="plan-image" onerror="planImageMissing()" onload="applyLayout()"></div></div>';
 buildBars(f);
 renderDevices(f);
 applyLayout();
@@ -413,6 +415,8 @@ var inner=document.getElementById('planInner');
 var content=document.getElementById('planContent');
 var img=document.querySelector('.plan-image');
 if(!c||!inner||!content||!img||!img.naturalWidth)return;
+c.style.background=screenBg();
+inner.style.borderRadius=backdropRadius()+'px';
 var mode=scaleMode();
 var winW=c.clientWidth;
 var winH=c.clientHeight;
@@ -422,7 +426,6 @@ var padPct=0.03;
 var targetPct=0.88;
 var planW,planH,innerW,innerH,leftPos,topPos,contentLeft,contentTop;
 if(mode==='none'){
-// Без масштабирования: подложка = картинка + 3% картинки с каждой стороны
 planW=natW;
 planH=natH;
 var padW=planW*padPct;
@@ -434,7 +437,6 @@ contentTop=padH;
 leftPos=Math.max(0,(winW-innerW)/2);
 topPos=Math.max(0,(winH-innerH)/2);
 }else if(mode==='width'){
-// По ширине: подложка на весь экран, план 88% ширины окна
 planW=winW*targetPct;
 var scale=planW/natW;
 planH=natH*scale;
@@ -451,7 +453,6 @@ innerH=planH+2*gapH;
 leftPos=gapW;
 topPos=gapH;
 }else if(mode==='height'){
-// По высоте: подложка на весь экран, план 88% высоты окна
 planH=winH*targetPct;
 var scale=planH/natH;
 planW=natW*scale;

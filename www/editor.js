@@ -8,6 +8,7 @@ var pickerTab='emoji',pickerIcon=null;
 var selectedDevices=new Set();
 var CACHE_BUSTER='?v='+Date.now(),PRES_PORT=8084;
 var lastRenderedFloorId=null;
+var editingFloorIdx=null;
 var DEF_VF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'overlay'};
 var DEF_NF={family:'Arial',weight:'400',size:'12px',color:'#fff',bgColor:'transparent',position:'bottom'};
 var FONTS=['Arial','Arial Black','Verdana','Tahoma','Trebuchet MS','Segoe UI','Roboto','Open Sans','Lato','Montserrat','Times New Roman','Georgia','Garamond','Courier New','Lucida Console','Impact','Comic Sans MS'];
@@ -23,7 +24,6 @@ function ensureConfig(){
 if(!config||typeof config!=='object')config={};
 if(!Array.isArray(config.floors))config.floors=[];
 if(!Array.isArray(config.templates))config.templates=[];
-// Миграция старых направляющих (из глобального массива) в первый этаж
 if(Array.isArray(config.guides)&&config.guides.length>0){
 if(config.floors.length>0){
 if(!Array.isArray(config.floors[0].guides))config.floors[0].guides=[];
@@ -31,7 +31,6 @@ config.floors[0].guides=config.floors[0].guides.concat(config.guides);
 }
 delete config.guides;
 }
-// Обеспечиваем массивы направляющих для всех этажей
 config.floors.forEach(function(f){
 if(!Array.isArray(f.guides))f.guides=[];
 });
@@ -48,8 +47,18 @@ function fillFont(el,cur){cur=cur||'Arial';el.innerHTML='';var found=false;FONTS
 function fillWeight(el,cur){cur=String(cur||'400');if(cur==='normal')cur='400';if(cur==='bold')cur='700';el.innerHTML='';WEIGHTS.forEach(function(w){var o=document.createElement('option');o.value=w[0];o.textContent=w[1];if(w[0]===cur)o.selected=true;el.appendChild(o);});}
 function barDefaults(){return{height:40,width:120,gap:8,radius:100,orient:'h',position:'top',align:'center',textAlign:'left',icon:null,iconPos:'left',active:{bg:'#0cbaba',border:'#0cbaba',font:{family:'Roboto',weight:'500',size:'14px',color:'#ffffff'}},inactive:{bg:'#2a2f36',border:'#3a4048',font:{family:'Roboto',weight:'500',size:'14px',color:'#e8eaed'}}};}
 document.addEventListener('DOMContentLoaded',loadConfig);
-function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;ensureConfig();if(!currentFloorId&&config.floors[0])currentFloorId=config.floors[0].id;renderFloorWorkspace();}).catch(function(e){ensureConfig();renderFloorWorkspace();showDebug('Ошибка: '+e.message);});}
+function loadConfig(){fetch('/api/config').then(function(r){return r.json();}).then(function(d){config=d;ensureConfig();applyScreenBg();if(!currentFloorId&&config.floors[0])currentFloorId=config.floors[0].id;renderFloorWorkspace();}).catch(function(e){ensureConfig();renderFloorWorkspace();showDebug('Ошибка: '+e.message);});}
 function saveConfig(cb){fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)}).then(function(){if(cb)cb();}).catch(function(){showDebug('Ошибка сохранения');});}
+// === ОСНОВНОЙ ФОН ЭКРАНА И РАДИУС ПОДЛОЖКИ ===
+function screenBg(){return(config&&config.screenBg)||'#f7f9fc';}
+function backdropRadius(){return(config&&config.backdropRadius!=null)?config.backdropRadius:16;}
+function applyScreenBg(){
+document.body.style.background=screenBg();
+var peas=document.querySelectorAll('.pea');
+peas.forEach(function(p){p.style.background=planBg();});
+var inners=document.querySelectorAll('.plan-inner');
+inners.forEach(function(p){p.style.borderRadius=backdropRadius()+'px';});
+}
 // === НАПРАВЛЯЮЩИЕ (уникальные для каждого этажа) ===
 function getGuides(){
 var cur=getCurrentFloor();
@@ -274,16 +283,67 @@ function renderFloorTabs(){
 var c=$('fte');var h='';
 var fs=floorBarSettings();
 var ta=fs.textAlign||'left';
+h+='<span class="ftc-label">Этажи:</span>';
 for(var i=0;i<config.floors.length;i++){var f=config.floors[i];
 h+='<div class="fte'+(f.id===currentFloorId?' active':'')+'" onclick="selectFloor(\''+f.id+'\')" style="text-align:'+ta+'">';
 h+='<span class="btn-ic">'+iconHtml(f.icon,'16px')+'</span>';
 h+='<span class="btn-label" style="text-align:'+ta+'">'+esc(f.name)+'</span>';
+h+='<button class="act" onclick="event.stopPropagation();openFloorEditModal('+i+')" title="Редактировать этаж">✏️</button>';
 h+='<button class="act" onclick="event.stopPropagation();openFloorIconModal('+i+')" title="Иконка">🖼️</button>';
 h+='<button class="act" onclick="event.stopPropagation();moveFloor('+i+',-1)">↑</button>';
 h+='<button class="act" onclick="event.stopPropagation();moveFloor('+i+',1)">↓</button>';
 h+='<button class="act" onclick="event.stopPropagation();removeFloor('+i+',event)">×</button>';
 h+='</div>';}
 h+='<button class="md-btn filled small" onclick="addFloor()">+ Этаж</button><span class="spacer"></span>'+(currentFloorId?'<button class="md-btn tonal small" onclick="openPreview(\''+currentFloorId+'\')">👁 Просмотр</button>':'');c.innerHTML=h;}
+// === РЕДАКТИРОВАНИЕ ЭТАЖА ===
+function openFloorEditModal(fIdx){
+editingFloorIdx=fIdx;
+var f=config.floors[fIdx];
+sv('floorEditName',f.name||'');
+sv('floorEditSlug',f.slug||'');
+var img=$('floorEditPreview');
+if(f.image){img.src=f.image+CACHE_BUSTER;img.style.display='block';}
+else{img.src='';img.style.display='none';}
+$('floorEditModal').classList.add('active');
+}
+function closeFloorEditModal(){
+$('floorEditModal').classList.remove('active');
+editingFloorIdx=null;
+}
+function saveFloorEdit(){
+if(editingFloorIdx==null)return;
+var f=config.floors[editingFloorIdx];
+f.name=gv('floorEditName')||'Без названия';
+var slug=gv('floorEditSlug').trim();
+if(slug){
+f.slug=slug;
+}
+saveConfig(renderFloorWorkspace);
+closeFloorEditModal();
+}
+function handleFloorEditImage(input){
+var file=input.files[0];
+if(!file)return;
+if(editingFloorIdx==null)return;
+var reader=new FileReader();
+reader.onload=function(e){
+fetch('/api/upload',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({filename:'floor_'+editingFloorIdx+'_'+Date.now()+'.png',base64Data:e.target.result})
+}).then(function(x){return x.json();}).then(function(d){
+if(d.success){
+config.floors[editingFloorIdx].image=d.url;
+var img=$('floorEditPreview');
+img.src=d.url+CACHE_BUSTER;
+img.style.display='block';
+lastRenderedFloorId=null;
+}
+});
+};
+reader.readAsDataURL(file);
+input.value='';
+}
 function addFloor(){ensureConfig();var id='floor_'+Date.now();var slug='floor_'+(config.floors.length+1);config.floors.push({id:id,name:'Новый этаж',slug:slug,image:'',guides:[],layers:[]});currentFloorId=id;currentLayerId=null;saveConfig(renderFloorWorkspace);}
 function removeFloor(i,e){if(e)e.stopPropagation();if(!confirm('Удалить этаж?'))return;var rid=config.floors[i].id;config.floors.splice(i,1);if(currentFloorId===rid)currentFloorId=config.floors[0]?config.floors[0].id:null;saveConfig(renderFloorWorkspace);}
 function selectFloor(id){
@@ -323,16 +383,17 @@ chips+='<button class="act" onclick="event.stopPropagation();moveLayer('+fIdx+',
 chips+='<button class="act" onclick="event.stopPropagation();moveLayer('+fIdx+','+i+',1)">↓</button>';
 chips+='<button class="act" onclick="event.stopPropagation();removeLayer('+fIdx+',\''+l.id+'\',event)">×</button>';
 chips+='</div>';});
-var h='<div class="ftb"><input type="text" value="'+esc(floor.name)+'" id="floorNameInput" placeholder="Название"><input type="text" class="floor-slug" value="'+esc(floor.slug||'')+'" id="floorSlugInput" placeholder="Идентификатор (для ?floor=...)"><button class="md-btn filled small" onclick="saveFloorName('+fIdx+')">💾</button><button class="md-btn tonal small" onclick="document.getElementById(\'floorImageInput\').click()">🖼️</button><input type="file" id="floorImageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this,'+fIdx+')"></div>';
-h+='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
+var h='<div class="ftb"><strong>Слои:</strong><div class="ls">'+chips+'<button class="md-btn tonal small" onclick="addLayer('+fIdx+')">+ Слой</button></div><span class="spacer"></span><button class="md-btn filled small" onclick="openAddDeviceModal('+fIdx+')">+ Объект</button></div>';
 var sm=scaleMode();
-if(floor.image)h+='<div class="pea scale-'+sm+'" id="pea" style="background:'+planBg()+'" onclick="handlePlanClick(event)" oncontextmenu="handlePlanContextMenu(event)"><div class="plan-inner" id="planInner"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div></div>';
-else h+='<div class="pea scale-'+sm+'" style="background:'+planBg()+'"><div class="pempty">🖼️ Загрузите план</div></div>';
+if(floor.image)h+='<div class="pea scale-'+sm+'" id="pea" style="background:'+planBg()+';border-radius:'+backdropRadius()+'px" onclick="handlePlanClick(event)" oncontextmenu="handlePlanContextMenu(event)"><div class="plan-inner" id="planInner" style="border-radius:'+backdropRadius()+'px"><img src="'+floor.image+CACHE_BUSTER+'" id="peaImg"></div></div>';
+else h+='<div class="pea scale-'+sm+'" style="background:'+planBg()+';border-radius:'+backdropRadius()+'px"><div class="pempty">🖼️ Загрузите план</div></div>';
 w.innerHTML=h;
 lastRenderedFloorId=floor.id;
+applyScreenBg();
 if(floor.image){renderPlanMarkers(floor,fIdx);renderGuides();attachGuideZones();startLive();}
 else stopLive();
-updateAlignPanel();}
+updateAlignPanel();
+}
 function updateLayerChips(floor,fIdx){
 var lsEl=document.querySelector('.ls');
 if(!lsEl)return;
@@ -363,16 +424,8 @@ updateAlignPanel();
 function addLayer(fIdx){var n=prompt('Название слоя:','Новый слой');if(!n)return;var f=config.floors[fIdx];if(!f.layers)f.layers=[];var nl={id:'layer_'+Date.now(),name:n,devices:[]};f.layers.push(nl);currentLayerId=nl.id;saveConfig(renderFloorWorkspace);}
 function renameLayer(fIdx,lIdx){var f=config.floors[fIdx];var l=f.layers[lIdx];var n=prompt('Новое название слоя:',l.name);if(n&&n.trim()){l.name=n.trim();saveConfig(renderFloorWorkspace);}}
 function removeLayer(fIdx,lId,e){if(e)e.stopPropagation();if(!confirm('Удалить слой?'))return;var f=config.floors[fIdx];var i=f.layers.findIndex(function(l){return l.id===lId;});if(i>=0)f.layers.splice(i,1);if(currentLayerId===lId)currentLayerId=null;saveConfig(renderFloorWorkspace);}
-function saveFloorName(fIdx){
-config.floors[fIdx].name=gv('floorNameInput')||'Без названия';
-var slug=gv('floorSlugInput').trim();
-if(slug){
-config.floors[fIdx].slug=slug;
-}
-saveConfig(renderFloorTabs);
-}
 function handleImageUpload(inp,fIdx){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:'floor_'+fIdx+'_'+Date.now()+'.png',base64Data:e.target.result})}).then(function(x){return x.json();}).then(function(d){if(d.success){config.floors[fIdx].image=d.url;lastRenderedFloorId=null;saveConfig(renderFloorWorkspace);}});};r.readAsDataURL(f);}
-function openSettingsModal(){sv('planBg',config.planBg||'#2a2f36');sv('scaleMode',config.scaleMode||'height');fillBarFields();$('settingsModal').classList.add('active');$('settingsModal').querySelector('.modal').scrollTop=0;}
+function openSettingsModal(){sv('screenBg',config.screenBg||'#f7f9fc');sv('planBg',config.planBg||'#2a2f36');sv('backdropRadius',config.backdropRadius!=null?config.backdropRadius:16);sv('scaleMode',config.scaleMode||'height');fillBarFields();$('settingsModal').classList.add('active');$('settingsModal').querySelector('.modal').scrollTop=0;}
 function closeSettingsModal(){$('settingsModal').classList.remove('active');}
 function getBar(t){return(t==='floor'?config.floorBar:config.layerBar)||barDefaults();}
 function barIconHtml(icon,h){if(!icon)return'';if(icon.kind==='emoji')return'<span style="font-size:'+h+';line-height:1">'+esc(icon.value)+'</span>';var u=icon.kind==='mfd'?(mfdBaseUrl+icon.value+'.png'):icon.value;return'<span class="im" style="width:'+h+';height:'+h+';background-color:currentColor;-webkit-mask-image:url('+u+');mask-image:url('+u+');"></span>';}
@@ -387,12 +440,20 @@ fillFont($('bar-i-ff'),s.inactive.font.family);fillWeight($('bar-i-fw'),s.inacti
 sv('bar-a-bg',s.active.bg);sv('bar-a-bd',s.active.border);sv('bar-a-fs',s.active.font.size);sv('bar-a-fc',s.active.font.color);
 sv('bar-i-bg',s.inactive.bg);sv('bar-i-bd',s.inactive.border);sv('bar-i-fs',s.inactive.font.size);sv('bar-i-fc',s.inactive.font.color);}
 function saveSettingsModal(){
+config.screenBg=gv('screenBg');
 config.planBg=gv('planBg');
+config.backdropRadius=parseInt(gv('backdropRadius'),10);
+if(isNaN(config.backdropRadius)||config.backdropRadius<0)config.backdropRadius=16;
 config.scaleMode=gv('scaleMode');
 var t=gv('barTarget');var s={height:+gv('bar-height'),width:+gv('bar-width'),gap:+gv('bar-gap'),radius:+gv('bar-radius'),orient:gv('bar-orient'),position:gv('bar-position'),align:gv('bar-align'),textAlign:gv('bar-textalign'),icon:barIcon,iconPos:gv('bar-iconpos'),
 active:{bg:gv('bar-a-bg'),border:gv('bar-a-bd'),font:{family:gv('bar-a-ff'),weight:gv('bar-a-fw'),size:gv('bar-a-fs'),color:gv('bar-a-fc')}},
 inactive:{bg:gv('bar-i-bg'),border:gv('bar-i-bd'),font:{family:gv('bar-i-ff'),weight:gv('bar-i-fw'),size:gv('bar-i-fs'),color:gv('bar-i-fc')}}};
-if(t==='floor')config.floorBar=s;else config.layerBar=s;closeSettingsModal();lastRenderedFloorId=null;saveConfig(renderFloorWorkspace);}
+if(t==='floor')config.floorBar=s;else config.layerBar=s;
+closeSettingsModal();
+lastRenderedFloorId=null;
+saveConfig(renderFloorWorkspace);
+applyScreenBg();
+}
 function checkLocks(){
 var now=Date.now();
 var changed=false;
@@ -637,8 +698,9 @@ function closeTreeModal(){$('treeModal').classList.remove('active');objectTreeCo
 function loadIoBrokerObjects(){fetch('/api/iobroker/objects').then(function(r){return r.json();}).then(function(d){allIoBrokerObjects=d||[];ioBrokerTree=buildIoBrokerTree(allIoBrokerObjects);renderObjectTree();}).catch(function(){$('objectTree').innerHTML='<div class="tl">Ошибка</div>';});}
 function filterTree(){renderObjectTree();}
 function selectObject(id){if(!objectTreeContext)return;if(objectTreeContext.target==='main')sv('deviceId',id);else setExtraIdValue(objectTreeContext.extraIndex,id);closeTreeModal();}
-window.addFloor=addFloor;window.removeFloor=removeFloor;window.selectFloor=selectFloor;window.selectLayer=selectLayer;window.addLayer=addLayer;window.removeLayer=removeLayer;window.renameLayer=renameLayer;window.saveFloorName=saveFloorName;window.handleImageUpload=handleImageUpload;window.moveFloor=moveFloor;window.moveLayer=moveLayer;window.openPreview=openPreview;
+window.addFloor=addFloor;window.removeFloor=removeFloor;window.selectFloor=selectFloor;window.selectLayer=selectLayer;window.addLayer=addLayer;window.removeLayer=removeLayer;window.renameLayer=renameLayer;window.moveFloor=moveFloor;window.moveLayer=moveLayer;window.openPreview=openPreview;
 window.openFloorIconModal=openFloorIconModal;window.openLayerIconModal=openLayerIconModal;window.closeIconPicker=closeIconPicker;window.switchPickerTab=switchPickerTab;window.clearPickerIcon=clearPickerIcon;window.pickPickerEmoji=pickPickerEmoji;window.pickPickerMfd=pickPickerMfd;window.filterPickerMfd=filterPickerMfd;
+window.openFloorEditModal=openFloorEditModal;window.closeFloorEditModal=closeFloorEditModal;window.saveFloorEdit=saveFloorEdit;window.handleFloorEditImage=handleFloorEditImage;
 window.openSettingsModal=openSettingsModal;window.closeSettingsModal=closeSettingsModal;window.fillBarFields=fillBarFields;window.saveSettingsModal=saveSettingsModal;window.openBarDisk=openBarDisk;window.openBarMfd=openBarMfd;window.clearBarIcon=clearBarIcon;
 window.openAddDeviceModal=openAddDeviceModal;window.openEditDeviceModal=openEditDeviceModal;window.saveDevice=saveDevice;window.cancelDevice=cancelDevice;window.deleteDevice=deleteDevice;window.onObjTypeChange=onObjTypeChange;window.addExtraIdRow=addExtraIdRow;window.openObjectTreeForExtra=openObjectTreeForExtra;
 window.saveTemplate=saveTemplate;window.applyTemplate=applyTemplate;
