@@ -1,0 +1,3 @@
+[submodule ".opencode/skills/iobroker-adapter-dev"]
+	path = .opencode/skills/iobroker-adapter-dev
+	url = https://github.com/yohohum/ioBroker.Adapter-Development-Skill.git
