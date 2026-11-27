@@ -78,7 +78,7 @@ describe('package.json validation', function () {
 
     it('should have correct engines', function () {
         assert.property(pkg.engines, 'node');
-        assert.include(pkg.engines.node, '18');
+        assert.include(pkg.engines.node, '20');
     });
 
     it('should have test scripts', function () {
