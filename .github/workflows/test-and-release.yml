@@ -65,6 +65,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create test data directory
+        run: |
+          mkdir -p /tmp/test-iobroker.floorplan-visualizer/iobroker-data
+          echo '{"common": {"type": "json", "write": true, "read": true}, "native": {}}' > /tmp/test-iobroker.floorplan-visualizer/iobroker-data/iobroker.json
+
       - name: Run adapter tests
         uses: ioBroker/testing-action-adapter@v1
         with:
