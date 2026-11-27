@@ -1,9 +1,7 @@
 'use strict';
 
 const chai = require('chai');
-const fs = require('fs');
 const path = require('path');
-const { validateConfig, sanitizeConfig, getDefaultConfig } = require('../../lib/configValidator');
 
 const assert = chai.assert;
 
