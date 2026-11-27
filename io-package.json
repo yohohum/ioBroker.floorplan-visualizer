@@ -4,17 +4,17 @@
     "version": "15.3.0",
     "news": {
       "15.3.0": {
-        "en": "Screen background, backdrop radius, floor edit modal",
-        "de": "Bildschirmhintergrund, Hintergrundradius, Etagenbearbeitungs-Modal",
-        "ru": "Основной фон экрана, радиус подложки, модальное окно редактирования этажа",
-        "pt": "Fundo da tela, raio do fundo, modal de edição de andar",
-        "nl": "Schermachtergrond, achtergrondstraal, verdiepingsbewerkingsmodal",
-        "fr": "Arrière-plan de l'écran, rayon du fond, modal d'édition d'étage",
-        "it": "Sfondo schermo, raggio sfondo, modalità modifica piano",
-        "es": "Fondo de pantalla, radio de fondo, modal de edición de planta",
-        "pl": "Tło ekranu, promień tła, modal edycji piętra",
-        "uk": "Фон екрана, радіус підкладки, модальне вікно редагування поверху",
-        "zh-cn": "屏幕背景、背景半径、楼层编辑模态框"
+        "en": "Security: Admin API authentication, separated admin/presentation API, allowlisted state access, CORS restrictions, upload protection",
+        "de": "Sicherheit: Admin-API-Authentifizierung, getrennte Admin/Präsentations-API, erlaubte State-IDs, CORS-Einschränkungen, Upload-Schutz",
+        "ru": "Безопасность: Аутентификация Admin API, разделение Admin/Presentation API, разрешенные State IDs, ограничения CORS, защита загрузки",
+        "pt": "Segurança: Autenticação Admin API, API Admin/Presentation separada, IDs de estado permitidas, restrições CORS, proteção de upload",
+        "nl": "Beveiliging: Admin API authenticatie, gescheiden Admin/Presentatie API, toegestane State IDs, CORS beperkingen, upload beveiliging",
+        "fr": "Sécurité: Authentification Admin API, API Admin/Présentation séparée, IDs d'état autorisés, restrictions CORS, protection d'upload",
+        "it": "Sicurezza: Autenticazione Admin API, API Admin/Presentation separate, State ID consentiti, restrizioni CORS, protezione upload",
+        "es": "Seguridad: Autenticación Admin API, API Admin/Presentación separadas, State IDs permitidas, restricciones CORS, protección de subida",
+        "pl": "Bezpieczeństwo: Uwierzytelnianie Admin API, oddzielne API Admin/Presentacja, dozwolone State ID, ograniczenia CORS, ochrona uploadu",
+        "uk": "Безпека: Автентифікація Admin API, розділення Admin/Presentation API, дозволені State ID, обмеження CORS, захист завантаження",
+        "zh-cn": "安全性: Admin API 认证、分离 Admin/Presentation API、允许列表 State ID、CORS 限制、上传保护"
       },
       "15.2.0": {
         "en": "Per-floor guides, slug for floor URLs, fixed layer switching flicker",
@@ -114,7 +114,8 @@
   "native": {
     "adminPort": 8083,
     "presentationPort": 8084,
-    "bind": "0.0.0.0"
+    "bind": "0.0.0.0",
+    "adminApiToken": ""
   },
   "objects": [],
   "states": []
