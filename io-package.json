@@ -103,7 +103,7 @@
     "adminUI": {
       "config": "json"
     },
-    "localLink": "http://%ip%:8083/editor.html",
+    "localLink": "http://%ip%:%adminPort%/editor.html",
     "icon": "icon.svg",
     "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
     "loglevel": "info",

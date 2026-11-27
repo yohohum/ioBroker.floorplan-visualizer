@@ -16,23 +16,17 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Test on Node.js ${{ matrix.node }} (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node: ['18', '20', '22']
-      fail-fast: false
-
+  check-and-lint:
+    name: Check and Lint
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -44,56 +38,56 @@ jobs:
       - name: Run build
         run: npm run build
 
-      - name: Run package tests
-        run: npm run test:package
+      - name: Run checks
+        uses: ioBroker/testing-action-check@v2
+        with:
+          node-version: '20'
 
-      - name: Run unit tests
-        run: npm run test:unit
-
-  integration-test:
-    name: Integration Test on Node.js ${{ matrix.node }}
+  adapter-tests:
+    name: Adapter Tests
+    needs: check-and-lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['18', '20', '22']
+        node-version: ['18', '20', '22', '24', '26']
+        os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run integration tests
-        run: npm run test:integration
-        env:
-          NODE_ENV: test
+      - name: Run adapter tests
+        uses: ioBroker/testing-action-adapter@v1
+        with:
+          os: ${{ matrix.os }}
+          node-version: ${{ matrix.node-version }}
 
-  release:
-    name: Release
-    needs: [test, integration-test]
+  deploy:
+    name: Deploy
+    needs: [check-and-lint, adapter-tests]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for npm OIDC Trusted Publishing
-      contents: write  # Required for GitHub Release
-      packages: write  # Required for npm provenance
-
+      id-token: write
+      contents: write
+      packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
@@ -122,15 +116,16 @@ jobs:
         run: npm run build
 
       - name: Run all tests
-        run: npm test
+        run: npm run test:all
 
       - name: Publish to npm (Trusted Publishing)
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: ioBroker/testing-action-deploy@v1
+        with:
+          node-version: '20'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
         env:

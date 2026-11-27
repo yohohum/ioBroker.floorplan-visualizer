@@ -11,7 +11,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
+const { validateConfig, sanitizeConfig, getDefaultConfig } = require('./lib/configValidator');
 
 /**
  * @typedef {Object} FloorConfig
@@ -104,6 +104,8 @@ class FloorplanVisualizer extends utils.Adapter {
         this.allowedPresentationStateIds = new Set();
         /** @type {Object|null} */
         this.currentConfig = null;
+        /** @type {Object|null} */
+        this.objectsCache = null;
 
         this.on('ready', this.onReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
@@ -133,32 +135,50 @@ class FloorplanVisualizer extends utils.Adapter {
         // Load current config and build allowed state IDs for presentation
         await this.loadConfigAndBuildAllowlist();
 
+        // Validate and normalize config
+        this.validateAndNormalizeConfig();
+
         // Start HTTP servers with separate apps
-        this.startServer(this.config.adminPort || 8083, 'admin');
-        this.startServer(this.config.presentationPort || 8084, 'presentation');
+        this.startServer(this.config.adminPort, 'admin');
+        this.startServer(this.config.presentationPort, 'presentation');
 
         this.log.info('Adapter started successfully');
     }
 
     /**
-     * Initialize admin API token for authentication
+     * Validate and normalize adapter configuration
      */
-    async initAdminApiToken() {
-        // Check if token exists in native config
-        if (this.config.adminApiToken && typeof this.config.adminApiToken === 'string' && this.config.adminApiToken.length >= 32) {
-            this.adminApiToken = this.config.adminApiToken;
-            this.log.debug('Using existing admin API token');
+    validateAndNormalizeConfig() {
+        // Validate adminPort
+        const adminPort = parseInt(this.config.adminPort, 10);
+        if (isNaN(adminPort) || adminPort < 1 || adminPort > 65535) {
+            this.log.warn(`Invalid adminPort: ${this.config.adminPort}, using default 8083`);
+            this.config.adminPort = 8083;
         } else {
-            // Generate new secure token
-            this.adminApiToken = crypto.randomBytes(32).toString('hex');
-            // Update native config with the new token
-            const newConfig = { ...this.config, adminApiToken: this.adminApiToken };
-            await this.setForeignObjectAsync(`${this.namespace}`, {
-                ...(await this.getForeignObjectAsync(`${this.namespace}`)),
-                native: newConfig
-            });
-            this.config = newConfig;
-            this.log.info('Generated new admin API token');
+            this.config.adminPort = adminPort;
+        }
+
+        // Validate presentationPort
+        const presentationPort = parseInt(this.config.presentationPort, 10);
+        if (isNaN(presentationPort) || presentationPort < 1 || presentationPort > 65535) {
+            this.log.warn(`Invalid presentationPort: ${this.config.presentationPort}, using default 8084`);
+            this.config.presentationPort = 8084;
+        } else {
+            this.config.presentationPort = presentationPort;
+        }
+
+        // Check for port conflict
+        if (this.config.adminPort === this.config.presentationPort) {
+            this.log.warn('Admin and presentation ports are the same, changing presentation port');
+            this.config.presentationPort = this.config.adminPort === 8083 ? 8084 : 8083;
+        }
+
+        // Validate bind address
+        if (typeof this.config.bind !== 'string' || this.config.bind.trim() === '') {
+            this.log.warn(`Invalid bind address: ${this.config.bind}, using default 0.0.0.0`);
+            this.config.bind = '0.0.0.0';
+        } else {
+            this.config.bind = this.config.bind.trim();
         }
     }
 
@@ -169,7 +189,9 @@ class FloorplanVisualizer extends utils.Adapter {
         try {
             const state = await this.getStateAsync('config');
             if (state && state.val) {
-                this.currentConfig = JSON.parse(state.val);
+                const parsed = JSON.parse(state.val);
+                // Sanitize config to ensure valid structure
+                this.currentConfig = sanitizeConfig(parsed);
                 this.buildPresentationAllowlist(this.currentConfig);
             }
         } catch (e) {
@@ -245,16 +267,7 @@ class FloorplanVisualizer extends utils.Adapter {
      * Ensure config state exists with default structure
      */
     async ensureConfigState() {
-        const defaultConfig = {
-            floors: [],
-            templates: [],
-            screenBg: '#f7f9fc',
-            planBg: '#2a2f36',
-            backdropRadius: 16,
-            scaleMode: 'height',
-            floorBar: null,
-            layerBar: null
-        };
+        const defaultConfig = getDefaultConfig();
 
         await this.setObjectNotExistsAsync('config', {
             type: 'state',
@@ -273,6 +286,22 @@ class FloorplanVisualizer extends utils.Adapter {
         if (!existing || !existing.val) {
             await this.setStateAsync('config', { val: JSON.stringify(defaultConfig), ack: true });
             this.log.debug('Created default configuration');
+        } else {
+            // Validate and sanitize existing config
+            try {
+                const parsed = JSON.parse(existing.val);
+                const validation = validateConfig(parsed);
+                if (!validation.isValid()) {
+                    this.log.warn(`Existing config has validation errors: ${JSON.stringify(validation.errors)}`);
+                    // Sanitize and save corrected config
+                    const sanitized = sanitizeConfig(parsed);
+                    await this.setStateAsync('config', { val: JSON.stringify(sanitized), ack: true });
+                    this.log.info('Configuration sanitized and saved');
+                }
+            } catch (e) {
+                this.log.warn(`Could not parse existing config, recreating: ${e.message}`);
+                await this.setStateAsync('config', { val: JSON.stringify(defaultConfig), ack: true });
+            }
         }
     }
 
@@ -342,21 +371,60 @@ class FloorplanVisualizer extends utils.Adapter {
      * @param {'admin'|'presentation'} kind
      */
     startServer(port, kind) {
+        // Validate port
+        const portNum = parseInt(port, 10);
+        if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+            throw new Error(`Invalid ${kind} port: ${port}. Must be 1-65535.`);
+        }
+
+        // Validate bind address
+        const bindAddress = this.config.bind || '0.0.0.0';
+        if (typeof bindAddress !== 'string' || bindAddress.trim() === '') {
+            throw new Error(`Invalid bind address: ${bindAddress}`);
+        }
+
+        // Check for port conflict
+        if (this.adminServer && kind === 'presentation' && this.getServerPort(this.adminServer) === portNum) {
+            throw new Error(`Admin and presentation ports cannot be the same: ${portNum}`);
+        }
+        if (this.presentationServer && kind === 'admin' && this.getServerPort(this.presentationServer) === portNum) {
+            throw new Error(`Admin and presentation ports cannot be the same: ${portNum}`);
+        }
+
         const app = kind === 'admin' ? this.buildAdminApp() : this.buildPresentationApp();
         const server = http.createServer(app);
 
-        server.listen(port, this.config.bind || '0.0.0.0', () => {
-            this.log.info(`${kind} server listening on ${this.config.bind || '0.0.0.0'}:${port}`);
+        server.listen(portNum, bindAddress, () => {
+            this.log.info(`${kind} server listening on ${bindAddress}:${portNum}`);
         });
 
         server.on('error', (err) => {
-            this.log.error(`${kind} server error: ${err.message}`);
+            if (err.code === 'EADDRINUSE') {
+                this.log.error(`${kind} server error: Port ${portNum} is already in use`);
+            } else if (err.code === 'EACCES') {
+                this.log.error(`${kind} server error: Permission denied to bind to ${bindAddress}:${portNum}`);
+            } else {
+                this.log.error(`${kind} server error: ${err.message}`);
+            }
         });
 
         if (kind === 'admin') {
             this.adminServer = server;
         } else {
             this.presentationServer = server;
+        }
+    }
+
+    /**
+     * Get server port from server instance
+     * @param {http.Server} server
+     * @returns {number|null}
+     */
+    getServerPort(server) {
+        try {
+            return server.address()?.port || null;
+        } catch {
+            return null;
         }
     }
 
@@ -481,7 +549,16 @@ class FloorplanVisualizer extends utils.Adapter {
         // Config POST (admin only)
         app.post('/api/config', async (req, res) => {
             try {
-                await this.setStateAsync('config', { val: JSON.stringify(req.body), ack: true });
+                // Validate and sanitize config before saving
+                const validation = validateConfig(req.body);
+                if (!validation.isValid()) {
+                    return res.status(400).json({ 
+                        error: 'Invalid configuration', 
+                        details: validation.errors 
+                    });
+                }
+                const sanitized = sanitizeConfig(req.body);
+                await this.setStateAsync('config', { val: JSON.stringify(sanitized), ack: true });
                 // Reload config and rebuild allowlist
                 await self.loadConfigAndBuildAllowlist();
                 res.json({ success: true });
@@ -515,6 +592,47 @@ class FloorplanVisualizer extends utils.Adapter {
         // Get all ioBroker objects (admin only)
         app.get('/api/iobroker/objects', async (req, res) => {
             try {
+                // Parse query parameters for filtering and pagination
+                const query = req.query.q || '';
+                const role = req.query.role || '';
+                const type = req.query.type || '';
+                const limit = Math.min(parseInt(req.query.limit, 10) || 1000, 5000);
+                const offset = parseInt(req.query.offset, 10) || 0;
+
+                // Check cache first
+                const now = Date.now();
+                if (self.objectsCache && self.objectsCache.timestamp && (now - self.objectsCache.timestamp) < 30000) {
+                    // Cache valid for 30 seconds
+                    let cachedResults = self.objectsCache.data;
+                    
+                    // Apply filters to cached data
+                    if (query) {
+                        const q = query.toLowerCase();
+                        cachedResults = cachedResults.filter(obj => 
+                            obj.id.toLowerCase().includes(q) || 
+                            obj.name.toLowerCase().includes(q)
+                        );
+                    }
+                    if (role) {
+                        cachedResults = cachedResults.filter(obj => obj.role === role);
+                    }
+                    if (type) {
+                        cachedResults = cachedResults.filter(obj => obj.type === type);
+                    }
+                    
+                    const total = cachedResults.length;
+                    const paginated = cachedResults.slice(offset, offset + limit);
+                    
+                    return res.json({
+                        results: paginated,
+                        total,
+                        limit,
+                        offset,
+                        cached: true
+                    });
+                }
+
+                // Build cache
                 const [states, enums] = await Promise.all([
                     this.getForeignObjectsAsync('*', 'state'),
                     this.getForeignObjectsAsync('enum.*', 'enum').catch(() => ({}))
@@ -550,6 +668,7 @@ class FloorplanVisualizer extends utils.Adapter {
                             id,
                             name,
                             role: obj.common.role || '',
+                            type: obj.common.type || '',
                             room: match(rooms, id),
                             func: match(functions, id)
                         });
@@ -557,7 +676,39 @@ class FloorplanVisualizer extends utils.Adapter {
                 }
 
                 result.sort((a, b) => a.id.localeCompare(b.id));
-                res.json(result);
+                
+                // Cache the full result
+                self.objectsCache = {
+                    data: result,
+                    timestamp: now
+                };
+
+                // Apply filters
+                let filteredResults = result;
+                if (query) {
+                    const q = query.toLowerCase();
+                    filteredResults = filteredResults.filter(obj => 
+                        obj.id.toLowerCase().includes(q) || 
+                        obj.name.toLowerCase().includes(q)
+                    );
+                }
+                if (role) {
+                    filteredResults = filteredResults.filter(obj => obj.role === role);
+                }
+                if (type) {
+                    filteredResults = filteredResults.filter(obj => obj.type === type);
+                }
+
+                const total = filteredResults.length;
+                const paginated = filteredResults.slice(offset, offset + limit);
+
+                res.json({
+                    results: paginated,
+                    total,
+                    limit,
+                    offset,
+                    cached: false
+                });
             } catch (e) {
                 self.log.error(`Objects API error: ${e.message}`);
                 res.status(500).json({ error: e.message });

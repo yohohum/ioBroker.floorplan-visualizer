@@ -21,6 +21,8 @@
 
 The adapter provides a visual editor for designing floor plans and a separate presentation mode for embedding in dashboards (Jarvis, vis, etc.).
 
+> **WORK IN PROGRESS** - This adapter is actively maintained and updated. Please check the [CHANGELOG.md](CHANGELOG.md) for the latest changes.
+
 ## ✨ Features
 
 ### 🏠 Multi-floor structure
@@ -217,6 +219,63 @@ Clean view for embedding in dashboards:
 }
 ```
 
+```
+ 
+## 🔒 Security Model
+ 
+The adapter implements a comprehensive security model to protect your smart home:
+ 
+### Authentication & Authorization
+ 
+- **Admin API (port 8083)**: Requires Bearer token authentication
+  - Token is auto-generated on first start (32-byte hex)
+  - Stored in adapter native configuration
+  - Must be included as `Authorization: Bearer <token>` header or `?token=<token>` query parameter
+  - All admin endpoints protected: config read/write, state read/write, objects, icons, upload
+ 
+- **Presentation API (port 8084)**: Allowlist-based access control
+  - No authentication required for read-only access
+  - State reads/writes restricted to device states configured in floorplan
+  - Automatic allowlist built from configured device `stateIds`
+  - Prevents unauthorized access to arbitrary ioBroker states
+ 
+### API Separation
+ 
+- **Admin server** (editor): Full management capabilities with authentication
+- **Presentation server** (viewer): Restricted to configured devices only
+- Separate Express applications with independent middleware
+- No cross-access between admin and presentation endpoints
+ 
+### CORS Policy
+ 
+- Restricted to localhost origins (`http://localhost:8083`, `http://localhost:8084`, `http://127.0.0.1:8083`, `http://127.0.0.1:8084`)
+- No wildcard (`*`) origins
+- Credentials allowed for admin API
+ 
+### File Upload Protection
+ 
+- Filename sanitization (alphanumeric, dots, underscores, hyphens only)
+- Base64 payload validation
+- 10 MB file size limit
+- Path traversal protection (directory containment verification)
+- MIME type validation via file signature checking
+- No executable content execution
+ 
+### Network Security
+ 
+- Configurable bind address (default `0.0.0.0` for all interfaces)
+- Admin and presentation ports must be different
+- Port validation (1-65535)
+- Proper error handling for `EADDRINUSE` and `EACCES`
+- Secure server shutdown on unload
+ 
+### Admin Token Management
+ 
+- Auto-generated 32-byte cryptographically secure token on first start
+- Persisted in adapter native configuration
+- Token persists across restarts
+- Regenerated only if missing or invalid
+ 
 ## 🏗️ Architecture
 
 - **Backend**: Node.js + Express + ioBroker adapter-core
