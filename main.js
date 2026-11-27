@@ -11,6 +11,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { validateConfig, sanitizeConfig, getDefaultConfig } = require('./lib/configValidator');
 
 /**
@@ -362,6 +363,28 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         } catch (e) {
             this.log.debug('Web adapter not found, using default port');
+        }
+    }
+
+    /**
+     * Initialize admin API token for authentication
+     */
+    async initAdminApiToken() {
+        // Check if token exists in native config
+        if (this.config.adminApiToken && typeof this.config.adminApiToken === 'string' && this.config.adminApiToken.length >= 32) {
+            this.adminApiToken = this.config.adminApiToken;
+            this.log.debug('Using existing admin API token');
+        } else {
+            // Generate new secure token
+            this.adminApiToken = crypto.randomBytes(32).toString('hex');
+            // Update native config with the new token
+            const newConfig = { ...this.config, adminApiToken: this.adminApiToken };
+            await this.setForeignObjectAsync(`${this.namespace}`, {
+                ...(await this.getForeignObjectAsync(`${this.namespace}`)),
+                native: newConfig
+            });
+            this.config = newConfig;
+            this.log.info('Generated new admin API token');
         }
     }
 
