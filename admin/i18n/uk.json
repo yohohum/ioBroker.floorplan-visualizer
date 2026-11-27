@@ -1,0 +1,10 @@
+{
+  "Floor Plan Visualizer Settings": "Налаштування Візуалізатора Плану Поверху",
+  "General": "Загальні",
+  "Editor port": "Порт Редактора",
+  "Port for the visual editor web interface": "Порт для веб-інтерфейсу візуального редактора",
+  "Presentation port": "Порт Презентації",
+  "Port for the presentation mode (embedding in dashboards)": "Порт для режиму презентації (вбудовування в дашборди)",
+  "IP address": "IP-адреса",
+  "Network interface to bind (0.0.0.0 = all interfaces)": "Мережевий інтерфейс для прив'язки (0.0.0.0 = всі інтерфейси)"
+}

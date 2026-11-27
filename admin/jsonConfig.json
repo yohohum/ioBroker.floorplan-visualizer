@@ -1,0 +1,39 @@
+{
+  "type": "panel",
+  "title": "Floor Plan Visualizer Settings",
+  "items": [
+    {
+      "type": "panel",
+      "title": "General",
+      "items": [
+        {
+          "type": "number",
+          "name": "adminPort",
+          "label": "Editor port",
+          "default": 8083,
+          "min": 1024,
+          "max": 65535,
+          "step": 1,
+          "description": "Port for the visual editor web interface"
+        },
+        {
+          "type": "number",
+          "name": "presentationPort",
+          "label": "Presentation port",
+          "default": 8084,
+          "min": 1024,
+          "max": 65535,
+          "step": 1,
+          "description": "Port for the presentation mode (embedding in dashboards)"
+        },
+        {
+          "type": "text",
+          "name": "bind",
+          "label": "IP address",
+          "default": "0.0.0.0",
+          "description": "Network interface to bind (0.0.0.0 = all interfaces)"
+        }
+      ]
+    }
+  ]
+}

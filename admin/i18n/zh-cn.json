@@ -1,0 +1,10 @@
+{
+  "Floor Plan Visualizer Settings": "楼层平面图可视化器设置",
+  "General": "常规",
+  "Editor port": "编辑器端口",
+  "Port for the visual editor web interface": "可视化编辑器Web界面端口",
+  "Presentation port": "演示端口",
+  "Port for the presentation mode (embedding in dashboards)": "演示模式端口（嵌入仪表板）",
+  "IP address": "IP地址",
+  "Network interface to bind (0.0.0.0 = all interfaces)": "绑定网络接口 (0.0.0.0 = 所有接口)"
+}

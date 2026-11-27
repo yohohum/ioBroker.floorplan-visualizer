@@ -1,0 +1,10 @@
+{
+  "Floor Plan Visualizer Settings": "Instellingen Verdiepingsvisualisator",
+  "General": "Algemeen",
+  "Editor port": "Editor-poort",
+  "Port for the visual editor web interface": "Poort voor de visuele editor-webinterface",
+  "Presentation port": "Presentatiepoort",
+  "Port for the presentation mode (embedding in dashboards)": "Poort voor de presentatiemodus (insluiten in dashboards)",
+  "IP address": "IP-adres",
+  "Network interface to bind (0.0.0.0 = all interfaces)": "Netwerkinterface om te binden (0.0.0.0 = alle interfaces)"
+}

@@ -5,29 +5,83 @@
     "news": {
       "15.3.0": {
         "en": "Screen background, backdrop radius, floor edit modal",
-        "ru": "Основной фон экрана, радиус подложки, модальное окно редактирования этажа"
+        "de": "Bildschirmhintergrund, Hintergrundradius, Etagenbearbeitungs-Modal",
+        "ru": "Основной фон экрана, радиус подложки, модальное окно редактирования этажа",
+        "pt": "Fundo da tela, raio do fundo, modal de edição de andar",
+        "nl": "Schermachtergrond, achtergrondstraal, verdiepingsbewerkingsmodal",
+        "fr": "Arrière-plan de l'écran, rayon du fond, modal d'édition d'étage",
+        "it": "Sfondo schermo, raggio sfondo, modalità modifica piano",
+        "es": "Fondo de pantalla, radio de fondo, modal de edición de planta",
+        "pl": "Tło ekranu, promień tła, modal edycji piętra",
+        "uk": "Фон екрана, радіус підкладки, модальне вікно редагування поверху",
+        "zh-cn": "屏幕背景、背景半径、楼层编辑模态框"
       },
       "15.2.0": {
         "en": "Per-floor guides, slug for floor URLs, fixed layer switching flicker",
-        "ru": "Направляющие для каждого этажа, идентификатор этажа для ссылок, устранено мигание при переключении слоёв"
+        "de": "Führungen pro Etage, Slug für Etagen-URLs, Flackern beim Ebenenwechsel behoben",
+        "ru": "Направляющие для каждого этажа, идентификатор этажа для ссылок, устранено мигание при переключении слоёв",
+        "pt": "Guias por andar, slug para URLs de andares, cintilação ao trocar camadas corrigida",
+        "nl": "Gidsen per verdieping, slug voor verdiepings-URL's, flitsen bij laagwisseling opgelost",
+        "fr": "Guides par étage, identifiant pour URLs d'étage, scintillement changement de couche corrigé",
+        "it": "Guide per piano, slug per URL piano, sfarfallio cambio layer corretto",
+        "es": "Guías por planta, slug para URLs de planta, parpadeo al cambiar capas corregido",
+        "pl": "Przewodniki na każde piętro, identyfikator piętra do linków, naprawione migotanie przy przełączaniu warstw",
+        "uk": "Направляючі для кожного поверху, ідентифікатор поверху для посилань, усунено миготіння при перемиканні шарів",
+        "zh-cn": "每层独立参考线、楼层 URL 标识符、修复切换图层闪烁"
       },
       "15.1.0": {
         "en": "Context menu for guides (delete single/all)",
-        "ru": "Контекстное меню для направляющих (удалить одну/все)"
+        "de": "Kontextmenü für Führungen (einzeln/alle löschen)",
+        "ru": "Контекстное меню для направляющих (удалить одну/все)",
+        "pt": "Menu de contexto para guias (excluir individual/todos)",
+        "nl": "Contextmenu voor gidsen (enkel/alle verwijderen)",
+        "fr": "Menu contextuel pour guides (supprimer unique/tous)",
+        "it": "Menu contestuale per guide (elimina singola/tutte)",
+        "es": "Menú contextual para guías (eliminar una/todas)",
+        "pl": "Menu kontekstowe dla przewodników (usuń pojedynczą/wszystkie)",
+        "uk": "Контекстне меню для напрямок (видалити одну/всі)",
+        "zh-cn": "参考线右键菜单（删除单个/全部）"
       },
       "15.0.0": {
         "en": "Stable release with scaling modes, lock feature, guides, alignment",
-        "ru": "Стабильный релиз с режимами масштабирования, блокировкой, направляющими, выравниванием"
+        "de": "Stabile Version mit Skalierungsmodi, Sperrfunktion, Führungen, Ausrichtung",
+        "ru": "Стабильный релиз с режимами масштабирования, блокировкой, направляющими, выравниванием",
+        "pt": "Versão estável com modos de escala, recurso de bloqueio, guias, alinhamento",
+        "nl": "Stabiele release met schaalmodi, vergrendelfunctie, gidsen, uitlijning",
+        "fr": "Version stable avec modes d'échelle, verrouillage, guides, alignement",
+        "it": "Rilascio stabile con modalità di scala, blocco, guide, allineamento",
+        "es": "Versión estable con modos de escala, bloqueo, guías, alineación",
+        "pl": "Stabilna wersja z trybami skalowania, blokadą, przewodnikami, wyrównywaniem",
+        "uk": "Стабільний реліз з режимами масштабування, блокуванням, напрямками, вирівнюванням",
+        "zh-cn": "稳定版：缩放模式、锁定功能、参考线、对齐"
       }
     },
     "title": "Floor Plan Visualizer",
     "titleLang": {
       "en": "Floor Plan Visualizer",
-      "ru": "Визуализатор плана этажа"
+      "de": "Grundriss-Visualisierer",
+      "ru": "Визуализатор плана этажа",
+      "pt": "Visualizador de Planta",
+      "nl": "Verdieplingsvisualisator",
+      "fr": "Visualiseur de Plan d'Étage",
+      "it": "Visualizzatore Planimetria",
+      "es": "Visualizador de Plano de Planta",
+      "pl": "Wizualizator Planu Piętra",
+      "uk": "Візуалізатор плану поверху",
+      "zh-cn": "楼层平面图可视化器"
     },
     "desc": {
       "en": "Interactive floor plan visualization for smart homes",
-      "ru": "Интерактивная визуализация плана этажа для умного дома"
+      "de": "Interaktive Grundrissvisualisierung für Smart Homes",
+      "ru": "Интерактивная визуализация плана этажа для умного дома",
+      "pt": "Visualização interativa de planta para casas inteligentes",
+      "nl": "Interactieve verdiepingsvisualisatie voor slimme huizen",
+      "fr": "Visualisation interactive de plan d'étage pour maisons intelligentes",
+      "it": "Visualizzazione interattiva planimetria per case intelligenti",
+      "es": "Visualización interactiva de plano de planta para hogares inteligentes",
+      "pl": "Interaktywna wizualizacja planu piętra dla inteligentnych domów",
+      "uk": "Інтерактивна візуалізація плану поверху для розумного дому",
+      "zh-cn": "智能家居交互式楼层平面图可视化"
     },
     "authors": [
       "YoHoHum <yohohum@gmail.com>"
@@ -47,14 +101,15 @@
     "connectionType": "local",
     "dataSource": "push",
     "adminUI": {
-      "config": "html"
+      "config": "json"
     },
     "localLink": "http://%ip%:8083/editor.html",
     "icon": "icon.svg",
     "readme": "https://github.com/yohohum/ioBroker.floorplan-visualizer/blob/master/README.md",
     "loglevel": "info",
     "tier": 3,
-    "enabled": true
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/yohohum/ioBroker.floorplan-visualizer/master/admin/icon.svg"
   },
   "native": {
     "adminPort": 8083,

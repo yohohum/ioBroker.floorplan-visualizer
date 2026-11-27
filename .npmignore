@@ -1,5 +1,53 @@
-   .git
-   .github
-   .gitignore
-   test
-   .npmignore
+# Git
+.git
+.github
+.gitignore
+.gitmodules
+
+# CI/CD
+.gitlab-ci.yml
+.jenkinsfile
+
+# Development
+test/
+*.test.js
+*.spec.js
+.mocharc.json
+.setup.js
+.eslintrc.js
+.prettierrc
+.editorconfig
+tsconfig.json
+
+# Documentation
+CHANGELOG.md
+README.md
+LICENSE
+CONTRIBUTING.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Temporary
+*.tmp
+*.temp
+
+# Package
+package-lock.json
+npm-shrinkwrap.json

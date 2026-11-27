@@ -1,0 +1,10 @@
+{
+  "Floor Plan Visualizer Settings": "Grundriss-Visualisierer Einstellungen",
+  "General": "Allgemein",
+  "Editor port": "Editor-Port",
+  "Port for the visual editor web interface": "Port für die visuelle Editor-Weboberfläche",
+  "Presentation port": "Präsentations-Port",
+  "Port for the presentation mode (embedding in dashboards)": "Port für den Präsentationsmodus (Einbetten in Dashboards)",
+  "IP address": "IP-Adresse",
+  "Network interface to bind (0.0.0.0 = all interfaces)": "Netzwerkschnittstelle zum Binden (0.0.0.0 = alle Schnittstellen)"
+}

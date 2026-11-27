@@ -1,0 +1,10 @@
+{
+  "Floor Plan Visualizer Settings": "Ajustes del Visualizador de Planos",
+  "General": "General",
+  "Editor port": "Puerto del Editor",
+  "Port for the visual editor web interface": "Puerto para la interfaz web del editor visual",
+  "Presentation port": "Puerto de Presentación",
+  "Port for the presentation mode (embedding in dashboards)": "Puerto para el modo de presentación (incrustación en paneles)",
+  "IP address": "Dirección IP",
+  "Network interface to bind (0.0.0.0 = all interfaces)": "Interfaz de red para enlazar (0.0.0.0 = todas las interfaces)"
+}

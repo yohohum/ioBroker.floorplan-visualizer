@@ -1,0 +1,10 @@
+{
+  "Floor Plan Visualizer Settings": "Configurações do Visualizador de Plantas",
+  "General": "Geral",
+  "Editor port": "Porta do Editor",
+  "Port for the visual editor web interface": "Porta para a interface web do editor visual",
+  "Presentation port": "Porta de Apresentação",
+  "Port for the presentation mode (embedding in dashboards)": "Porta para o modo de apresentação (incorporação em dashboards)",
+  "IP address": "Endereço IP",
+  "Network interface to bind (0.0.0.0 = all interfaces)": "Interface de rede para vincular (0.0.0.0 = todas as interfaces)"
+}

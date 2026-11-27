@@ -1,0 +1,8 @@
+{
+  "skills": [
+    {
+      "name": "iobroker-adapter-dev",
+      "path": ".opencode/skills/iobroker-adapter-dev"
+    }
+  ]
+}
