@@ -140,8 +140,13 @@ class FloorplanVisualizer extends utils.Adapter {
         this.validateAndNormalizeConfig();
 
         // Start HTTP servers with separate apps
-        this.startServer(this.config.adminPort, 'admin');
-        this.startServer(this.config.presentationPort, 'presentation');
+        try {
+            await this.startServer(this.config.adminPort, 'admin');
+            await this.startServer(this.config.presentationPort, 'presentation');
+        } catch (e) {
+            this.log.error(`Failed to start servers: ${e.message}`);
+            throw e;
+        }
 
         this.log.info('Adapter started successfully');
     }
@@ -433,6 +438,89 @@ class FloorplanVisualizer extends utils.Adapter {
     }
 
     /**
+     * Validate file content by checking magic bytes/signatures
+     * @param {Buffer} data - File data buffer
+     * @param {string} filename - Original filename for extension check
+     * @returns {{valid: boolean, mimeType: string, error?: string}}
+     */
+    validateFileContent(data, filename) {
+        if (!data || data.length === 0) {
+            return { valid: false, mimeType: '', error: 'Empty file' };
+        }
+
+        // Check file signatures (magic bytes)
+        let mimeType = '';
+        if (data.length >= 8 && data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47) {
+            mimeType = 'image/png';
+        } else if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) {
+            mimeType = 'image/jpeg';
+        } else if (data.length >= 5 && data.toString('utf8', 0, 5).trim().startsWith('<svg')) {
+            mimeType = 'image/svg+xml';
+        } else {
+            return { valid: false, mimeType: '', error: 'Unsupported file type. Only PNG, JPEG, and SVG are allowed.' };
+        }
+
+        // Verify extension matches detected type
+        const ext = path.extname(filename).toLowerCase();
+        const validExtensions = {
+            'image/png': ['.png'],
+            'image/jpeg': ['.jpg', '.jpeg'],
+            'image/svg+xml': ['.svg']
+        };
+
+        if (!validExtensions[mimeType]?.includes(ext)) {
+            return { valid: false, mimeType, error: `File extension ${ext} does not match detected type ${mimeType}` };
+        }
+
+        return { valid: true, mimeType };
+    }
+
+    /**
+     * Sanitize SVG content to prevent XSS
+     * @param {string} svgContent - Raw SVG content
+     * @returns {{valid: boolean, content?: string, error?: string}}
+     */
+    sanitizeSvgContent(svgContent) {
+        if (typeof svgContent !== 'string') {
+            return { valid: false, error: 'SVG content must be a string' };
+        }
+
+        // Check for dangerous patterns
+        const dangerousPatterns = [
+            /<script\b[^>]*>/gi,
+            /on\w+\s*=/gi,
+            /javascript:/gi,
+            /onload\s*=/gi,
+            /onerror\s*=/gi,
+            /onclick\s*=/gi,
+            /<foreignObject\b/gi,
+            /<iframe\b/gi,
+            /<embed\b/gi,
+            /<object\b/gi,
+            /<applet\b/gi,
+            /<link\b/gi,
+            /<meta\b/gi,
+            /<style\b/gi,
+            /expression\s*\(/gi,
+            /url\s*\(\s*['"]?\s*javascript:/gi
+        ];
+
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(svgContent)) {
+                return { valid: false, error: 'SVG contains potentially dangerous content' };
+            }
+        }
+
+        // Remove any remaining potentially dangerous attributes
+        const sanitized = svgContent
+            .replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '')
+            .replace(/\s+xmlns:xlink\s*=\s*["'][^"']*["']/gi, '')
+            .replace(/\s+xlink:href\s*=\s*["'][^"']*["']/gi, '');
+
+        return { valid: true, content: sanitized };
+    }
+
+    /**
      * Initialize admin API token for authentication
      */
     async initAdminApiToken() {
@@ -458,50 +546,55 @@ class FloorplanVisualizer extends utils.Adapter {
      * Start HTTP server
      * @param {number} port
      * @param {'admin'|'presentation'} kind
+     * @returns {Promise<http.Server>}
      */
     startServer(port, kind) {
-        // Validate port
-        const portNum = parseInt(port, 10);
-        if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-            throw new Error(`Invalid ${kind} port: ${port}. Must be 1-65535.`);
-        }
+        return new Promise((resolve, reject) => {
+            // Validate port
+            const portNum = parseInt(port, 10);
+            if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+                return reject(new Error(`Invalid ${kind} port: ${port}. Must be 1-65535.`));
+            }
 
-        // Validate bind address
-        const bindAddress = this.config.bind || '0.0.0.0';
-        if (typeof bindAddress !== 'string' || bindAddress.trim() === '') {
-            throw new Error(`Invalid bind address: ${bindAddress}`);
-        }
+            // Validate bind address
+            const bindAddress = this.config.bind || '0.0.0.0';
+            if (typeof bindAddress !== 'string' || bindAddress.trim() === '') {
+                return reject(new Error(`Invalid bind address: ${bindAddress}`));
+            }
 
-        // Check for port conflict
-        if (this.adminServer && kind === 'presentation' && this.getServerPort(this.adminServer) === portNum) {
-            throw new Error(`Admin and presentation ports cannot be the same: ${portNum}`);
-        }
-        if (this.presentationServer && kind === 'admin' && this.getServerPort(this.presentationServer) === portNum) {
-            throw new Error(`Admin and presentation ports cannot be the same: ${portNum}`);
-        }
+            // Check for port conflict
+            if (this.adminServer && kind === 'presentation' && this.getServerPort(this.adminServer) === portNum) {
+                return reject(new Error(`Admin and presentation ports cannot be the same: ${portNum}`));
+            }
+            if (this.presentationServer && kind === 'admin' && this.getServerPort(this.presentationServer) === portNum) {
+                return reject(new Error(`Admin and presentation ports cannot be the same: ${portNum}`));
+            }
 
-        const app = kind === 'admin' ? this.buildAdminApp() : this.buildPresentationApp();
-        const server = http.createServer(app);
+            const app = kind === 'admin' ? this.buildAdminApp() : this.buildPresentationApp();
+            const server = http.createServer(app);
 
-        server.listen(portNum, bindAddress, () => {
-            this.log.info(`${kind} server listening on ${bindAddress}:${portNum}`);
-        });
+            server.listen(portNum, bindAddress, () => {
+                this.log.info(`${kind} server listening on ${bindAddress}:${portNum}`);
+                resolve(server);
+            });
 
-        server.on('error', (err) => {
-            if (err.code === 'EADDRINUSE') {
-                this.log.error(`${kind} server error: Port ${portNum} is already in use`);
-            } else if (err.code === 'EACCES') {
-                this.log.error(`${kind} server error: Permission denied to bind to ${bindAddress}:${portNum}`);
+            server.on('error', (err) => {
+                if (err.code === 'EADDRINUSE') {
+                    this.log.error(`${kind} server error: Port ${portNum} is already in use`);
+                } else if (err.code === 'EACCES') {
+                    this.log.error(`${kind} server error: Permission denied to bind to ${bindAddress}:${portNum}`);
+                } else {
+                    this.log.error(`${kind} server error: ${err.message}`);
+                }
+                reject(err);
+            });
+
+            if (kind === 'admin') {
+                this.adminServer = server;
             } else {
-                this.log.error(`${kind} server error: ${err.message}`);
+                this.presentationServer = server;
             }
         });
-
-        if (kind === 'admin') {
-            this.adminServer = server;
-        } else {
-            this.presentationServer = server;
-        }
     }
 
     /**
@@ -613,13 +706,49 @@ class FloorplanVisualizer extends utils.Adapter {
                 if (data.length > 10 * 1024 * 1024) {
                     return res.status(400).json({ error: 'File too large (max 10MB)' });
                 }
-                const filePath = path.join(self.uploadDir, safeName);
-                // Ensure path is within upload directory
-                if (!filePath.startsWith(self.uploadDir)) {
-                    return res.status(400).json({ error: 'Invalid file path' });
+                
+                // Validate file content (MIME type and signature)
+                const mimeValidation = self.validateFileContent(data, safeName);
+                if (!mimeValidation.valid) {
+                    return res.status(400).json({ error: mimeValidation.error });
                 }
-                fs.writeFileSync(filePath, data);
-                res.json({ success: true, url: '/uploads/' + safeName });
+                
+                // Check for SVG content and sanitize if needed
+                if (mimeValidation.mimeType === 'image/svg+xml') {
+                    const sanitizedSvg = self.sanitizeSvgContent(data.toString('utf8'));
+                    if (!sanitizedSvg.valid) {
+                        return res.status(400).json({ error: sanitizedSvg.error });
+                    }
+                    // Write sanitized SVG
+                    const filePath = path.join(self.uploadDir, safeName);
+                    // Ensure path is within upload directory using proper containment check
+                    const resolvedUploadDir = path.resolve(self.uploadDir);
+                    const resolvedFilePath = path.resolve(filePath);
+                    if (!resolvedFilePath.startsWith(resolvedUploadDir + path.sep) && resolvedFilePath !== resolvedUploadDir) {
+                        return res.status(400).json({ error: 'Invalid file path' });
+                    }
+                    // Check for existing file to prevent overwrite
+                    if (fs.existsSync(filePath)) {
+                        return res.status(409).json({ error: 'File already exists' });
+                    }
+                    fs.writeFileSync(filePath, sanitizedSvg.content);
+                    res.json({ success: true, url: '/uploads/' + safeName });
+                } else {
+                    // For binary files (PNG, JPEG), write directly
+                    const filePath = path.join(self.uploadDir, safeName);
+                    // Ensure path is within upload directory using proper containment check
+                    const resolvedUploadDir = path.resolve(self.uploadDir);
+                    const resolvedFilePath = path.resolve(filePath);
+                    if (!resolvedFilePath.startsWith(resolvedUploadDir + path.sep) && resolvedFilePath !== resolvedUploadDir) {
+                        return res.status(400).json({ error: 'Invalid file path' });
+                    }
+                    // Check for existing file to prevent overwrite
+                    if (fs.existsSync(filePath)) {
+                        return res.status(409).json({ error: 'File already exists' });
+                    }
+                    fs.writeFileSync(filePath, data);
+                    res.json({ success: true, url: '/uploads/' + safeName });
+                }
             } catch (e) {
                 self.log.error(`Upload error: ${e.message}`);
                 res.status(500).json({ error: 'Upload failed' });
