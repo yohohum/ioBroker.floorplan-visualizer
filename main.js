@@ -243,7 +243,7 @@ class FloorplanVisualizer extends utils.Adapter {
      */
     requireAdminAuth(req, res, next) {
         const authHeader = req.headers.authorization;
-        const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.query.token;
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
         if (!token || token !== this.adminApiToken) {
             this.log.warn(`Unauthorized admin API access from ${req.ip}: ${req.method} ${req.path}`);
@@ -262,6 +262,72 @@ class FloorplanVisualizer extends utils.Adapter {
         // For presentation, we allow read access to config and version without auth
         // but state writes require the state to be in allowlist
         next();
+    }
+
+    /**
+     * Validates and safely writes a state value
+     * @param {string} stateId - The state ID to write
+     * @param {*} val - The value to write
+     * @param {boolean} checkAllowlist - Whether to check presentation allowlist
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async safeSetState(stateId, val, checkAllowlist = false) {
+        // Check allowlist if required (for presentation mode)
+        if (checkAllowlist && !this.isStateAllowedForPresentation(stateId)) {
+            return { success: false, error: 'State not controllable in presentation mode' };
+        }
+
+        try {
+            // Get the state object to validate
+            const stateObj = await this.getForeignObjectAsync(stateId);
+            if (!stateObj) {
+                return { success: false, error: 'State not found' };
+            }
+
+            if (stateObj.type !== 'state') {
+                return { success: false, error: 'Object is not a state' };
+            }
+
+            if (!stateObj.common) {
+                return { success: false, error: 'State has no common definition' };
+            }
+
+            if (stateObj.common.write !== true) {
+                return { success: false, error: 'State is not writable' };
+            }
+
+            // Validate value type matches state type
+            const expectedType = stateObj.common.type;
+            if (expectedType === 'boolean' && typeof val !== 'boolean') {
+                return { success: false, error: 'Value must be boolean' };
+            }
+            if (expectedType === 'number' && typeof val !== 'number') {
+                return { success: false, error: 'Value must be a number' };
+            }
+            if (expectedType === 'string' && typeof val !== 'string') {
+                return { success: false, error: 'Value must be a string' };
+            }
+
+            // Check numeric constraints
+            if (expectedType === 'number' && typeof val === 'number') {
+                if (!Number.isFinite(val)) {
+                    return { success: false, error: 'Value must be a finite number' };
+                }
+                if (stateObj.common.min !== undefined && val < stateObj.common.min) {
+                    return { success: false, error: `Value must be >= ${stateObj.common.min}` };
+                }
+                if (stateObj.common.max !== undefined && val > stateObj.common.max) {
+                    return { success: false, error: `Value must be <= ${stateObj.common.max}` };
+                }
+            }
+
+            // Write the state
+            await this.setForeignStateAsync(stateId, val, false);
+            return { success: true };
+        } catch (e) {
+            this.log.error(`Safe set state error for ${stateId}: ${e.message}`);
+            return { success: false, error: 'Internal error' };
+        }
     }
 
     /**
@@ -462,12 +528,14 @@ class FloorplanVisualizer extends utils.Adapter {
         // CORS middleware - restrict to same origin in production
         app.use((req, res, next) => {
             const origin = req.headers.origin;
-            // Allow localhost and configured origins
+            // Allow localhost and configured origins based on config ports
+            const adminPort = this.config.adminPort || 8083;
+            const presentationPort = this.config.presentationPort || 8084;
             const allowedOrigins = [
-                'http://localhost:8083',
-                'http://localhost:8084',
-                'http://127.0.0.1:8083',
-                'http://127.0.0.1:8084'
+                `http://localhost:${adminPort}`,
+                `http://localhost:${presentationPort}`,
+                `http://127.0.0.1:${adminPort}`,
+                `http://127.0.0.1:${presentationPort}`
             ];
             if (origin && allowedOrigins.includes(origin)) {
                 res.header('Access-Control-Allow-Origin', origin);
@@ -601,11 +669,14 @@ class FloorplanVisualizer extends utils.Adapter {
             }
         });
 
-        // State POST (admin only - can write any state)
+        // State POST (admin only - can write any state with validation)
         app.post('/api/state/:id(*)', async (req, res) => {
             try {
                 const { val } = req.body;
-                await this.setForeignStateAsync(req.params.id, val, false);
+                const result = await this.safeSetState(req.params.id, val, false);
+                if (!result.success) {
+                    return res.status(400).json({ error: result.error });
+                }
                 res.json({ success: true });
             } catch (e) {
                 res.status(500).json({ error: e.message });
@@ -777,11 +848,13 @@ class FloorplanVisualizer extends utils.Adapter {
         // CORS middleware - restrict to same origin
         app.use((req, res, next) => {
             const origin = req.headers.origin;
+            const adminPort = this.config.adminPort || 8083;
+            const presentationPort = this.config.presentationPort || 8084;
             const allowedOrigins = [
-                'http://localhost:8083',
-                'http://localhost:8084',
-                'http://127.0.0.1:8083',
-                'http://127.0.0.1:8084'
+                `http://localhost:${adminPort}`,
+                `http://localhost:${presentationPort}`,
+                `http://127.0.0.1:${adminPort}`,
+                `http://127.0.0.1:${presentationPort}`
             ];
             if (origin && allowedOrigins.includes(origin)) {
                 res.header('Access-Control-Allow-Origin', origin);
@@ -866,12 +939,11 @@ class FloorplanVisualizer extends utils.Adapter {
         app.post('/api/state/:id(*)', async (req, res) => {
             try {
                 const stateId = req.params.id;
-                // Check if state is in allowlist
-                if (!self.isStateAllowedForPresentation(stateId)) {
-                    return res.status(403).json({ error: 'State not controllable in presentation mode' });
-                }
                 const { val } = req.body;
-                await this.setForeignStateAsync(stateId, val, false);
+                const result = await self.safeSetState(stateId, val, true);
+                if (!result.success) {
+                    return res.status(403).json({ error: result.error });
+                }
                 res.json({ success: true });
             } catch (e) {
                 res.status(500).json({ error: e.message });
