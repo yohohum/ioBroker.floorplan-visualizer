@@ -47,7 +47,7 @@
     "lint:fix": "eslint main.js lib/**/*.js test/**/*.js --fix",
     "build": "tsc --noEmit",
     "pretest": "npm run lint",
-    "release": "npm run test:all && npm run build"
+    "release": "release-script"
   },
   "bugs": {
     "url": "https://github.com/yohohum/ioBroker.floorplan-visualizer/issues"
